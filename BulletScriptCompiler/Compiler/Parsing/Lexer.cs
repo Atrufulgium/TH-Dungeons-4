@@ -17,7 +17,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
         /// as those require more data than just the literal token as encountered.
         /// </para>
         /// </summary>
-        static readonly Dictionary<string, TokenKind> easyParses = new Dictionary<string, TokenKind>() {
+        static readonly Dictionary<string, TokenKind> easyParses = new() {
             { ";", TokenKind.Semicolon },
             { "{", TokenKind.BlockStart },
             { "}", TokenKind.BlockEnd },
@@ -140,11 +140,11 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
         (string token, int advance) GrabToken(ReadOnlySpan<char> remainingLine) {
             int i;
             sb.Clear();
-            // "A full alphanmueric+. range if we start with a letter"
+            // "A full alphanmueric+_ range if we start with a letter"
             if (char.IsLetter(remainingLine[0])) {
                 for (i = 0; i < remainingLine.Length; i++) {
                     char c = remainingLine[i];
-                    if (!char.IsLetter(c) && !char.IsNumber(c))
+                    if (!char.IsLetter(c) && !char.IsNumber(c) && c != '_')
                         break;
                     sb.Append(c);
                 }

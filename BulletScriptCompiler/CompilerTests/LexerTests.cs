@@ -140,5 +140,16 @@ new List<TokenKind>() {
 
         [TestMethod]
         public void LexerTest9() => TestLexerDiagnostics("_ \"unmatched :(", new() { "BS0002", "BS0001" });
+
+        // ...i just forgot about the existence of _
+        [TestMethod]
+        public void LexerTest10() => TestLexer(
+@"a b a_b",
+new List<TokenKind>() {
+    TokenKind.Identifier,
+    TokenKind.Identifier,
+    TokenKind.Identifier
+}
+        );
     }
 }

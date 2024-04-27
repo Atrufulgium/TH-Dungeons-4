@@ -9,7 +9,7 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         public static Diagnostic UnknownToken(Location location, string token)
             => new(location, DiagnosticLevel.Error, "BS0002",
-                $"Encountered unexpected token:\n  {token}\n(No hint provided.)"
+                $"Encountered unexpected token:\n  {token}\n(If you started a name with a \"_\", that is not allowed.)"
             );
     }
 }
