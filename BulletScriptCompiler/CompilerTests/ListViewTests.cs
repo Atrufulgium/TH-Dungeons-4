@@ -51,5 +51,33 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
                 view[^2] // Note that the collection grew one so we need to step one more back as this is "from end"
             );
         }
+
+        [TestMethod]
+        public void ListViewTest4() {
+            List<int> ints = new() { 1, 2, 3, 4, 5, 6, 7, 8 };
+            // Next line only difference with previous test lol
+            var view = ints.GetView(..^1).GetView(1..).GetView(1..^1).GetView(..^1);
+            Assert.AreEqual(
+                ints[4],
+                view[2]
+            );
+
+            Assert.AreEqual(
+                ints[4],
+                view[^1]
+            );
+
+            ints.Insert(0, 0);
+
+            Assert.AreEqual(
+                ints[4],
+                view[2]
+            );
+
+            Assert.AreEqual(
+                ints[4],
+                view[^2]
+            );
+        }
     }
 }

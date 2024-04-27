@@ -1,13 +1,24 @@
 ﻿using System.Collections;
 
 namespace Atrufulgium.BulletScript.Compiler.Helpers {
+
     /// <summary>
-    /// Represents a live view of a part of a list. The lower end is redefined
-    /// as index 0. The "from end" indices are dynamic in that if the list
-    /// grows, the upper ends grow as well.
+    /// <para>
+    /// Represents a live view of a part of a list.
+    /// </para>
+    /// <para>
+    /// It's indexed such thatTo access the first index
+    /// of this view, simply use <c>[0]</c>.
+    /// </para>
+    /// <para>
+    /// The "from end" <c>^</c> of the overload that constructs a view from a
+    /// <see cref="Range"/>, gives dynamic indices: if the list grows, the
+    /// upper ends grow as well.
+    /// </para>
     /// </summary>
-    internal class ListView<T> : IReadOnlyList<T> {
-        private readonly List<T> list;
+    internal class ListView<TIReadOnlyList, T> : IReadOnlyList<T>
+        where TIReadOnlyList : IReadOnlyList<T> {
+        private readonly TIReadOnlyList list;
         // The two endpoints of allowed indices.
         readonly Range viewRange;
 
@@ -21,7 +32,7 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
         /// </summary>
         /// <param name="list"> What list to make a view of. </param>
         /// <param name="lower"> The lower bound of the list to consider. </param>
-        public ListView(List<T> list, int lower) {
+        public ListView(TIReadOnlyList list, int lower) {
             if (lower < 0)
                 throw new ArgumentOutOfRangeException(nameof(lower), $"Lower index is {lower} < 0.");
 
@@ -29,9 +40,9 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
             viewRange = lower..;
         }
 
-        /// <inheritdoc cref="ListView{T}.ListView(List{T}, int)"/>
+        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
         /// <param name="upper"> The upper bound of this list to consider. </param>
-        public ListView(List<T> list, int lower, int upper) {
+        public ListView(TIReadOnlyList list, int lower, int upper) {
             if (lower < 0)
                 throw new ArgumentOutOfRangeException(nameof(lower), $"Lower index is {lower} < 0.");
             if (upper < 0)
@@ -43,13 +54,13 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
             viewRange = lower..upper;
         }
 
-        /// <inheritdoc cref="ListView{T}.ListView(List{T}, int)"/>
+        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
         /// <param name="viewRange">
         /// The range of this view to consider. Just like the list, this is a
         /// live range. If you pas <c>^2</c>, it will always exclude
         /// <i>exactly</i> the last element, no matter what you add or remove.
         /// </param>
-        public ListView(List<T> list, Range viewRange) {
+        public ListView(TIReadOnlyList list, Range viewRange) {
             this.list = list;
             this.viewRange = viewRange;
         }
@@ -78,11 +89,14 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
     }
 
     internal static class ListViewExtensions {
-        /// <inheritdoc cref="ListView{T}.ListView(List{T}, int)"/>
-        public static ListView<T> GetView<T>(this List<T> list, int lower) => new(list, lower);
-        /// <inheritdoc cref="ListView{T}.ListView(List{T}, int, int)"/>
-        public static ListView<T> GetView<T>(this List<T> list, int lower, int upper) => new(list, lower, upper);
-        /// <inheritdoc cref="ListView{T}.ListView(List{T}, Range)"/>
-        public static ListView<T> GetView<T>(this List<T> list, Range viewRange) => new(list, viewRange);
+        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
+        public static ListView<IReadOnlyList<T>, T> GetView<T>(this IReadOnlyList<T> list, int lower)
+            => new(list, lower);
+        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int, int)"/>
+        public static ListView<IReadOnlyList<T>, T> GetView<T>(this IReadOnlyList<T> list, int lower, int upper)
+            => new(list, lower, upper);
+        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, Range)"/>
+        public static ListView<IReadOnlyList<T>, T> GetView<T>(this IReadOnlyList<T> list, Range viewRange)
+            => new(list, viewRange);
     }
 }
