@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace CompilerTests {
     internal static class TestHelpers {
-        public static void AssertCollectionsEqual(ICollection expected, ICollection actual) {
+        public static void AssertICollectionsEqual(ICollection expected, ICollection actual) {
             try {
                 CollectionAssert.AreEqual(expected, actual);
             } catch (AssertFailedException) {
@@ -34,5 +34,8 @@ namespace CompilerTests {
                 Assert.Fail(msg);
             }
         }
+
+        public static void AssertCollectionsEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual)
+            => AssertICollectionsEqual(expected.ToList(), actual.ToList());
     }
 }

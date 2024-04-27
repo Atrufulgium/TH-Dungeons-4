@@ -3,6 +3,7 @@
 namespace Atrufulgium.BulletScript.Compiler.Parsing {
     /// <summary>
     /// A class for converting code into more meaningful <see cref="Token"/>s.
+    /// This is done via <see cref="ToTokens(string)"/>.
     /// </summary>
     internal class Lexer {
         /// <summary>

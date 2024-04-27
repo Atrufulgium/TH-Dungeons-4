@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 
-namespace Atrufulgium.BulletScript.Compiler.AST {
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// The base node all AST nodes derive from.
     /// </summary>
