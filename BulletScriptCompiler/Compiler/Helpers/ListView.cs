@@ -16,9 +16,8 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
     /// upper ends grow as well.
     /// </para>
     /// </summary>
-    internal class ListView<TIReadOnlyList, T> : IReadOnlyList<T>
-        where TIReadOnlyList : IReadOnlyList<T> {
-        private readonly TIReadOnlyList list;
+    internal class ListView<T> : IReadOnlyList<T> {
+        private readonly IReadOnlyList<T> list;
         // The two endpoints of allowed indices.
         readonly Range viewRange;
 
@@ -32,7 +31,7 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
         /// </summary>
         /// <param name="list"> What list to make a view of. </param>
         /// <param name="lower"> The lower bound of the list to consider. </param>
-        public ListView(TIReadOnlyList list, int lower) {
+        public ListView(IReadOnlyList<T> list, int lower) {
             if (lower < 0)
                 throw new ArgumentOutOfRangeException(nameof(lower), $"Lower index is {lower} < 0.");
 
@@ -42,7 +41,7 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
 
         /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
         /// <param name="upper"> The upper bound of this list to consider. </param>
-        public ListView(TIReadOnlyList list, int lower, int upper) {
+        public ListView(IReadOnlyList<T> list, int lower, int upper) {
             if (lower < 0)
                 throw new ArgumentOutOfRangeException(nameof(lower), $"Lower index is {lower} < 0.");
             if (upper < 0)
@@ -60,7 +59,7 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
         /// live range. If you pas <c>^2</c>, it will always exclude
         /// <i>exactly</i> the last element, no matter what you add or remove.
         /// </param>
-        public ListView(TIReadOnlyList list, Range viewRange) {
+        public ListView(IReadOnlyList<T> list, Range viewRange) {
             this.list = list;
             this.viewRange = viewRange;
         }
@@ -90,13 +89,13 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
 
     internal static class ListViewExtensions {
         /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
-        public static ListView<IReadOnlyList<T>, T> GetView<T>(this IReadOnlyList<T> list, int lower)
+        public static ListView<T> GetView<T>(this IReadOnlyList<T> list, int lower)
             => new(list, lower);
         /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int, int)"/>
-        public static ListView<IReadOnlyList<T>, T> GetView<T>(this IReadOnlyList<T> list, int lower, int upper)
+        public static ListView<T> GetView<T>(this IReadOnlyList<T> list, int lower, int upper)
             => new(list, lower, upper);
         /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, Range)"/>
-        public static ListView<IReadOnlyList<T>, T> GetView<T>(this IReadOnlyList<T> list, Range viewRange)
+        public static ListView<T> GetView<T>(this IReadOnlyList<T> list, Range viewRange)
             => new(list, viewRange);
     }
 }
