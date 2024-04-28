@@ -77,6 +77,8 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
             }
         }
 
+        public ListView<T> this[Range r] => new(this, r);
+
         public IEnumerator<T> GetEnumerator() {
             for (int i = RangeLower; i < RangeUpper; i++) {
                 yield return list[i];

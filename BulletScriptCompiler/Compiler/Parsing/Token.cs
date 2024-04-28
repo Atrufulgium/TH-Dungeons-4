@@ -10,6 +10,7 @@
         BracketEnd,
         ParensStart,
         ParensEnd,
+        Comma,
         FloatKeyword,
         MatrixKeyword,
         StringKeyword,
@@ -21,7 +22,6 @@
         WhileKeyword,
         ForKeyword,
         RepeatKeyword,
-        LoopKeyword,
         BreakKeyword,
         ContinueKeyword,
         FunctionKeyword,
@@ -47,7 +47,7 @@
         /// <summary>
         /// The kind of token this is.
         /// </summary>
-        public readonly TokenKind SyntaxToken;
+        public readonly TokenKind Kind;
         /// <summary>
         /// The text corresponding to this token in the text.
         /// </summary>
@@ -58,12 +58,24 @@
         public readonly Location Location;
 
         public Token(TokenKind syntaxToken, string value, Location location) {
-            SyntaxToken = syntaxToken;
+            Kind = syntaxToken;
             Value = value;
             Location = location;
         }
 
         public override string ToString()
-            => $"{SyntaxToken} ({Value})";
+            => $"{Kind} ({Value})";
+
+        /// <summary>
+        /// Whether this token specifies a proper type.
+        /// </summary>
+        public bool IsTypeName
+            => Kind is TokenKind.FloatKeyword or TokenKind.MatrixKeyword or TokenKind.StringKeyword;
+
+        /// <summary>
+        /// Whether this token specifies a proper type, or `void`.
+        /// </summary>
+        public bool IsReturnTypeName
+            => IsTypeName || Kind == TokenKind.VoidKeyword;
     }
 }

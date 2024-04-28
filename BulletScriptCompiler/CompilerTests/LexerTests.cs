@@ -9,7 +9,7 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
         static void TestLexer(string code, List<TokenKind> expectedTokens)
             => TestHelpers.AssertCollectionsEqual(
                 expectedTokens,
-                new Lexer().ToTokens(code).Item1.Select(t => t.SyntaxToken).ToList()
+                new Lexer().ToTokens(code).Item1.Select(t => t.Kind).ToList()
             );
 
         static void TestLexerDiagnostics(string code, List<string> expectedIDs)
@@ -85,8 +85,8 @@ new List<TokenKind>() {
 
         [TestMethod]
         public void LexerTest6() => TestLexer(
-@"; {} { } [] [ ] () ( ) float matrix string 230 ""string"" identifier if else while for
-repeat loop break continue function void ! ^ * / % + - < > = & |",
+@"; {} { } [] [ ] (), ( ) , float matrix string 230 ""string"" identifier if else while for
+repeat break continue function void ! ^ * / % + - < > = & |",
 new List<TokenKind>() {
     TokenKind.Semicolon,
     TokenKind.BlockStart,
@@ -99,8 +99,10 @@ new List<TokenKind>() {
     TokenKind.BracketEnd,
     TokenKind.ParensStart,
     TokenKind.ParensEnd,
+    TokenKind.Comma,
     TokenKind.ParensStart,
     TokenKind.ParensEnd,
+    TokenKind.Comma,
     TokenKind.FloatKeyword,
     TokenKind.MatrixKeyword,
     TokenKind.StringKeyword,
@@ -112,7 +114,6 @@ new List<TokenKind>() {
     TokenKind.WhileKeyword,
     TokenKind.ForKeyword,
     TokenKind.RepeatKeyword,
-    TokenKind.LoopKeyword,
     TokenKind.BreakKeyword,
     TokenKind.ContinueKeyword,
     TokenKind.FunctionKeyword,
@@ -150,6 +151,16 @@ new List<TokenKind>() {
     TokenKind.Identifier,
     TokenKind.Identifier
 }
+        );
+        
+        // ...empty lines gave an out of range, whoops
+        [TestMethod]
+        public void LexerTest11() => TestLexer(
+@"
+
+
+",
+new List<TokenKind>() { }
         );
     }
 }

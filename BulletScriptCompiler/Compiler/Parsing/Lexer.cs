@@ -25,6 +25,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             { "[", TokenKind.BracketStart },
             { "]", TokenKind.BracketEnd },
             { "(", TokenKind.ParensStart },
+            { ",", TokenKind.Comma },
             { ")", TokenKind.ParensEnd },
             { "float", TokenKind.FloatKeyword },
             { "matrix", TokenKind.MatrixKeyword },
@@ -34,7 +35,6 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             { "while", TokenKind.WhileKeyword },
             { "for", TokenKind.ForKeyword },
             { "repeat", TokenKind.RepeatKeyword },
-            { "loop", TokenKind.LoopKeyword },
             { "break", TokenKind.BreakKeyword },
             { "continue", TokenKind.ContinueKeyword },
             { "function", TokenKind.FunctionKeyword },
@@ -74,6 +74,9 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
                 int charNumber = 0;
                 while (true) {
+                    if (charNumber >= line.Length)
+                        break;
+
                     // Trim initial whitespace as otherwise the col nr is incorrect.
                     while (charNumber < line.Length && char.IsWhiteSpace(line[charNumber]))
                         charNumber++;
@@ -118,9 +121,6 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                             );
                         }
                     }
-
-                    if (charNumber + advance >= line.Length)
-                        break;
                     charNumber += advance;
                 }
             }
