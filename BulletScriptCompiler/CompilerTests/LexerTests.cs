@@ -86,7 +86,7 @@ new List<TokenKind>() {
         [TestMethod]
         public void LexerTest6() => TestLexer(
 @"; {} { } [] [ ] (), ( ) , float matrix string 230 ""string"" identifier if else while for
-repeat break continue function void ! ^ * / % + - < > = & |",
+repeat break continue function void ! ^ * / % + - < > = & | return",
 new List<TokenKind>() {
     TokenKind.Semicolon,
     TokenKind.BlockStart,
@@ -129,7 +129,8 @@ new List<TokenKind>() {
     TokenKind.MoreThan,
     TokenKind.Equals,
     TokenKind.And,
-    TokenKind.Or
+    TokenKind.Or,
+    TokenKind.ReturnKeyword
 }
         );
 

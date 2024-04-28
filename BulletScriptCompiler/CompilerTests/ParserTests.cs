@@ -1,6 +1,4 @@
-﻿using Atrufulgium.BulletScript.Compiler.Helpers;
-using Atrufulgium.BulletScript.Compiler.Parsing;
-using CompilerTests;
+﻿using Atrufulgium.BulletScript.Compiler.Parsing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Atrufulgium.BulletScript.Compiler.Tests {
@@ -10,9 +8,31 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
 
         static void TestCompile(string code, string tree) {
             string actualTree = Compile(code);
-            Assert.AreEqual("\n" + tree.Trim() + "\n", "\n" + actualTree.Trim() + "\n");
+            tree = tree.ReplaceLineEndings().Trim();
+            actualTree = actualTree.ReplaceLineEndings().Trim();
+            // (newlines for nicer test output)
+            Assert.AreEqual("\n" + tree + "\n", "\n" + actualTree + "\n");
         }
-        static string Compile(string code) => new Parser().ToTree(new Lexer().ToTokens(code).Item1).Item1.ToString();
+        static string Compile(string code) {
+            var (tokens, diags) = new Lexer().ToTokens(code);
+            AssertNoErrorDiagnostics(diags);
+            var (root, diags2) = new Parser().ToTree(tokens);
+            AssertNoErrorDiagnostics(diags2);
+            if (root == null)
+                Assert.Fail("Unexpected null tree, without any diagnostics.");
+            return root.ToString();
+        }
+
+        static void AssertNoErrorDiagnostics(IEnumerable<Diagnostic> diagnostics) {
+            var errorDiags = diagnostics.Where(d => d.DiagnosticLevel == DiagnosticLevel.Error);
+            if (!errorDiags.Any())
+                return;
+            string msg = "";
+            foreach (var err in errorDiags) {
+                msg += "\n" + err.ToString();
+            }
+            Assert.Fail(msg);
+        }
 
         [TestMethod]
         public void CompileTest1() => TestCompile(@"

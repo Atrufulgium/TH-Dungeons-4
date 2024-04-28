@@ -35,6 +35,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             { "while", TokenKind.WhileKeyword },
             { "for", TokenKind.ForKeyword },
             { "repeat", TokenKind.RepeatKeyword },
+            { "return", TokenKind.ReturnKeyword },
             { "break", TokenKind.BreakKeyword },
             { "continue", TokenKind.ContinueKeyword },
             { "function", TokenKind.FunctionKeyword },

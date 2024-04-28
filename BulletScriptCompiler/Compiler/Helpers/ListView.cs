@@ -1,4 +1,6 @@
 ﻿using System.Collections;
+using System.ComponentModel;
+using System.Diagnostics;
 
 namespace Atrufulgium.BulletScript.Compiler.Helpers {
 
@@ -16,6 +18,8 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
     /// upper ends grow as well.
     /// </para>
     /// </summary>
+    [DebuggerTypeProxy(typeof(ListViewDebuggerView<>))]
+    [DebuggerDisplay("Count = {Count}")]
     internal class ListView<T> : IReadOnlyList<T> {
         private readonly IReadOnlyList<T> list;
         // The two endpoints of allowed indices.
@@ -31,6 +35,8 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
         /// </summary>
         /// <param name="list"> What list to make a view of. </param>
         /// <param name="lower"> The lower bound of the list to consider. </param>
+        // TODO: These constructors should have special handling when the
+        // IReadOnlyList<T> is actually already a ListView<T>.
         public ListView(IReadOnlyList<T> list, int lower) {
             if (lower < 0)
                 throw new ArgumentOutOfRangeException(nameof(lower), $"Lower index is {lower} < 0.");
@@ -99,5 +105,22 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
         /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, Range)"/>
         public static ListView<T> GetView<T>(this IReadOnlyList<T> list, Range viewRange)
             => new(list, viewRange);
+    }
+
+    /// <summary>
+    /// A class to make <see cref="ListView{T}"/> print the same way as a
+    /// regular list in the debugger.
+    /// </summary>
+    // See https://www.codeproject.com/Articles/28405/Make-the-debugger-show-the-contents-of-your-custom
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    class ListViewDebuggerView<T> {
+        readonly private ListView<T> list;
+
+        public ListViewDebuggerView(ListView<T> list) {
+            this.list = list ?? throw new ArgumentNullException(nameof(list));
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] Items => list.ToArray();
     }
 }

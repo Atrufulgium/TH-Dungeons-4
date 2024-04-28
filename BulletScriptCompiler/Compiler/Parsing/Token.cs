@@ -26,6 +26,7 @@
         ContinueKeyword,
         FunctionKeyword,
         VoidKeyword,
+        ReturnKeyword,
         ExclamationMark,
         Power,
         Mul,
@@ -56,6 +57,12 @@
         /// Where in the text this token was found.
         /// </summary>
         public readonly Location Location;
+        /// <summary>
+        /// The first index in the text beyond this token.
+        /// (This may not necessarily exist in the text in cases of e.g.
+        ///  newlines.)
+        /// </summary>
+        public Location EndLocation => new(Location.line, Location.col + Value.Length);
 
         public Token(TokenKind syntaxToken, string value, Location location) {
             Kind = syntaxToken;

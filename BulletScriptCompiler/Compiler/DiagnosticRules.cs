@@ -37,31 +37,35 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic NumberUnparsable(Location location, string number)
             => Error(location, "BS0008", $"Expected a number, but `{number}` is not a number!");
 
-        public static Diagnostic FunctionParensWrong(Location location)
-            => Error(location, "BS0009", "This function declaration has malformed parentheses.");
-
-        public static Diagnostic FunctionParamsWrong(Location location)
-            => Error(location, "BS0010", "Expected either a function parameter or a closing brace, but found neither.");
-
         public static Diagnostic FunctionArgsCommaSep(Token location)
             => Error(location, "BS0011", "Function arguments should be separated with a comma.");
 
-        public static Diagnostic FunctionHasNoBlock(Location location)
-            => Error(location, "BS0012", "Function does not have a block body `{ .. }`. All functions must have one.");
-
-        public static Diagnostic BlockNeedsOpenBrace(Location location)
-            => Error(location, "BS0013", "Expected a block `{ .. }`, but did not encounter opening `{`.");
+        public static Diagnostic ExpectedOpeningBrace(Location location)
+            => Error(location, "BS0013", "Expected a block `{ .. }`, but did not encounter opening `{`. Note that single statements are not a replacement for blocks.");
 
         public static Diagnostic UnexpectedEoF(Location location)
-            => Error(new Location(location.line + 1, 1), "BS0014", "Unexpected end of file.");
-
-        public static Diagnostic BlocksNeedsCloseBrace(Token location)
-            => Error(location, "BS0015", "Expected block `{ .. }` to close with `}`, but did not.");
+            => Error(new Location(location.line + 1, 1), "BS0014", "Unexpected end of file. Don't forget to end your blocks with `}` and your statements with `;`.");
 
         public static Diagnostic UnknownType(Token location)
             => Error(location, "BS0016", "Expected a valid variable type (`float`, `matrix`, or `string`).");
 
         public static Diagnostic VariableNameWrong(Token location)
             => Error(location, "BS0017", "Expected a valid identifier name for the variable. NOte that this may not be a predefined keyword (such as `matrix` or `function`).");
+
+        public static Diagnostic MissingSemicolon(Token location)
+            => Error(location, "BS0018", "Expected a semicolon `;`.");
+
+        public static Diagnostic NotAStatement(Token location)
+            => Error(location, "BS0019", "Expected a statement (such as `break;`, `lhs = rhs`, `call()`, etc.)");
+
+        public static Diagnostic Silly(Location location, string reason)
+            => Error(location, "BS0020", $"(Something went wrong internally, and a precondition that should always be met was not met: {reason})");
+
+        public static Diagnostic ForgotClosingParens(Token location)
+            => Error(location, "BS0021", "Expected a closing parenthesis `)`.");
+
+        public static Diagnostic ExpectedOpeningParens(Token location)
+            => Error(location, "BS0022", "Expected an opening parenthesis `(`.");
+
     }
 }
