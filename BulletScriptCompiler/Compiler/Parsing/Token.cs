@@ -27,6 +27,7 @@
         FunctionKeyword,
         VoidKeyword,
         ReturnKeyword,
+        Colon,
         ExclamationMark,
         Power,
         Mul,
@@ -84,5 +85,14 @@
         /// </summary>
         public bool IsReturnTypeName
             => IsTypeName || Kind == TokenKind.VoidKeyword;
+
+        /// <summary>
+        /// Whether this token specifies a non-assignment operator: one of
+        /// ^ * / % + - &lt; &gt; &amp; |.
+        /// </summary>
+        public bool IsOp
+            => Kind is TokenKind.Power or TokenKind.Mul or TokenKind.Div or TokenKind.Mod
+            or TokenKind.Plus or TokenKind.Minus or TokenKind.LessThan or TokenKind.MoreThan
+            or TokenKind.And or TokenKind.Or;
     }
 }

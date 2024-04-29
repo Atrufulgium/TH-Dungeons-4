@@ -20,6 +20,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
         /// </summary>
         static readonly Dictionary<string, TokenKind> easyParses = new() {
             { ";", TokenKind.Semicolon },
+            { ":", TokenKind.Colon },
             { "{", TokenKind.BlockStart },
             { "}", TokenKind.BlockEnd },
             { "[", TokenKind.BracketStart },

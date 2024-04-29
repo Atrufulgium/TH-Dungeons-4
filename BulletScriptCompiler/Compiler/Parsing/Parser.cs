@@ -120,7 +120,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 return ParseVariableDeclaration(ref tokens);
             
             Panic(ExpectedDeclaration(location));
-            return null;
+            throw new UnreachablePathException();
         }
 
         MethodDeclaration ParseMethodDeclaration(ref ListView<Token> tokens) {
@@ -155,9 +155,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 if (tokens.Count == 0) EoFPanic();
                 if (tokens[0].Kind == TokenKind.ParensEnd)
                     break;
-                if (tokens[0].Kind != TokenKind.Comma)
-                    Panic(FunctionArgsCommaSep(tokens[0]));
-                tokens = tokens[1..];
+                ParseComma(ref tokens);
             }
 
             // By the break conditions we are guaranteed a parens end here.
@@ -256,7 +254,8 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             // - ReturnStatement (signified by ReturnKeyword)
             // - WhileStatement (signified by WhileKeyword)
             // ExpressionStatement is the odd one out, but *currently*, it will
-            // always start with an Identifier.
+            // always start with an Identifier, as the only two valid ones are
+            // AssignmentExpression and InvocationExpression.
             // Note: All of these statements only parse themselves, and not the
             // following semicolon.
             if (tokens.Count == 0) EoFPanic();
@@ -466,10 +465,244 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
         }
 
         Expression ParseExpression(ref ListView<Token> tokens) {
-            // temp
+            var lhs = ParseTerm(ref tokens);
+            return ParseRemainingExpression(ref tokens, 0, lhs);
+        }
+
+        /// <summary>
+        /// Parses a single term in a complex expression.
+        /// </summary>
+        Expression ParseTerm(ref ListView<Token> tokens) {
+            // A single term is defined to be one of the following,
+            // in order of parsing:
+            // - A parenthesised expression
+            // - Invocations `identifier(..`
+            // - Postfix `identifier++` or `identifier--`
+            // - Accesses `identifier[..`
+            // - Regular identifiers `identifier`
+            // - Literals `number` or `string`
+            // - Matrix-likes `[ .. ]` including the polar variant
+            // - Prefix `-` and `!` operators
+            if (tokens.Count < 2) EoFPanic();
+
+            if (tokens[0].Kind == TokenKind.ParensStart) {
+                tokens = tokens[1..];
+                return ParseParenthesisedExpression(ref tokens);
+            }
+
+            if (tokens[0].Kind == TokenKind.Identifier) {
+                if (tokens[1].Kind == TokenKind.ParensStart)
+                    return ParseInvocation(ref tokens);
+
+                var id = new IdentifierName(tokens[0]);
+                tokens = tokens[1..];
+
+                if (tokens.Count < 2 && tokens[0].Kind == tokens[1].Kind
+                    && tokens[0].Kind is TokenKind.Plus or TokenKind.Minus) {
+                    var pf = new PostfixUnaryExpression(
+                        id,
+                        tokens[0].Kind == TokenKind.Plus ? "++" : "--",
+                        id.Location
+                    );
+                    tokens = tokens[3..];
+                    return pf;
+                }
+
+                if (tokens[1].Kind == TokenKind.BracketStart) {
+                    tokens = tokens[1..];
+                    var matlike = ParseMatrixLike(ref tokens);
+                    if (matlike is MatrixExpression mat)
+                        return new IndexExpression(id, mat, id.Location);
+                    Panic(PolarIsntAnIndex(matlike.Location));
+                }
+
+                return id;
+            }
+
+            if (tokens[0].Kind is TokenKind.Number or TokenKind.String) {
+                var lit = new LiteralExpression(tokens[0].Value, tokens[0].Location);
+                tokens = tokens[1..];
+                return lit;
+            }
+
+            if (tokens[0].Kind is TokenKind.BracketStart)
+                return ParseMatrixLike(ref tokens);
+
+            if (tokens[0].Kind is TokenKind.Minus or TokenKind.ExclamationMark)
+                return ParsePrefixUnary(ref tokens);
+
+            Panic(UnexpectedTerm(tokens[0]));
+            throw new UnreachablePathException();
+        }
+
+        /// <summary>
+        /// After a term <paramref name="lhs"/> has been parsed, this parses
+        /// the remaining expression.
+        /// </summary>
+        Expression ParseRemainingExpression(ref ListView<Token> tokens, int prevPrecedence, Expression lhs) {
+            // New things to handle:
+            // - Assignment `[∘]=`
+            // - Binop `∘`
+            // Depending on the precedence of the operation so far, the
+            // precedence of the next op, and the precedence of the RHS, things
+            // bind differently, which gives some annoying code.
+            while (true) {
+                var (op, precedence, isAssignment, consumedTokens) = ParseOp(tokens);
+                tokens = tokens[consumedTokens..];
+
+                if (precedence == -999)
+                    return lhs;
+                // Nothing to bind to on the right in this case.
+                if (precedence < prevPrecedence)
+                    return lhs;
+
+                var rhs = ParseTerm(ref tokens);
+                int nextPrecedence = ParseOp(tokens).precedence;
+                // We have to bind to the right *first* in this case.
+                if (precedence < nextPrecedence)
+                    rhs = ParseRemainingExpression(ref tokens, precedence + 1, rhs);
+                
+                if (isAssignment) {
+                    if (lhs is not IdentifierName id) {
+                        Panic(AssignLHSMustBeIdentifier(lhs.Location));
+                        throw new UnreachablePathException();
+                    }
+                    return new AssignmentExpression(id, op, rhs, lhs.Location);
+                }
+                return new BinaryExpression(lhs, op, rhs, lhs.Location);
+            }
+        }
+
+        static readonly Dictionary<string, (string op, int precedence, bool isAssignment, int consumedTokens)> ops = new() {
+            {  "^", ( "^", 14, false, 1) }, { "^=", ( "^", 0, true, 2) },
+            {  "*", ( "*", 12, false, 1) }, { "*=", ( "*", 0, true, 2) },
+            {  "/", ( "/", 12, false, 1) }, { "/=", ( "/", 0, true, 2) },
+            {  "%", ( "%", 12, false, 1) }, { "%=", ( "%", 0, true, 2) },
+            {  "+", ( "+", 10, false, 1) }, { "+=", ( "+", 0, true, 2) },
+            {  "-", ( "-", 10, false, 1) }, { "-=", ( "-", 0, true, 2) },
+            {  "<", ( "<",  8, false, 1) },
+            {  ">", ( ">",  8, false, 1) },
+            { "<=", ("<=",  8, false, 2) },
+            { ">=", (">=",  8, false, 2) },
+            { "==", ("==",  6, false, 2) },
+            { "!=", ("!=",  6, false, 2) },
+            {  "&", ( "&",  4, false, 1) }, { "&=", ( "&", 0, true, 2) },
+            {  "|", ( "|",  2, false, 1) }, { "|=", ( "|", 0, true, 2) },
+            {  "=", (  "",  0, true, 1) }
+        };
+
+        /// <summary>
+        /// Parses the next operator or assignment, and puts relevant data in
+        /// the return. This does not throw an error when it is not an op/ass,
+        /// but insteads returns ("", -999, false).
+        /// </summary>
+        static (string op, int precedence, bool isAssignment, int consumedTokens) ParseOp(ListView<Token> tokens) {
+            if (tokens.Count >= 2) {
+                if (ops.TryGetValue(tokens[0].Value + tokens[1].Value, out var res)) {
+                    return res;
+                }
+            }
+            if (tokens.Count >= 1) {
+                if (ops.TryGetValue(tokens[0].Value, out var res)) {
+                    return res;
+                }
+            }
+            return ("", -999, false, 0);
+        }
+
+        Expression ParseParenthesisedExpression(ref ListView<Token> tokens) {
+            ParseParensOpen(ref tokens);
+            var expr = ParseExpression(ref tokens);
+            ParseParensClose(ref tokens);
+            return expr;
+        }
+
+        InvocationExpression ParseInvocation(ref ListView<Token> tokens) {
             if (tokens.Count == 0) EoFPanic();
-            var location = tokens[0].Location;
-            return new LiteralExpression("", location);
+            var nameLoc = tokens[0].Location;
+            var name = ParseMethodName(ref tokens);
+            ParseParensOpen(ref tokens);
+            List<Expression> args = new();
+            while (tokens.Count > 0) {
+                if (tokens[0].Kind == TokenKind.ParensEnd)
+                    break;
+
+                args.Add(ParseExpression(ref tokens));
+
+                if (tokens[0].Kind == TokenKind.ParensEnd)
+                    break;
+                ParseComma(ref tokens);
+            }
+            ParseParensClose(ref tokens);
+
+            return new(new(name, nameLoc), args, nameLoc);
+        }
+
+        /// <summary>
+        /// Parses either a matrix or a polar coord 2-vector, returning either
+        /// a <see cref="MatrixExpression"/> or <see cref="PolarExpression"/>.
+        /// </summary>
+        Expression ParseMatrixLike(ref ListView<Token> tokens) {
+            if (tokens.Count == 0) EoFPanic();
+            var matLoc = tokens[0].Location;
+
+            ParseBracketOpen(ref tokens);
+            List<List<Expression>> entries = new();
+            bool isPolar = false;
+            while(tokens.Count > 0) {
+                // Row
+                if (tokens[0].Kind == TokenKind.BracketEnd)
+                    break;
+                // Stupid edge-case: the rest of the code succesfully parses
+                // a polar matrix of the form [:angle radius].
+                if (tokens[0].Kind == TokenKind.Colon)
+                    Panic(PolarFormatWrong(tokens[0].Location));
+
+                List<Expression> row = new();
+                while (tokens.Count > 0) {
+                    // Single entry in row
+                    if (tokens[0].Kind is TokenKind.Semicolon or TokenKind.BracketEnd)
+                        break;
+                    if (tokens[0].Kind == TokenKind.Colon) {
+                        isPolar = true;
+                        tokens = tokens[1..];
+                    }
+                    var expr = ParseExpression(ref tokens);
+                    row.Add(expr);
+                }
+                // broke because of a `;`/`]` token, consume it
+                tokens = tokens[1..];
+                if (row.Count > 0)
+                    entries.Add(row);
+            }
+            ParseBracketClose(ref tokens);
+
+            // Now ensure the matrix is actually proper
+            if (entries.Count == 0)
+                Panic(EmptyMatrix(matLoc));
+            int rowCount = entries.Count;
+            int colCount = entries[0].Count;
+            if (entries.Any(l => l.Count != colCount))
+                Panic(JaggedMatrix(matLoc));
+            if (rowCount is < 1 or > 4 || colCount is < 1 or > 4)
+                Panic(LargeMatrix(matLoc, rowCount, colCount));
+            if (isPolar && (rowCount != 1 || colCount != 2))
+                Panic(PolarFormatWrong(matLoc));
+
+            List<Expression> flattenedEntries = entries.SelectMany(l => l).ToList();
+            if (isPolar)
+                return new PolarExpression(flattenedEntries[0], flattenedEntries[1], matLoc);
+            return new MatrixExpression(flattenedEntries, rowCount, colCount, matLoc);
+        }
+
+        PrefixUnaryExpression ParsePrefixUnary(ref ListView<Token> tokens) {
+            if (tokens.Count == 0) EoFPanic();
+            if (tokens[0].Kind is not (TokenKind.ExclamationMark or TokenKind.Minus))
+                Panic(NotAPrefixUnary(tokens[0]));
+            var unary = tokens[0];
+            tokens = tokens[1..];
+            var expr = ParseExpression(ref tokens);
+            return new PrefixUnaryExpression(expr, unary.Value, unary.Location);
         }
 
         void ParseParensOpen(ref ListView<Token> tokens) {
@@ -518,6 +751,13 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             if (tokens.Count == 0) EoFPanic();
             if (tokens[0].Kind != TokenKind.Semicolon)
                 Panic(MissingSemicolon(tokens[0]));
+            tokens = tokens[1..];
+        }
+
+        void ParseComma(ref ListView<Token> tokens) {
+            if (tokens.Count == 0) EoFPanic();
+            if (tokens[0].Kind != TokenKind.Comma)
+                Panic(FunctionArgsCommaSep(tokens[0]));
             tokens = tokens[1..];
         }
 

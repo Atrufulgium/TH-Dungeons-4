@@ -310,7 +310,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
     /// <summary>
     /// Represents an expression of the form <c>a ∘= b</c> for some (or no)
-    /// operator <c>∘</c>.
+    /// operator <c>∘</c>. <see cref="OP"/> excludes the <c>=</c>-sign.
     /// </summary>
     internal class AssignmentExpression : Expression {
         public IdentifierName LHS { get; private set; }
@@ -337,9 +337,6 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// Represents an expression of the form <c>a ∘ b</c> for some
     /// operator <c>∘</c>.
     /// </para>
-    /// <para>
-    /// This includes the indexing operator <c>a[b]</c>.
-    /// </para>
     /// </summary>
     internal class BinaryExpression : Expression {
         public Expression LHS { get; private set; }
@@ -359,6 +356,26 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public override string ToString()
             => $"[binop]\nlhs:\n{Indent(LHS)}\nop:\n{Indent(OP)}\nrhs:\n{Indent(RHS)}";
+    }
+
+    /// <summary>
+    /// Represents an expression of the form <c>a[b]</c>.
+    /// </summary>
+    internal class IndexExpression : Expression {
+        public Expression Expression { get; private set; }
+        public MatrixExpression Index { get; private set; }
+
+        public IndexExpression(
+            Expression expression,
+            MatrixExpression index,
+            Location location
+        ) : base(location) {
+            Expression = expression;
+            Index = index;
+        }
+
+        public override string ToString()
+            => $"[index]\n:expression:\n{Indent(Expression)}\nindex:\n{Indent(Index)}";
     }
 
     /// <summary>

@@ -67,5 +67,28 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic ExpectedOpeningParens(Token location)
             => Error(location, "BS0022", "Expected an opening parenthesis `(`.");
 
+        public static Diagnostic PolarIsntAnIndex(Location location)
+            => Error(location, "BS0023", "You cannot access a matrix with a polar expression [a:b], only with a regular matrix.");
+
+        public static Diagnostic UnexpectedTerm(Token location)
+            => Error(location, "BS0024", $"Unexpected `{location.Value}`.");
+
+        public static Diagnostic AssignLHSMustBeIdentifier(Location location)
+            => Error(location, "BS0025", "The left-hand side of an assignment must be an identifier name.");
+
+        public static Diagnostic NotAPrefixUnary(Token location)
+            => Error(location, "BS0026", "Expected a unary operator `!` or `-`.");
+
+        public static Diagnostic EmptyMatrix(Location location)
+            => Error(location, "BS0027", "Matrix is empty. Matrices must be between 1x1 and 4x4.");
+
+        public static Diagnostic JaggedMatrix(Location location)
+            => Error(location, "BS0028", "Matrix is not square.");
+
+        public static Diagnostic LargeMatrix(Location location, int rows, int cols)
+            => Error(location, "BS0029", $"Matrix is {rows}x{cols}. Matrices must be between 1x1 and 4x4.");
+
+        public static Diagnostic PolarFormatWrong(Location location)
+            => Error(location, "BS0030", "Polar matrices must be of the form `[angle:radius]`.");
     }
 }
