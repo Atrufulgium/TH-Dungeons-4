@@ -35,29 +35,11 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
         /// </summary>
         /// <param name="list"> What list to make a view of. </param>
         /// <param name="lower"> The lower bound of the list to consider. </param>
-        // TODO: These constructors should have special handling when the
-        // IReadOnlyList<T> is actually already a ListView<T>.
-        public ListView(IReadOnlyList<T> list, int lower) {
-            if (lower < 0)
-                throw new ArgumentOutOfRangeException(nameof(lower), $"Lower index is {lower} < 0.");
-
-            this.list = list;
-            viewRange = lower..;
-        }
+        public ListView(IReadOnlyList<T> list, int lower) : this(list, lower..) { }
 
         /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
         /// <param name="upper"> The upper bound of this list to consider. </param>
-        public ListView(IReadOnlyList<T> list, int lower, int upper) {
-            if (lower < 0)
-                throw new ArgumentOutOfRangeException(nameof(lower), $"Lower index is {lower} < 0.");
-            if (upper < 0)
-                throw new ArgumentOutOfRangeException(nameof(upper), $"Upper index is {upper} < 0.");
-            if (lower > upper)
-                throw new ArgumentException($"Lower index is {lower} > upper index {upper}.");
-
-            this.list = list;
-            viewRange = lower..upper;
-        }
+        public ListView(IReadOnlyList<T> list, int lower, int upper) : this(list, lower..upper) { }
 
         /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
         /// <param name="viewRange">
@@ -66,8 +48,15 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
         /// <i>exactly</i> the last element, no matter what you add or remove.
         /// </param>
         public ListView(IReadOnlyList<T> list, Range viewRange) {
-            this.list = list;
-            this.viewRange = viewRange;
+            // If we make a view of a list view, there's no point making a long
+            // chain if we can just change the view range directly.
+            if (list is ListView<T> listview) {
+                this.list = listview.list;
+                this.viewRange = listview.viewRange.SubRange(viewRange);
+            } else {
+                this.list = list;
+                this.viewRange = viewRange;
+            }
         }
 
         public T this[int i] {
