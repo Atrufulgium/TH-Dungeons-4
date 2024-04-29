@@ -177,7 +177,7 @@ statements:
             name:
                 float
         initializer:
-            [literal]
+            [literal float]
             value:
                 200000000
 ");
@@ -200,7 +200,7 @@ statements:
             name:
                 string
         initializer:
-            [literal]
+            [literal string]
             value:
                 ""hoi""
 ");
@@ -225,22 +225,22 @@ statements:
         initializer:
             [matrix2x3]
             entries:
-                [literal]
+                [literal float]
                 value:
                     1
-                [literal]
+                [literal float]
                 value:
                     2
-                [literal]
+                [literal float]
                 value:
                     3
-                [literal]
+                [literal float]
                 value:
                     4
-                [literal]
+                [literal float]
                 value:
                     5
-                [literal]
+                [literal float]
                 value:
                     6
 ");
@@ -265,11 +265,11 @@ statements:
         initializer:
             [polar]
             angle:
-                [literal]
+                [literal float]
                 value:
                     7
             radius:
-                [literal]
+                [literal float]
                 value:
                     8
 ");
@@ -286,7 +286,7 @@ statements:
     initializer:
         [none]
     condition:
-        [literal]
+        [literal float]
         value:
             1
     increment:
@@ -319,7 +319,7 @@ statements:
                 name:
                     float
             initializer:
-                [literal]
+                [literal float]
                 value:
                     0
     condition:
@@ -331,7 +331,7 @@ statements:
         op:
             <
         rhs:
-            [literal]
+            [literal float]
             value:
                 10
     increment:
@@ -362,7 +362,7 @@ statements:
             op:
                 =
             rhs:
-                [literal]
+                [literal float]
                 value:
                     0
     condition:
@@ -374,7 +374,7 @@ statements:
         op:
             <
         rhs:
-            [literal]
+            [literal float]
             value:
                 10
     increment:
@@ -411,7 +411,7 @@ statements:
             args:
                 [none]
     condition:
-        [literal]
+        [literal float]
         value:
             1
     increment:
@@ -432,7 +432,7 @@ if (true) {
 statements:
     [if]
     condition:
-        [literal]
+        [literal float]
         value:
             1
     true:
@@ -463,7 +463,7 @@ if (true) {
 statements:
     [if]
     condition:
-        [literal]
+        [literal float]
         value:
             1
     true:
@@ -504,7 +504,7 @@ if (true) {
 statements:
     [if]
     condition:
-        [literal]
+        [literal float]
         value:
             1
     true:
@@ -524,7 +524,7 @@ statements:
         statements:
             [if]
             condition:
-                [literal]
+                [literal float]
                 value:
                     0
             true:
@@ -557,7 +557,7 @@ if (true) {
 statements:
     [if]
     condition:
-        [literal]
+        [literal float]
         value:
             1
     true:
@@ -577,7 +577,7 @@ statements:
         statements:
             [if]
             condition:
-                [literal]
+                [literal float]
                 value:
                     0
             true:
@@ -601,7 +601,7 @@ statements:
                         op:
                             -
                         expression:
-                            [literal]
+                            [literal float]
                             value:
                                 1
                     true:
@@ -647,7 +647,7 @@ repeat (10) {
 statements:
     [repeat loop]
     count:
-        [literal]
+        [literal float]
         value:
             10
     body:
@@ -677,16 +677,16 @@ statements:
     value:
         [matrix2x2]
         entries:
-            [literal]
+            [literal float]
             value:
                 1
-            [literal]
+            [literal float]
             value:
                 2
-            [literal]
+            [literal float]
             value:
                 3
-            [literal]
+            [literal float]
             value:
                 4
 ");
@@ -701,7 +701,7 @@ while (true) {
 statements:
     [while loop]
     condition:
-        [literal]
+        [literal float]
         value:
             1
     body:
@@ -728,7 +728,7 @@ statements:
             name:
                 float
         initializer:
-            [literal]
+            [literal float]
             value:
                 1
 ");
@@ -784,7 +784,7 @@ statements:
             [identifier name]
             name:
                 a
-            [literal]
+            [literal float]
             value:
                 2
             [invocation]
@@ -847,16 +847,16 @@ statements:
         initializer:
             [matrix2x2]
             entries:
-                [literal]
+                [literal float]
                 value:
                     1
-                [literal]
+                [literal float]
                 value:
                     2
-                [literal]
+                [literal float]
                 value:
                     3
-                [literal]
+                [literal float]
                 value:
                     4
 ");
@@ -881,52 +881,52 @@ statements:
         initializer:
             [matrix4x4]
             entries:
-                [literal]
+                [literal float]
                 value:
                     1
-                [literal]
+                [literal float]
                 value:
                     2
-                [literal]
+                [literal float]
                 value:
                     3
-                [literal]
+                [literal float]
                 value:
                     4
-                [literal]
+                [literal float]
                 value:
                     5
-                [literal]
+                [literal float]
                 value:
                     6
-                [literal]
+                [literal float]
                 value:
                     7
-                [literal]
+                [literal float]
                 value:
                     8
-                [literal]
+                [literal float]
                 value:
                     9
-                [literal]
+                [literal float]
                 value:
                     10
-                [literal]
+                [literal float]
                 value:
                     11
-                [literal]
+                [literal float]
                 value:
                     12
-                [literal]
+                [literal float]
                 value:
                     13
-                [literal]
+                [literal float]
                 value:
                     14
-                [literal]
+                [literal float]
                 value:
                     15
-                [literal]
+                [literal float]
                 value:
                     16
 ");
@@ -951,16 +951,16 @@ statements:
         initializer:
             [matrix1x4]
             entries:
-                [literal]
+                [literal float]
                 value:
                     1
-                [literal]
+                [literal float]
                 value:
                     2
-                [literal]
+                [literal float]
                 value:
                     3
-                [literal]
+                [literal float]
                 value:
                     4
 ");
@@ -985,16 +985,16 @@ statements:
         initializer:
             [matrix4x1]
             entries:
-                [literal]
+                [literal float]
                 value:
                     1
-                [literal]
+                [literal float]
                 value:
                     2
-                [literal]
+                [literal float]
                 value:
                     3
-                [literal]
+                [literal float]
                 value:
                     4
 ");
@@ -1019,7 +1019,7 @@ statements:
         initializer:
             [matrix1x1]
             entries:
-                [literal]
+                [literal float]
                 value:
                     1
 ");
@@ -1044,11 +1044,11 @@ statements:
         initializer:
             [polar]
             angle:
-                [literal]
+                [literal float]
                 value:
                     1
             radius:
-                [literal]
+                [literal float]
                 value:
                     2
 ");
@@ -1077,57 +1077,57 @@ statements:
                 lhs:
                     [binop]
                     lhs:
-                        [literal]
+                        [literal float]
                         value:
                             1
                     op:
                         +
                     rhs:
-                        [literal]
+                        [literal float]
                         value:
                             2
                 op:
                     +
                 rhs:
-                    [literal]
+                    [literal float]
                     value:
                         3
                 [binop]
                 lhs:
                     [binop]
                     lhs:
-                        [literal]
+                        [literal float]
                         value:
                             4
                     op:
                         +
                     rhs:
-                        [literal]
+                        [literal float]
                         value:
                             5
                 op:
                     +
                 rhs:
-                    [literal]
+                    [literal float]
                     value:
                         6
                 [binop]
                 lhs:
                     [binop]
                     lhs:
-                        [literal]
+                        [literal float]
                         value:
                             7
                     op:
                         +
                     rhs:
-                        [literal]
+                        [literal float]
                         value:
                             8
                 op:
                     +
                 rhs:
-                    [literal]
+                    [literal float]
                     value:
                         9
 ");
@@ -1158,13 +1158,13 @@ statements:
                     lhs:
                         [binop]
                         lhs:
-                            [literal]
+                            [literal float]
                             value:
                                 1
                         op:
                             +
                         rhs:
-                            [literal]
+                            [literal float]
                             value:
                                 2
                     op:
@@ -1176,19 +1176,19 @@ statements:
                             lhs:
                                 [binop]
                                 lhs:
-                                    [literal]
+                                    [literal float]
                                     value:
                                         3
                                 op:
                                     *
                                 rhs:
-                                    [literal]
+                                    [literal float]
                                     value:
                                         4
                             op:
                                 /
                             rhs:
-                                [literal]
+                                [literal float]
                                 value:
                                     5
                         op:
@@ -1196,19 +1196,19 @@ statements:
                         rhs:
                             [binop]
                             lhs:
-                                [literal]
+                                [literal float]
                                 value:
                                     6
                             op:
                                 ^
                             rhs:
-                                [literal]
+                                [literal float]
                                 value:
                                     7
                 op:
                     &
                 rhs:
-                    [literal]
+                    [literal float]
                     value:
                         8
             op:
@@ -1216,13 +1216,13 @@ statements:
             rhs:
                 [binop]
                 lhs:
-                    [literal]
+                    [literal float]
                     value:
                         9
                 op:
                     >
                 rhs:
-                    [literal]
+                    [literal float]
                     value:
                         0
 ");
@@ -1247,7 +1247,7 @@ statements:
         initializer:
             [binop]
             lhs:
-                [literal]
+                [literal float]
                 value:
                     1
             op:
@@ -1277,7 +1277,7 @@ statements:
                                     op:
                                         -
                                     expression:
-                                        [literal]
+                                        [literal float]
                                         value:
                                             2
 ");
@@ -1300,13 +1300,13 @@ statements:
         rhs:
             [binop]
             lhs:
-                [literal]
+                [literal float]
                 value:
                     1
             op:
                 +
             rhs:
-                [literal]
+                [literal float]
                 value:
                     1
 ");

@@ -550,8 +550,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             }
 
             if (tokens[0].Kind == TokenKind.Number) {
-                // kinda awkward to convert string to float to string (to later float)
-                var lit = new LiteralExpression(ParseNumber(tokens[0]).ToString(), tokens[0].Location);
+                var lit = new LiteralExpression(ParseNumber(tokens[0]), tokens[0].Location);
                 tokens = tokens[1..];
                 return lit;
             }

@@ -1,5 +1,7 @@
-﻿using Atrufulgium.BulletScript.Compiler.Parsing;
+﻿using Atrufulgium.BulletScript.Compiler.Helpers;
+using Atrufulgium.BulletScript.Compiler.Parsing;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
@@ -423,24 +425,42 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
     /// <summary>
     /// <para>
-    /// Represents a literal value, such as <c>23</c>, or <c>"hi"</c>.
+    /// Represents a literal value, such as <c>23</c>, or <c>"hi"</c>. The set
+    /// one is nonnull, the unset one is null.
     /// </para>
     /// <para>
     /// Note that "literal matrices" aren't a thing.
     /// </para>
     /// </summary>
     internal class LiteralExpression : Expression {
-        public string Value { get; private set; }
+        public string? StringValue { get; private set; }
+        public float? FloatValue { get; private set; }
 
         public LiteralExpression(
             string value,
             Location location
         ) : base(location) {
-            Value = value;
+            if (value[0] != '"' || value[^1] != '"')
+                throw new ArgumentException("The string must be enclosed in \".");
+            StringValue = value;
+            FloatValue = null;
         }
 
-        public override string ToString()
-            => $"[literal]\nvalue:\n{Indent(Value)}";
+        public LiteralExpression(
+            float value,
+            Location location
+        ) : base(location) {
+            StringValue = null;
+            FloatValue = value;
+        }
+
+        public override string ToString() {
+            if (StringValue != null)
+                return $"[literal string]\nvalue:\n{Indent(StringValue)}";
+            if (FloatValue != null)
+                return $"[literal float]\nvalue:\n{Indent(FloatValue.ToString())}";
+            throw new UnreachablePathException();
+        }
     }
 
     /// <summary>
