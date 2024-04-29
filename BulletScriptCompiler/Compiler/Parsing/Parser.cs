@@ -328,11 +328,17 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
             ParseParensOpen(ref tokens);
             if (tokens.Count == 0) EoFPanic();
-            // Two options: a semicolon for an empty init, or an init.
-            // TODO: More than just declarations lol
-            VariableDeclaration? init = null;
+            // Three options: a `;` for an empty init, a declaration statement,
+            // or an expression.
+            Statement? init = null;
             if (tokens[0].Kind != TokenKind.Semicolon) {
-                init = ParseVariableDeclaration(ref tokens);
+                if (tokens[0].IsTypeName) {
+                    var decl = ParseVariableDeclaration(ref tokens);
+                    init = new LocalDeclarationStatement(decl, decl.Location);
+                } else {
+                    var expr = ParseExpression(ref tokens);
+                    init = new ExpressionStatement(expr, expr.Location);
+                }
             }
             ParseSemicolon(ref tokens);
             var condition = ParseExpression(ref tokens);
@@ -388,7 +394,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             if (tokens.Count == 0) EoFPanic();
             var location = tokens[0].Location;
 
-            if (tokens[0].IsTypeName)
+            if (!tokens[0].IsTypeName)
                 Panic(Silly(location, "localdecl"));
 
             var decl = ParseVariableDeclaration(ref tokens);
@@ -424,11 +430,13 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
             if (tokens[0].Kind != TokenKind.ReturnKeyword)
                 Panic(Silly(location, "return"));
-
-            if (tokens[1].Kind == TokenKind.Semicolon)
-                return new ReturnStatement(location);
-
             tokens = tokens[1..];
+
+            if (tokens[0].Kind == TokenKind.Semicolon) {
+                ParseSemicolon(ref tokens);
+                return new ReturnStatement(location);
+            }
+
             var expr = ParseExpression(ref tokens);
 
             ParseSemicolon(ref tokens);
@@ -485,26 +493,26 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             // - Prefix `-` and `!` operators
             if (tokens.Count < 2) EoFPanic();
 
-            if (tokens[0].Kind == TokenKind.ParensStart) {
-                tokens = tokens[1..];
+            if (tokens[0].Kind == TokenKind.ParensStart)
                 return ParseParenthesisedExpression(ref tokens);
-            }
 
             if (tokens[0].Kind == TokenKind.Identifier) {
-                if (tokens[1].Kind == TokenKind.ParensStart)
+                if (tokens[1].Kind == TokenKind.ParensStart
+                    || (tokens.Count >= 5 && tokens[1].Kind == TokenKind.LessThan
+                    && tokens[3].Kind == TokenKind.MoreThan && tokens[4].Kind == TokenKind.ParensStart))
                     return ParseInvocation(ref tokens);
 
                 var id = new IdentifierName(tokens[0]);
                 tokens = tokens[1..];
 
-                if (tokens.Count < 2 && tokens[0].Kind == tokens[1].Kind
+                if (tokens.Count >= 2 && tokens[0].Kind == tokens[1].Kind
                     && tokens[0].Kind is TokenKind.Plus or TokenKind.Minus) {
                     var pf = new PostfixUnaryExpression(
                         id,
                         tokens[0].Kind == TokenKind.Plus ? "++" : "--",
                         id.Location
                     );
-                    tokens = tokens[3..];
+                    tokens = tokens[2..];
                     return pf;
                 }
 
@@ -519,11 +527,8 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 return id;
             }
 
-            if (tokens[0].Kind is TokenKind.Number or TokenKind.String) {
-                var lit = new LiteralExpression(tokens[0].Value, tokens[0].Location);
-                tokens = tokens[1..];
-                return lit;
-            }
+            if (tokens[0].Kind is TokenKind.Number or TokenKind.String)
+                return ParseLiteralExpression(ref tokens);
 
             if (tokens[0].Kind is TokenKind.BracketStart)
                 return ParseMatrixLike(ref tokens);
@@ -532,6 +537,26 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 return ParsePrefixUnary(ref tokens);
 
             Panic(UnexpectedTerm(tokens[0]));
+            throw new UnreachablePathException();
+        }
+
+        LiteralExpression ParseLiteralExpression(ref ListView<Token> tokens) {
+            if (tokens.Count == 0) EoFPanic();
+
+            if (tokens[0].Kind == TokenKind.String) {
+                var lit = new LiteralExpression(tokens[0].Value, tokens[0].Location);
+                tokens = tokens[1..];
+                return lit;
+            }
+
+            if (tokens[0].Kind == TokenKind.Number) {
+                // kinda awkward to convert string to float to string (to later float)
+                var lit = new LiteralExpression(ParseNumber(tokens[0]).ToString(), tokens[0].Location);
+                tokens = tokens[1..];
+                return lit;
+            }
+
+            Panic(UnsupportedLiteral(tokens[0]));
             throw new UnreachablePathException();
         }
 
@@ -548,13 +573,15 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             // bind differently, which gives some annoying code.
             while (true) {
                 var (op, precedence, isAssignment, consumedTokens) = ParseOp(tokens);
-                tokens = tokens[consumedTokens..];
 
                 if (precedence == -999)
                     return lhs;
                 // Nothing to bind to on the right in this case.
                 if (precedence < prevPrecedence)
                     return lhs;
+                // (Don't consume the token when not binding. Leave that for
+                //  its own iteration.)
+                tokens = tokens[consumedTokens..];
 
                 var rhs = ParseTerm(ref tokens);
                 int nextPrecedence = ParseOp(tokens).precedence;
@@ -567,9 +594,10 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                         Panic(AssignLHSMustBeIdentifier(lhs.Location));
                         throw new UnreachablePathException();
                     }
-                    return new AssignmentExpression(id, op, rhs, lhs.Location);
+                    lhs = new AssignmentExpression(id, op, rhs, lhs.Location);
+                } else {
+                    lhs = new BinaryExpression(lhs, op, rhs, lhs.Location);
                 }
-                return new BinaryExpression(lhs, op, rhs, lhs.Location);
             }
         }
 
@@ -588,7 +616,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             { "!=", ("!=",  6, false, 2) },
             {  "&", ( "&",  4, false, 1) }, { "&=", ( "&", 0, true, 2) },
             {  "|", ( "|",  2, false, 1) }, { "|=", ( "|", 0, true, 2) },
-            {  "=", (  "",  0, true, 1) }
+            {  "=", ( "=",  0, true, 1) }
         };
 
         /// <summary>
@@ -670,8 +698,10 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                     var expr = ParseExpression(ref tokens);
                     row.Add(expr);
                 }
-                // broke because of a `;`/`]` token, consume it
-                tokens = tokens[1..];
+                // if we broke because of a ; token, consume it
+                // if we broke because of a ; token, leave it to above
+                if (tokens[0].Kind == TokenKind.Semicolon)
+                    ParseSemicolon(ref tokens);
                 if (row.Count > 0)
                     entries.Add(row);
             }
@@ -762,6 +792,11 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
         }
 
         float ParseNumber(Token token) {
+            if (token.Value == "true")
+                return 1;
+            if (token.Value == "false")
+                return 0;
+
             // ParseFloat can't handle the f.
             // F.
             if (token.Value.EndsWith('f'))

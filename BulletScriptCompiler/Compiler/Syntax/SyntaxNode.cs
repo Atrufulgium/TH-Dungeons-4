@@ -171,7 +171,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// Represents a <c>for</c>-loop.
     /// </summary>
     internal class ForStatement : Statement {
-        public VariableDeclaration? Initializer { get; private set; }
+        public Statement? Initializer { get; private set; }
         public Expression Condition { get; private set; }
         public Expression? Increment { get; private set; }
         public Block Body { get; private set; }
@@ -180,7 +180,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             Expression condition,
             Block body,
             Location location,
-            VariableDeclaration? initializer = null,
+            Statement? initializer = null,
             Expression? increment = null
         ) : base(location) {
             Initializer = initializer;
@@ -310,7 +310,8 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
     /// <summary>
     /// Represents an expression of the form <c>a ∘= b</c> for some (or no)
-    /// operator <c>∘</c>. <see cref="OP"/> excludes the <c>=</c>-sign.
+    /// operator <c>∘</c>. <see cref="OP"/> excludes the <c>=</c>-sign when in
+    /// <c>∘=</c> form.
     /// </summary>
     internal class AssignmentExpression : Expression {
         public IdentifierName LHS { get; private set; }

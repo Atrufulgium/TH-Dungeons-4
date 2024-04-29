@@ -41,6 +41,8 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             { "continue", TokenKind.ContinueKeyword },
             { "function", TokenKind.FunctionKeyword },
             { "void", TokenKind.VoidKeyword },
+            { "true", TokenKind.Number},
+            { "false", TokenKind.Number },
             { "!", TokenKind.ExclamationMark },
             { "^", TokenKind.Power },
             { "*", TokenKind.Mul },

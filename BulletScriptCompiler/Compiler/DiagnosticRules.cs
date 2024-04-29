@@ -90,5 +90,8 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         public static Diagnostic PolarFormatWrong(Location location)
             => Error(location, "BS0030", "Polar matrices must be of the form `[angle:radius]`.");
+
+        public static Diagnostic UnsupportedLiteral(Token location)
+            => Error(location, "BS0031", "Expected a literal string `\"hi\"` or number `230`.");
     }
 }
