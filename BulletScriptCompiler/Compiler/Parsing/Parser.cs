@@ -530,8 +530,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                     return pf;
                 }
 
-                if (tokens[1].Kind == TokenKind.BracketStart) {
-                    tokens = tokens[1..];
+                if (tokens[0].Kind == TokenKind.BracketStart) {
                     var matlike = ParseMatrixLike(ref tokens);
                     if (matlike is MatrixExpression mat)
                         return new IndexExpression(id, mat, id.Location);
@@ -599,8 +598,9 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 var rhs = ParseTerm(ref tokens);
                 int nextPrecedence = ParseOp(tokens).precedence;
                 // We have to bind to the right *first* in this case.
-                if (precedence < nextPrecedence)
-                    rhs = ParseRemainingExpression(ref tokens, precedence + 1, rhs);
+                // Equality also for the = case that works strictly right to left.
+                if (precedence <= nextPrecedence)
+                    rhs = ParseRemainingExpression(ref tokens, nextPrecedence, rhs);
                 
                 if (isAssignment) {
                     if (lhs is not IdentifierName id) {

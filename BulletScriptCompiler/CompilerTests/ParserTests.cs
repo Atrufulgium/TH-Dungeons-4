@@ -20,17 +20,21 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
             AssertNoErrorDiagnostics(diags2);
             if (root == null)
                 Assert.Fail("Unexpected null tree, without any diagnostics.");
+            var diags3 = root.ValidateTree();
+            AssertNoErrorDiagnostics(diags3);
             return root.ToString();
         }
         static void TestFail(string code, string expectedErrorID, int expectedLine) {
             var (tokens, diags) = new Lexer().ToTokens(code);
             AssertNoErrorDiagnostics(diags);
             var (root, diags2) = new Parser().ToTree(tokens);
+            if (root != null)
+                diags2 = diags2.Union(root.ValidateTree()).ToList();
             foreach (var diag in diags2) {
                 if (diag.ID == expectedErrorID && diag.Location.line == expectedLine + 1)
                     return;
             }
-            string msg = $"Did not encounter error {expectedErrorID} at line {expectedLine + 1}.";
+            string msg = $"Did not encounter error \"{expectedErrorID}\" at line {expectedLine + 1}.";
             if (diags2.Any()) {
                 msg += " Errors:\n";
                 foreach (var diag in diags2) {
@@ -107,8 +111,8 @@ declarations:
         [TestMethod]
         public void CompileTestExpressionlessStatements1() => TestCompile(@"
 return;
-continue;
 repeat {
+    continue;
     break;
 }
 ", @"
@@ -117,13 +121,13 @@ statements:
     [return]
     value:
         [none]
-    [continue]
     [repeat loop]
     count:
         [none]
     body:
         [block]
         statements:
+            [continue]
             [break]
 ");
 
@@ -131,8 +135,8 @@ statements:
         public void CompileTestExpressionlessStatements2() => TestCompile(@"
 function void Main(float value) {
     return;
-    continue;
     repeat {
+        continue;
         break;
     }
 }
@@ -168,13 +172,13 @@ declarations:
             [return]
             value:
                 [none]
-            [continue]
             [repeat loop]
             count:
                 [none]
             body:
                 [block]
                 statements:
+                    [continue]
                     [break]
 ");
 
@@ -1094,61 +1098,61 @@ statements:
             entries:
                 [binop]
                 lhs:
+                    [literal float]
+                    value:
+                        1
+                op:
+                    +
+                rhs:
                     [binop]
                     lhs:
-                        [literal float]
-                        value:
-                            1
-                    op:
-                        +
-                    rhs:
                         [literal float]
                         value:
                             2
-                op:
-                    +
-                rhs:
-                    [literal float]
-                    value:
-                        3
-                [binop]
-                lhs:
-                    [binop]
-                    lhs:
-                        [literal float]
-                        value:
-                            4
                     op:
                         +
                     rhs:
+                        [literal float]
+                        value:
+                            3
+                [binop]
+                lhs:
+                    [literal float]
+                    value:
+                        4
+                op:
+                    +
+                rhs:
+                    [binop]
+                    lhs:
                         [literal float]
                         value:
                             5
-                op:
-                    +
-                rhs:
-                    [literal float]
-                    value:
-                        6
-                [binop]
-                lhs:
-                    [binop]
-                    lhs:
-                        [literal float]
-                        value:
-                            7
                     op:
                         +
                     rhs:
                         [literal float]
                         value:
-                            8
+                            6
+                [binop]
+                lhs:
+                    [literal float]
+                    value:
+                        7
                 op:
                     +
                 rhs:
-                    [literal float]
-                    value:
-                        9
+                    [binop]
+                    lhs:
+                        [literal float]
+                        value:
+                            8
+                    op:
+                        +
+                    rhs:
+                        [literal float]
+                        value:
+                            9
 ");
 
         [TestMethod]
@@ -1175,55 +1179,55 @@ statements:
                 lhs:
                     [binop]
                     lhs:
-                        [binop]
-                        lhs:
-                            [literal float]
-                            value:
-                                1
-                        op:
-                            +
-                        rhs:
-                            [literal float]
-                            value:
-                                2
+                        [literal float]
+                        value:
+                            1
                     op:
-                        -
+                        +
                     rhs:
                         [binop]
                         lhs:
+                            [literal float]
+                            value:
+                                2
+                        op:
+                            -
+                        rhs:
                             [binop]
                             lhs:
+                                [literal float]
+                                value:
+                                    3
+                            op:
+                                *
+                            rhs:
                                 [binop]
                                 lhs:
                                     [literal float]
                                     value:
-                                        3
-                                op:
-                                    *
-                                rhs:
-                                    [literal float]
-                                    value:
                                         4
-                            op:
-                                /
-                            rhs:
-                                [literal float]
-                                value:
-                                    5
-                        op:
-                            %
-                        rhs:
-                            [binop]
-                            lhs:
-                                [literal float]
-                                value:
-                                    6
-                            op:
-                                ^
-                            rhs:
-                                [literal float]
-                                value:
-                                    7
+                                op:
+                                    /
+                                rhs:
+                                    [binop]
+                                    lhs:
+                                        [literal float]
+                                        value:
+                                            5
+                                    op:
+                                        %
+                                    rhs:
+                                        [binop]
+                                        lhs:
+                                            [literal float]
+                                            value:
+                                                6
+                                        op:
+                                            ^
+                                        rhs:
+                                            [literal float]
+                                            value:
+                                                7
                 op:
                     &
                 rhs:
@@ -1328,6 +1332,35 @@ statements:
                 [literal float]
                 value:
                     1
+");
+
+        [TestMethod]
+        public void CompileTestIndex() => TestCompile(@"
+i = m[2];
+", @"
+[root]
+statements:
+    [expression statement]
+    statement:
+        [assignment]
+        lhs:
+            [identifier name]
+            name:
+                i
+        op:
+            =
+        rhs:
+            [index]
+            expression:
+                [identifier name]
+                name:
+                    m
+            index:
+                [matrix1x1]
+                entries:
+                    [literal float]
+                    value:
+                        2
 ");
 
         [TestMethod]
@@ -1655,11 +1688,48 @@ matrix m = [1:;];
 ;
 ", "BS0019", 1);
 
-        /* Template
         [TestMethod]
-        public void ErrorTestX() => TestFail(@"
+        public void ErrorTestBreakNotInLoop() => TestFail(@"
+function void main() {
+    break;
+}
+", "BS0035", 2);
 
-", "BS00xx", 0);
-        */
+        [TestMethod]
+        public void ErrorTestContinueNotInLoop() => TestFail(@"
+function void main() {
+    continue;
+}
+", "BS0036", 2);
+
+        [TestMethod]
+        public void ErrorTestInvalidForInitializer() => TestFail(@"
+for (1 + 1; true;) {}
+", "BS0037", 1);
+
+        [TestMethod]
+        public void ErrorTestAssignmentOnlyAsStatement() => TestFail(@"
+i = j = 3;
+", "BS0039", 1);
+
+        [TestMethod]
+        public void ErrorTestIndexWrong1() => TestFail(@"
+i = m[];
+", "BS0027", 1);
+
+        [TestMethod]
+        public void ErrorTestIndexWrong2() => TestFail(@"
+i = m[1 2 3];
+", "BS0040", 1);
+
+        [TestMethod]
+        public void ErrorTestIndexWrong3() => TestFail(@"
+i = m[1; 2; 3];
+", "BS0040", 1);
+
+        [TestMethod]
+        public void ErrorTestIndexWrong4() => TestFail(@"
+i = m[1 : 2];
+", "BS0023", 1);
     }
 }

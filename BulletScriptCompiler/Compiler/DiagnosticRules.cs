@@ -1,4 +1,5 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Parsing;
+using Atrufulgium.BulletScript.Compiler.Syntax;
 
 namespace Atrufulgium.BulletScript.Compiler {
     internal static class DiagnosticRules {
@@ -8,6 +9,9 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         static Diagnostic Error(Token token, string id, string msg)
             => Error(token.Location, id, msg);
+
+        static Diagnostic Error(Node node, string id, string msg)
+            => Error(node.Location, id, msg);
 
         public static Diagnostic UnterminatedString(Location location, string token)
             => Error(location, "BS0001",
@@ -105,5 +109,24 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         public static Diagnostic VarDeclNoOps(Token location)
             => Error(location, "BS0034", "Variable declarations with initializers must be of the form `type a = val`. There may not be a `+=` etc.");
+
+        public static Diagnostic BreakNotInLoop(Node location)
+            => Error(location, "BS0035", "Break statement not inside a `for`, `repeat`, or `while` loop.");
+
+        public static Diagnostic ContinueNotInLoop(Node location)
+            => Error(location, "BS0036", "Continue statement not inside a `for`, `repeat`, or `while` loop.");
+
+        public static Diagnostic InvalidForInitializer(Node location)
+            => Error(location, "BS0037", "For initializers may only be `type name = val` declarations, `my_method()` calls, or assignments.");
+
+        // "But why are assignments an expression then?"
+        // Because I may change my mind later and allow `a = b = c`.
+        public static Diagnostic AssignmentOnlyAsStatement(Node location)
+            => Error(location, "BS0039", "Assignments may only be a statement, and not further down in arithmetic/calls/etc.");
+
+        public static Diagnostic IndexMatrixWrongSize(Node location)
+            => Error(location, "BS0040", "Indexing matrices with `[ .. ]` is only sensible with `[a]`, `[a b]`, or `[a; b]`.");
+
+
     }
 }
