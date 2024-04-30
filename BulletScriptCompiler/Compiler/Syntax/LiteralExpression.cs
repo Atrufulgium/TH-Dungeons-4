@@ -42,5 +42,10 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => new List<Diagnostic>();
+
+        public LiteralExpression WithStringValue(string value)
+            => new(value, Location);
+        public LiteralExpression WithFloatValue(float value)
+            => new(value, Location);
     }
 }

@@ -16,5 +16,8 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Statements.SelectMany(s => s.ValidateTree(path.Append(this)));
+
+        public Block WithStatements(IList<Statement> statements)
+            => new(statements, Location);
     }
 }

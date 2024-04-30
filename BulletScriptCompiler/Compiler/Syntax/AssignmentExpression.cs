@@ -26,8 +26,10 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             => $"[assignment]\nlhs:\n{Indent(LHS)}\nop:\n{Indent(OP)}\nrhs:\n{Indent(RHS)}";
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
-            var childValidation = LHS.ValidateTree(path.Append(this))
-                .Concat(RHS.ValidateTree(path.Append(this)));
+            var childValidation = LHS.ValidateTree(path.Append(this));
+            if (OP is not ("=" or "+" or "-" or "*" or "/" or "^" or "&" or "|"))
+                childValidation = childValidation.Append(InvalidAssignment(this));
+            childValidation = childValidation.Concat(RHS.ValidateTree(path.Append(this)));
 
             // Only allow assignments as a root level statement.
             // i.e. the parent must directly be an ExpressionStatement.
@@ -36,5 +38,12 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
                 return childValidation.Prepend(AssignmentOnlyAsStatement(this));
             return childValidation;
         }
+
+        public AssignmentExpression WithLHS(IdentifierName lhs)
+            => new(lhs, OP, RHS, Location);
+        public AssignmentExpression WithOP(string op)
+            => new(LHS, op, RHS, Location);
+        public AssignmentExpression WithRHS(Expression rhs)
+            => new(LHS, OP, rhs, Location);
     }
 }

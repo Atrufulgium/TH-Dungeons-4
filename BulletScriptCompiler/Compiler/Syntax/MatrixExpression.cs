@@ -26,5 +26,8 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Entries.SelectMany(e => e.ValidateTree(path.Append(this)));
+
+        public MatrixExpression WithEntries(IList<Expression> entries, int rows, int cols)
+            => new(entries, rows, cols, Location);
     }
 }

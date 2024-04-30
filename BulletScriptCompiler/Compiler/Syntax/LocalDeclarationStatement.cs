@@ -17,5 +17,8 @@
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Declaration.ValidateTree(path.Append(this));
+
+        public LocalDeclarationStatement WithDeclaration(VariableDeclaration declaration)
+            => new(declaration, Location);
     }
 }

@@ -53,8 +53,9 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic UnexpectedEoF(Location location)
             => Error(new Location(location.line + 1, 1), "BS0014", "Unexpected end of file. Don't forget to end your blocks with `}` and your statements with `;`.");
 
-        public static Diagnostic UnknownType(Token location)
+        public static Diagnostic UnknownType(Location location)
             => Error(location, "BS0016", "Expected a valid variable type (`float`, `matrix`, or `string`).");
+        public static Diagnostic UnknownType(Token location) => UnknownType(location.Location);
 
         public static Diagnostic VariableNameWrong(Token location)
             => Error(location, "BS0017", "Expected a valid identifier name for the variable. Note that this may not be a predefined keyword (such as `matrix` or `function`).");
@@ -83,8 +84,9 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic AssignLHSMustBeIdentifier(Location location)
             => Error(location, "BS0025", "The left-hand side of an assignment must be an identifier name.");
 
-        public static Diagnostic NotAPrefixUnary(Token location)
+        public static Diagnostic NotAPrefixUnary(Location location)
             => Error(location, "BS0026", "Expected a unary operator `!` or `-`.");
+        public static Diagnostic NotAPrefixUnary(Token location) => NotAPostfixUnary(location.Location);
 
         public static Diagnostic EmptyMatrix(Location location)
             => Error(location, "BS0027", "Matrix is empty/has an empty row. Matrices must be between 1x1 and 4x4.");
@@ -127,6 +129,19 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic IndexMatrixWrongSize(Node location)
             => Error(location, "BS0040", "Indexing matrices with `[ .. ]` is only sensible with `[a]`, `[a b]`, or `[a; b]`.");
 
+        public static Diagnostic MethodDeclarationInitializer(Node location)
+            => Error(location, "BS0041", "Method arguments may not have initializers. For instance, `function void my_method(float val = 3)` is disallowed.");
 
+        public static Diagnostic InvalidAssignment(Node location)
+            => Error(location, "BS0042", "The only valid assignment operators are = + - * / % ^ & |");
+
+        public static Diagnostic InvalidBinop(Node location)
+            => Error(location, "BS0043", "The only valid binary operators are + - * / ^ & | != == >= <= > <");
+
+        public static Diagnostic InvalidExpressionStatement(Node location)
+            => Error(location, "BS0044", "Standalone expressions may only be arithmetic `a ∘= ..`, function calls `my_method(..`, or increment/decrementors `a++`/`a--`.");
+
+        public static Diagnostic NotAPostfixUnary(Location location)
+            => Error(location, "BS0045", "Expected a unary operator `++` or `--`.");
     }
 }

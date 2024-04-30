@@ -17,5 +17,10 @@
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => (Count?.ValidateTree(path.Append(this)) ?? new List<Diagnostic>())
             .Concat(Body.ValidateTree(path.Append(this)));
+
+        public RepeatStatement WithBody(Block body)
+            => new(body, Location, Count);
+        public RepeatStatement WithCount(Expression? count)
+            => new(Body, Location, count);
     }
 }

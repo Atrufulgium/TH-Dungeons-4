@@ -49,5 +49,14 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             }
             return diags;
         }
+
+        public ForStatement WithCondition(Expression condition)
+            => new(condition, Body, Location, Initializer, Increment);
+        public ForStatement WithBody(Block body)
+            => new(Condition, body, Location, Initializer, Increment);
+        public ForStatement WithInitializer(Statement? initializer)
+            => new(Condition, Body, Location, initializer, Increment);
+        public ForStatement WithIncrement(Expression? increment)
+            => new(Condition, Body, Location, Initializer, increment);
     }
 }

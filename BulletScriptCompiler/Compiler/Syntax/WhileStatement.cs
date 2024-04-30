@@ -17,5 +17,10 @@
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Condition.ValidateTree(path.Append(this))
             .Concat(Body.ValidateTree(path.Append(this)));
+
+        public WhileStatement WithCondition(Expression condition)
+            => new(condition, Body, Location);
+        public WhileStatement WithBody(Block body)
+            => new(Condition, body, Location);
     }
 }

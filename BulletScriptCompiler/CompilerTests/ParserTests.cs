@@ -1731,5 +1731,10 @@ i = m[1; 2; 3];
         public void ErrorTestIndexWrong4() => TestFail(@"
 i = m[1 : 2];
 ", "BS0023", 1);
+
+        [TestMethod]
+        public void ErrorTestInitInMethodDecl() => TestFail(@"
+function void my_method(float val = 3) {}
+", "BS0041", 1);
     }
 }

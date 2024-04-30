@@ -22,7 +22,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 return (new(Array.Empty<Declaration>(), new(0,0)), diagnostics);
             }
 
-            eofLocation = tokens.Last().Location;
+            eofLocation = tokens[tokens.Count - 1].Location;
             eofLocation = new(eofLocation.line + 1, 1);
 
             // We're in "top level statements" form if there is no `function` token.

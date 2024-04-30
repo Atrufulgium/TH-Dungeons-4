@@ -25,5 +25,12 @@
             => Condition.ValidateTree(path.Append(this))
             .Concat(TrueBranch.ValidateTree(path.Append(this)))
             .Concat(FalseBranch?.ValidateTree(path.Append(this)) ?? new List<Diagnostic>());
+
+        public IfStatement WithCondition(Expression condition)
+            => new(condition, TrueBranch, Location, FalseBranch);
+        public IfStatement WithTrueBranch(Block trueBranch)
+            => new(Condition, trueBranch, Location, FalseBranch);
+        public IfStatement WithFalseBranch(Block? falseBranch)
+            => new(Condition, TrueBranch, Location, falseBranch);
     }
 }

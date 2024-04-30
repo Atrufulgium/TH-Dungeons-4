@@ -20,5 +20,8 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => new List<Diagnostic>();
+
+        public IdentifierName WithName(string name)
+            => new(name, Location);
     }
 }

@@ -21,5 +21,10 @@
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Angle.ValidateTree(path.Append(this))
             .Concat(Radius.ValidateTree(path.Append(this)));
+
+        public PolarExpression WithAngle(Expression angle)
+            => new(angle, Radius, Location);
+        public PolarExpression WithRadius(Expression radius)
+            => new(Angle, radius, Location);
     }
 }

@@ -18,5 +18,8 @@
         // Return may not be in a non-function, but that's impossible.
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => ReturnValue?.ValidateTree(path.Append(this)) ?? new List<Diagnostic>();
+
+        public ReturnStatement WithReturnValue(Expression? returnValue)
+            => new(Location, returnValue);
     }
 }

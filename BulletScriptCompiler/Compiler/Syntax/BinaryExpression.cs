@@ -1,4 +1,6 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using static Atrufulgium.BulletScript.Compiler.DiagnosticRules;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// <para>
     /// Represents an expression of the form <c>a ∘ b</c> for some
@@ -24,8 +26,18 @@
         public override string ToString()
             => $"[binop]\nlhs:\n{Indent(LHS)}\nop:\n{Indent(OP)}\nrhs:\n{Indent(RHS)}";
 
-        public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
-            => LHS.ValidateTree(path.Append(this))
-            .Concat(RHS.ValidateTree(path.Append(this)));
+        public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
+            var childValidation = LHS.ValidateTree(path.Append(this));
+            if (OP is not ("+" or "-" or "*" or "/" or "%" or "^" or "&" or "|" or "!=" or "==" or ">=" or "<=" or ">" or "<"))
+                childValidation = childValidation.Append(InvalidBinop(this));
+            return childValidation.Concat(RHS.ValidateTree(path.Append(this)));
+        }
+
+        public BinaryExpression WithLHS(Expression lhs)
+            => new(lhs, OP, RHS, Location);
+        public BinaryExpression WithOP(string op)
+            => new(LHS, op, RHS, Location);
+        public BinaryExpression WithRHS(Expression rhs)
+            => new(LHS, OP, rhs, Location);
     }
 }

@@ -24,5 +24,10 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Target.ValidateTree(path.Append(this))
             .Concat(Arguments.SelectMany(e => e.ValidateTree(path.Append(this))));
+
+        public InvocationExpression WithTarget(IdentifierName target)
+            => new(target, Arguments, Location);
+        public InvocationExpression WithArguments(IList<Expression> arguments)
+            => new(Target, arguments, Location);
     }
 }

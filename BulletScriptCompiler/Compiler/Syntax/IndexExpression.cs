@@ -28,5 +28,10 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             }
             return ret.Concat(Index.ValidateTree(path.Append(this)));
         }
+
+        public IndexExpression WithExpression(Expression expression)
+            => new(expression, Index, Location);
+        public IndexExpression WithIndex(MatrixExpression index)
+            => new(Expression, index, Location);
     }
 }

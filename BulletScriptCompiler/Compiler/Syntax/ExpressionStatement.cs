@@ -1,4 +1,6 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using static Atrufulgium.BulletScript.Compiler.DiagnosticRules;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// Represents an expression as a stand-alone statement.
     /// </summary>
@@ -15,7 +17,14 @@
         public override string ToString()
             => $"[expression statement]\nstatement:\n{Indent(Statement)}";
 
-        public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
-            => Statement.ValidateTree(path.Append(this));
+        public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
+            var childValidations = Statement.ValidateTree(path.Append(this));
+            if (Statement is not (AssignmentExpression or InvocationExpression or PostfixUnaryExpression))
+                childValidations = childValidations.Prepend(InvalidExpressionStatement(this));
+            return childValidations;
+        }
+
+        public ExpressionStatement WithExpression(Expression statement)
+            => new(statement, Location);
     }
 }

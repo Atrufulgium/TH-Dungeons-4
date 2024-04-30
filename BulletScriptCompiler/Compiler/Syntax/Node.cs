@@ -27,7 +27,8 @@
 
         /// <summary>
         /// Check whether there are any obvious syntactic problems with the tree,
-        /// with a given path of parent nodes.
+        /// with a given path of parent nodes. This must include "obvious"
+        /// things, as well as things already checked by the <see cref="Parsing.Parser"/>.
         /// </summary>
         /// <param name="path">
         /// The path used to reach this node.

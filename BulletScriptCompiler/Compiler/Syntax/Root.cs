@@ -33,5 +33,10 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Declarations.SelectMany(d => d.ValidateTree(path.Append(this)))
             .Concat(RootLevelStatements.SelectMany(s => s.ValidateTree(path.Append(this))));
+
+        public Root WithDeclarations(IList<Declaration> declarations)
+            => new(declarations, Location);
+        public Root WithRootLevelStatements(IList<Statement> statements)
+            => new(statements, Location);
     }
 }
