@@ -1,0 +1,21 @@
+﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+    /// <summary>
+    /// Represents a <c>while</c>-loop.
+    /// </summary>
+    internal class WhileStatement : LoopStatement {
+        public Expression Condition { get; private set; }
+        public Block Body { get; private set; }
+
+        public WhileStatement(Expression condition, Block body, Location location) : base(location) {
+            Condition = condition;
+            Body = body;
+        }
+
+        public override string ToString()
+            => $"[while loop]\ncondition:\n{Indent(Condition)}\nbody:\n{Indent(Body)}";
+
+        public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
+            => Condition.ValidateTree(path.Append(this))
+            .Concat(Body.ValidateTree(path.Append(this)));
+    }
+}

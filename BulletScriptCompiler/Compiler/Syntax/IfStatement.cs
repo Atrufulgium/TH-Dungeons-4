@@ -1,0 +1,29 @@
+﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+    /// <summary>
+    /// Represents an <c>if</c>-statement, optionally with an <c>else</c> clause.
+    /// </summary>
+    internal class IfStatement : Statement {
+        public Expression Condition { get; private set; }
+        public Block TrueBranch { get; private set; }
+        public Block? FalseBranch { get; private set; }
+
+        public IfStatement(
+            Expression condition,
+            Block trueBranch,
+            Location location,
+            Block? falseBranch = null
+        ) : base(location) {
+            Condition = condition;
+            TrueBranch = trueBranch;
+            FalseBranch = falseBranch;
+        }
+
+        public override string ToString()
+            => $"[if]\ncondition:\n{Indent(Condition)}\ntrue:\n{Indent(TrueBranch)}\nfalse:\n{Indent(FalseBranch)}";
+
+        public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
+            => Condition.ValidateTree(path.Append(this))
+            .Concat(TrueBranch.ValidateTree(path.Append(this)))
+            .Concat(FalseBranch?.ValidateTree(path.Append(this)) ?? new List<Diagnostic>());
+    }
+}
