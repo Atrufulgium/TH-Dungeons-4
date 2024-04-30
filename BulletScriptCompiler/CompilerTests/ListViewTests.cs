@@ -79,5 +79,17 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
                 view[^2]
             );
         }
+
+        // Forgot a case where Count would return negative.
+        [TestMethod]
+        public void ListViewTest5() {
+            List<int> ints = new() { 1, 2, 3, 4, 5, 6, 7, 8 };
+            var view = ints.GetView(7..^7);
+            TestHelpers.AssertCollectionsEqual(
+                Array.Empty<int>(),
+                view
+            );
+            Assert.AreEqual(0, view.Count);
+        }
     }
 }

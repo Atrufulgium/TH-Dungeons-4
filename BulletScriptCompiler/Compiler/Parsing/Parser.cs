@@ -84,6 +84,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 }
                 catch (MalformedCodeException) {
                     // Guess the next statement by the heuristic "after a semicolon".
+                    tokens = tokens[1..];
                     int i = tokens.FirstIndexWhere(t => t.Kind == TokenKind.Semicolon);
                     tokens = tokens[(i + 1)..];
                 }
@@ -103,6 +104,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 } catch (MalformedCodeException) {
                     // Guess the next declaration by the "string", "matrix",
                     // "float", or "function" keywords.
+                    tokens = tokens[1..];
                     int i = tokens.FirstIndexWhere(t => t.IsTypeName || t.Kind == TokenKind.FunctionKeyword);
                     tokens = tokens[i..];
                 }
@@ -116,8 +118,11 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
             if (tokens[0].Kind == TokenKind.FunctionKeyword)
                 return ParseMethodDeclaration(ref tokens);
-            if (tokens[0].IsTypeName)
-                return ParseVariableDeclaration(ref tokens);
+            if (tokens[0].IsTypeName) {
+                var decl = ParseVariableDeclaration(ref tokens);
+                ParseSemicolon(ref tokens);
+                return decl;
+            }
             
             Panic(ExpectedDeclaration(location));
             throw new UnreachablePathException();
@@ -155,7 +160,12 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 if (tokens.Count == 0) EoFPanic();
                 if (tokens[0].Kind == TokenKind.ParensEnd)
                     break;
+
                 ParseComma(ref tokens);
+                // With the current format, (type1 arg1, type2 arg2,) with the
+                // extra comma is valid. Don't allow that.
+                if (tokens.Count > 0 && tokens[0].Kind == TokenKind.ParensEnd)
+                    Panic(UnknownType(tokens[0]));
             }
 
             // By the break conditions we are guaranteed a parens end here.
@@ -190,6 +200,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             return baseName;
         }
 
+        // (Parses WITHOUT any `;`)
         VariableDeclaration ParseVariableDeclaration(ref ListView<Token> tokens) {
             if (tokens.Count < 3) EoFPanic();
             var location = tokens[0].Location;
@@ -204,6 +215,8 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
             // Two branches: "type name" or "type name = init".
             if (tokens[2].Kind != TokenKind.Equals) {
+                if (tokens[2].IsOp)
+                    Panic(VarDeclNoOps(tokens[2]));
                 tokens = tokens[2..];
                 return new VariableDeclaration(new(name), new(type), location);
             }
@@ -233,6 +246,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 }
                 catch (MalformedCodeException) {
                     // Guess the next statement by the heuristic "after a semicolon".
+                    tokens = tokens[1..];
                     int i = tokens.FirstIndexWhere(t => t.Kind == TokenKind.Semicolon);
                     tokens = tokens[(i + 1)..];
                 }
@@ -464,7 +478,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
             if (tokens.Count == 0) EoFPanic();
             if (tokens[0].Kind != TokenKind.BlockStart)
-                Panic(ExpectedOpeningBrace(tokens[0].Location));
+                Panic(ExpectedOpeningBrace(tokens[0]));
 
             var body = ParseBlock(ref tokens);
 
@@ -658,7 +672,16 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
                 if (tokens[0].Kind == TokenKind.ParensEnd)
                     break;
+
+                // Fine I'll handle missing semicolons separately.
+                if (tokens.Count > 0 && tokens[0].Kind == TokenKind.Semicolon)
+                    Panic(ForgotClosingParens(tokens[0]));
+
                 ParseComma(ref tokens);
+                // With the current format, (type1 arg1, type2 arg2,) with the
+                // extra comma is valid. Don't allow that.
+                if (tokens.Count > 0 && tokens[0].Kind == TokenKind.ParensEnd)
+                    Panic(UnknownType(tokens[0]));
             }
             ParseParensClose(ref tokens);
 
@@ -677,6 +700,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             List<List<Expression>> entries = new();
             bool isPolar = false;
             while(tokens.Count > 0) {
+                var rowLoc = tokens[0].Location;
                 // Row
                 if (tokens[0].Kind == TokenKind.BracketEnd)
                     break;
@@ -699,10 +723,15 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 }
                 // if we broke because of a ; token, consume it
                 // if we broke because of a ; token, leave it to above
-                if (tokens[0].Kind == TokenKind.Semicolon)
+                if (tokens[0].Kind == TokenKind.Semicolon) {
                     ParseSemicolon(ref tokens);
-                if (row.Count > 0)
-                    entries.Add(row);
+                    // hacky edge-case that's not caught otherwise
+                    if (tokens.Count > 0 && tokens[0].Kind == TokenKind.BracketEnd)
+                        Panic(EmptyMatrix(rowLoc));
+                }
+                if (row.Count == 0)
+                    Panic(EmptyMatrix(rowLoc));
+                entries.Add(row);
             }
             ParseBracketClose(ref tokens);
 
@@ -737,42 +766,42 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
         void ParseParensOpen(ref ListView<Token> tokens) {
             if (tokens.Count == 0) EoFPanic();
             if (tokens[0].Kind != TokenKind.ParensStart)
-                Panic(MissingSemicolon(tokens[0]));
+                Panic(ExpectedOpeningParens(tokens[0]));
             tokens = tokens[1..];
         }
 
         void ParseParensClose(ref ListView<Token> tokens) {
             if (tokens.Count == 0) EoFPanic();
             if (tokens[0].Kind != TokenKind.ParensEnd)
-                Panic(MissingSemicolon(tokens[0]));
+                Panic(ForgotClosingParens(tokens[0]));
             tokens = tokens[1..];
         }
 
         void ParseBlockOpen(ref ListView<Token> tokens) {
             if (tokens.Count == 0) EoFPanic();
             if (tokens[0].Kind != TokenKind.BlockStart)
-                Panic(MissingSemicolon(tokens[0]));
+                Panic(ExpectedOpeningBrace(tokens[0]));
             tokens = tokens[1..];
         }
 
         void ParseBlockClose(ref ListView<Token> tokens) {
             if (tokens.Count == 0) EoFPanic();
             if (tokens[0].Kind != TokenKind.BlockEnd)
-                Panic(MissingSemicolon(tokens[0]));
+                Panic(ForgotClosingBrace(tokens[0]));
             tokens = tokens[1..];
         }
 
         void ParseBracketOpen(ref ListView<Token> tokens) {
             if (tokens.Count == 0) EoFPanic();
             if (tokens[0].Kind != TokenKind.BracketStart)
-                Panic(MissingSemicolon(tokens[0]));
+                Panic(ExpectedOpeningBrace(tokens[0]));
             tokens = tokens[1..];
         }
 
         void ParseBracketClose(ref ListView<Token> tokens) {
             if (tokens.Count == 0) EoFPanic();
             if (tokens[0].Kind != TokenKind.BracketEnd)
-                Panic(MissingSemicolon(tokens[0]));
+                Panic(ForgotClosingBracket(tokens[0]));
             tokens = tokens[1..];
         }
 

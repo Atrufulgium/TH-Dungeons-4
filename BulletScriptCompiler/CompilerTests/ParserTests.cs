@@ -22,6 +22,25 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
                 Assert.Fail("Unexpected null tree, without any diagnostics.");
             return root.ToString();
         }
+        static void TestFail(string code, string expectedErrorID, int expectedLine) {
+            var (tokens, diags) = new Lexer().ToTokens(code);
+            AssertNoErrorDiagnostics(diags);
+            var (root, diags2) = new Parser().ToTree(tokens);
+            foreach (var diag in diags2) {
+                if (diag.ID == expectedErrorID && diag.Location.line == expectedLine + 1)
+                    return;
+            }
+            string msg = $"Did not encounter error {expectedErrorID} at line {expectedLine + 1}.";
+            if (diags2.Any()) {
+                msg += " Errors:\n";
+                foreach (var diag in diags2) {
+                    msg += $"{diag}\n";
+                }
+            } else {
+                msg += " No errors at all.";
+            }
+            Assert.Fail(msg);
+        }
 
         static void AssertNoErrorDiagnostics(IEnumerable<Diagnostic> diagnostics) {
             var errorDiags = diagnostics.Where(d => d.DiagnosticLevel == DiagnosticLevel.Error);
@@ -1311,5 +1330,336 @@ statements:
                     1
 ");
 
+        [TestMethod]
+        public void ErrorTestStatementInDeclarationMode() => TestFail(@"
+function void hoi() {}
+i += 3;
+", "BS0004", 2);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclMissingReturntype() => TestFail(@"
+function hoi() {}
+", "BS0006", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclNonexistentReturntype() => TestFail(@"
+function my_type hoi() {}
+", "BS0006", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclMissingParens1() => TestFail(@"
+function void hoi {}
+", "BS0022", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclMissingParens2() => TestFail(@"
+function void hoi( {}
+", "BS0021", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclMissingBlock() => TestFail(@"
+function void hoi()
+float ensure_no_eof;
+", "BS0013", 2);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclArgMissingType() => TestFail(@"
+function void hoi(value) {}
+", "BS0016", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclArgMissingName() => TestFail(@"
+function void hoi(float) {}
+", "BS0017", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclArgMissing() => TestFail(@"
+function void hoi(float i,) {}
+", "BS0016", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodDeclArgWeirdName() => TestFail(@"
+function void hoi(float float) {}
+", "BS0017", 1);
+
+        [TestMethod]
+        public void ErrorTestVariableDeclWeirdName() => TestFail(@"
+float float = 3;
+function void ensure_toplevel_form() {}
+", "BS0017", 1);
+
+        [TestMethod]
+        public void ErrorTestVariableDeclWeirdOp() => TestFail(@"
+float i += 3;
+function void ensure_toplevel_form() {}
+", "BS0034", 1);
+
+        [TestMethod]
+        public void ErrorTestVariableDeclMissingSemicolon1() => TestFail(@"
+float i
+function void ensure_toplevel_form() {}
+", "BS0018", 2);
+
+        [TestMethod]
+        public void ErrorTestVariableDeclMissingSemicolon2() => TestFail(@"
+float i
+function void ensure_toplevel_form() {}
+", "BS0018", 2);
+
+        [TestMethod]
+        public void ErrorTestBlockMissingClose1() => TestFail(@"
+function void a() {
+function void b() {}
+", "BS0019", 2);
+
+        [TestMethod]
+        public void ErrorTestBlockMissingClose2() => TestFail(@"
+function void a() {
+    return;
+", "BS0014", 4);
+
+        [TestMethod]
+        public void ErrorTestStatementMissingSemicolon() => TestFail(@"
+float i = 3
+float j = 4;
+", "BS0018", 2);
+
+        [TestMethod]
+        public void ErrorTestForMissingPart1() => TestFail(@"
+for () {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestForMissingPart2() => TestFail(@"
+for (float i = 0) {}
+", "BS0018", 1);
+
+        [TestMethod]
+        public void ErrorTestForMissingPart3() => TestFail(@"
+for (float i = 0;;) {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestForMissingParens1() => TestFail(@"
+for float i = 0; true; i++) {}
+", "BS0022", 1);
+
+        [TestMethod]
+        public void ErrorTestForMissingParens2() => TestFail(@"
+for (float i = 0; true; i++ {}
+", "BS0021", 1);
+
+        [TestMethod]
+        public void ErrorTestForMissingBlock() => TestFail(@"
+for (float i = 0; true; i++)
+    i--;
+", "BS0013", 2);
+
+        [TestMethod]
+        public void ErrorTestForInvalidInit() => TestFail(@"
+for (return; true; i++) {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestForTooMuch() => TestFail(@"
+for (float i = 0; true; i++; i++) {}
+", "BS0021", 1);
+
+        [TestMethod]
+        public void ErrorTestIfMissingParens1() => TestFail(@"
+if (true {}
+", "BS0021", 1);
+
+        [TestMethod]
+        public void ErrorTestIfMissingParens2() => TestFail(@"
+if true) {}
+", "BS0022", 1);
+
+        [TestMethod]
+        public void ErrorTestIfMissingBlock() => TestFail(@"
+if (true)
+    i = 3;
+", "BS0013", 2);
+
+        [TestMethod]
+        public void ErrorTestIfElseMissingBlock() => TestFail(@"
+if (true) {}
+else
+    i = 3;
+", "BS0013", 3);
+
+        [TestMethod]
+        public void ErrorTestIfWeirdCondition1() => TestFail(@"
+if () {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestIfWeirdCondition2() => TestFail(@"
+if (return) {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestRepeatMissingBlock1() => TestFail(@"
+repeat
+    i++;
+", "BS0013", 2);
+
+        [TestMethod]
+        public void ErrorTestRepeatMissingBlock2() => TestFail(@"
+repeat (10)
+    i++;
+", "BS0013", 2);
+
+        [TestMethod]
+        public void ErrorTestRepeatMissingParens1() => TestFail(@"
+repeat (10 {}
+", "BS0021", 1);
+
+        // Pretty disagreeable, but getting a better error message seems like
+        // a lot of work for little reward.
+        [TestMethod]
+        public void ErrorTestRepeatMissingParens2() => TestFail(@"
+repeat 10) {}
+", "BS0013", 1);
+
+        [TestMethod]
+        public void ErrorTestRepeatWeirdCondition1() => TestFail(@"
+repeat () {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestRepeatWeirdCondition2() => TestFail(@"
+repeat (return) {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestWhileMissingParens1() => TestFail(@"
+while (true {}
+", "BS0021", 1);
+
+        [TestMethod]
+        public void ErrorTestWhileMissingParens2() => TestFail(@"
+while true) {}
+", "BS0022", 1);
+
+        [TestMethod]
+        public void ErrorTestWhileMissingCondition() => TestFail(@"
+while {}
+", "BS0022", 1);
+
+        [TestMethod]
+        public void ErrorTestWhileMissingBlock() => TestFail(@"
+while (true) i++;
+", "BS0013", 1);
+
+        [TestMethod]
+        public void ErrorTestWhileWeirdCondition1() => TestFail(@"
+while () {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestWhileWeirdCondition2() => TestFail(@"
+while (return) {}
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestWeirdOp() => TestFail(@"
+i =+ 1;
+", "BS0024", 1);
+
+        // If adding any op ∘ that does not have a ∘= variant, test here.
+
+        [TestMethod]
+        public void ErrorTestWeirdParens1() => TestFail(@"
+i = (((1));
+", "BS0021", 1);
+
+        [TestMethod]
+        public void ErrorTestWeirdParens2() => TestFail(@"
+i = ((1)));
+", "BS0018", 1);
+
+        [TestMethod]
+        public void ErrorTestInvocationMissingParens1() => TestFail(@"
+my_method(3;
+", "BS0021", 1);
+
+        // Also pretty suboptimal, but oh well.
+        [TestMethod]
+        public void ErrorTestInvocationMissingParens2() => TestFail(@"
+my_method3);
+", "BS0018", 1);
+
+        [TestMethod]
+        public void ErrorTestInvocationWeirdArg() => TestFail(@"
+my_method(1,2,3,return,5,6);
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix1() => TestFail(@"
+matrix m = [];
+", "BS0027", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix2() => TestFail(@"
+matrix m = [1; 1 2];
+", "BS0028", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix3() => TestFail(@"
+matrix m = [1 2 3 4 5];
+", "BS0029", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix4() => TestFail(@"
+matrix m = [1; 2; 3; 4; 5];
+", "BS0029", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix5() => TestFail(@"
+matrix m = [1 2 : 3; 4 5 6];
+", "BS0030", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix6() => TestFail(@"
+matrix m = [1 : 2 : 3];
+", "BS0030", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix7() => TestFail(@"
+matrix m = [;1];
+", "BS0027", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix8() => TestFail(@"
+matrix m = [1;];
+", "BS0027", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix9() => TestFail(@"
+matrix m = [:1 2];
+", "BS0030", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix10() => TestFail(@"
+matrix m = [1 2:];
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestMatrix11() => TestFail(@"
+matrix m = [1:;];
+", "BS0024", 1);
+
+        [TestMethod]
+        public void ErrorTestEmptyStatement() => TestFail(@"
+;
+", "BS0019", 1);
+
+        /* Template
+        [TestMethod]
+        public void ErrorTestX() => TestFail(@"
+
+", "BS00xx", 0);
+        */
     }
 }

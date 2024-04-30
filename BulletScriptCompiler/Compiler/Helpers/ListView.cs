@@ -27,7 +27,7 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
 
         int RangeLower => viewRange.Start.GetOffset(list.Count);
         int RangeUpper => viewRange.End.GetOffset(list.Count);
-        public int Count => RangeUpper - RangeLower;
+        public int Count => Math.Max(RangeUpper - RangeLower, 0);
 
         /// <summary>
         /// Creates a view of an existing list. Changes in the list are

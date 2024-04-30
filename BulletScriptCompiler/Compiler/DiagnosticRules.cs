@@ -23,7 +23,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             => new(new(0, 0), DiagnosticLevel.Warning, "BS0003", "You compiled an empty program. This is probably not intended.");
 
         public static Diagnostic ExpectedDeclaration(Location location)
-            => Error(location, "BS0004", "Expected a declaration such as `float number` or `function void method()` designated by a `float`, `function`, `method`, or `string` keyword..");
+            => Error(location, "BS0004", "Expected a declaration such as `float number` or `function void method()` designated by a `float`, `function`, `method`, or `string` keyword.");
 
         public static Diagnostic FunctionRequiresFunction(Location location)
             => Error(location, "BS0005", "A function declaration is of the form `function type name()`, but the `function` keyword is missing.");
@@ -40,7 +40,10 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic FunctionArgsCommaSep(Token location)
             => Error(location, "BS0011", "Function arguments should be separated with a comma.");
 
-        public static Diagnostic ExpectedOpeningBrace(Location location)
+        public static Diagnostic ForgotClosingBrace(Token location)
+            => Error(location, "BS0012", "Expected a block `{ .. }` to end with a closing `}`.");
+
+        public static Diagnostic ExpectedOpeningBrace(Token location)
             => Error(location, "BS0013", "Expected a block `{ .. }`, but did not encounter opening `{`. Note that single statements are not a replacement for blocks.");
 
         public static Diagnostic UnexpectedEoF(Location location)
@@ -50,7 +53,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             => Error(location, "BS0016", "Expected a valid variable type (`float`, `matrix`, or `string`).");
 
         public static Diagnostic VariableNameWrong(Token location)
-            => Error(location, "BS0017", "Expected a valid identifier name for the variable. NOte that this may not be a predefined keyword (such as `matrix` or `function`).");
+            => Error(location, "BS0017", "Expected a valid identifier name for the variable. Note that this may not be a predefined keyword (such as `matrix` or `function`).");
 
         public static Diagnostic MissingSemicolon(Token location)
             => Error(location, "BS0018", "Expected a semicolon `;`.");
@@ -80,7 +83,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             => Error(location, "BS0026", "Expected a unary operator `!` or `-`.");
 
         public static Diagnostic EmptyMatrix(Location location)
-            => Error(location, "BS0027", "Matrix is empty. Matrices must be between 1x1 and 4x4.");
+            => Error(location, "BS0027", "Matrix is empty/has an empty row. Matrices must be between 1x1 and 4x4.");
 
         public static Diagnostic JaggedMatrix(Location location)
             => Error(location, "BS0028", "Matrix is not square.");
@@ -93,5 +96,14 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         public static Diagnostic UnsupportedLiteral(Token location)
             => Error(location, "BS0031", "Expected a literal string `\"hi\"` or number `230`.");
+
+        public static Diagnostic ExpectedOpeningBracket(Token location)
+            => Error(location, "BS0032", "Expected opening brace `[`.");
+
+        public static Diagnostic ForgotClosingBracket(Token location)
+            => Error(location, "BS0033", "Expected closing brace `]`.");
+
+        public static Diagnostic VarDeclNoOps(Token location)
+            => Error(location, "BS0034", "Variable declarations with initializers must be of the form `type a = val`. There may not be a `+=` etc.");
     }
 }
