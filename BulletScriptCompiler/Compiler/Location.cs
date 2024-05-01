@@ -17,6 +17,12 @@
             this.col = col;
         }
 
-        public override string ToString() => $"Line {line}, col {col}";
+        /// <summary>
+        /// The location to use when something was not found in usercode, but
+        /// instead introduced by the compiler.
+        /// </summary>
+        public static Location CompilerIntroduced => default;
+
+        public override string ToString() => line > 0 && col > 0 ? $"Line {line}, col {col}" : "Not user code";
     }
 }

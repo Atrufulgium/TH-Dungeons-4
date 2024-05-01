@@ -146,5 +146,11 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         public static Diagnostic ParamMatricesNeedSize(Node location)
             => Error(location, "BS0046", "Matrix arguments in methods must have their size specified -- `matrix` as type is forbidden.");
+
+        public static Diagnostic ClashingTypes(Node location, Syntax.Type from, Syntax.Type to)
+            => Error(location, "BS0047", $"Identifier already exists as type `{from}`, but also gets redefined as incompatible type `{to}`.");
+
+        public static Diagnostic ClashingKinds(Node location)
+            => Error(location, "BS0048", "The same identifier cannot be used for both a function and a variable.");
     }
 }

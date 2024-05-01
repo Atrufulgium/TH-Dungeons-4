@@ -165,8 +165,23 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
                 floatFunc: () => "float",
                 stringFunc: () => "string",
                 matrixUnspecifiedFunc: () => "matrix",
-                vectorFunc: (int n) => $"vector{n}",
+                vectorFunc: (int n) => $"matrix1x{n}",
                 matrixFunc: (int r, int c) => $"matrix{r}x{c}"
             );
+
+        /// <summary>
+        /// Whether <paramref name="from"/> can also be seen as <paramref name="to"/>.
+        /// </summary>
+        public static bool TypesAreCompatible(Type from, Type to) {
+            if (from == MatrixUnspecified && to.IsMatrix)
+                return true;
+            if (from.IsMatrix && to == MatrixUnspecified)
+                return true;
+            if (from == Float && (to == MatrixUnspecified || to == Vector1))
+                return true;
+            if ((from == MatrixUnspecified || from == Vector1) && to == Float)
+                return true;
+            return false;
+        }
     }
 }
