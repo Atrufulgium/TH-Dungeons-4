@@ -7,11 +7,11 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// </summary>
     internal class PostfixUnaryExpression : Expression {
         public Expression Expression { get; private set; }
-        public string OP { get; private set; }
+        public PostfixUnaryOp OP { get; private set; }
 
         public PostfixUnaryExpression(
             Expression expression,
-            string op,
+            PostfixUnaryOp op,
             Location location
         ) : base(location) {
             Expression = expression;
@@ -19,18 +19,18 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         public override string ToString()
-            => $"[postfix]\nop:\n{Indent(OP)}\nexpression:\n{Indent(Expression)}";
+            => $"[postfix]\nop:\n{Indent(OP.ToString())}\nexpression:\n{Indent(Expression)}";
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var diags = Expression.ValidateTree(path.Append(this));
-            if (OP is not ("++" or "--"))
+            if (OP == PostfixUnaryOp.Error)
                 diags = diags.Append(NotAPostfixUnary(Location));
             return diags;
         }
 
         public PostfixUnaryExpression WithExpression(Expression expression)
             => new(expression, OP, Location);
-        public PostfixUnaryExpression WithOP(string op)
+        public PostfixUnaryExpression WithOP(PostfixUnaryOp op)
             => new(Expression, op, Location);
     }
 }

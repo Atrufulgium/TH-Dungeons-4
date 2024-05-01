@@ -136,12 +136,15 @@ namespace Atrufulgium.BulletScript.Compiler {
             => Error(location, "BS0042", "The only valid assignment operators are = + - * / % ^ & |");
 
         public static Diagnostic InvalidBinop(Node location)
-            => Error(location, "BS0043", "The only valid binary operators are + - * / ^ & | != == >= <= > <");
+            => Error(location, "BS0043", "The only valid binary operators are + - * / % ^ & | != == >= <= > <");
 
         public static Diagnostic InvalidExpressionStatement(Node location)
             => Error(location, "BS0044", "Standalone expressions may only be arithmetic `a ∘= ..`, function calls `my_method(..`, or increment/decrementors `a++`/`a--`.");
 
         public static Diagnostic NotAPostfixUnary(Location location)
             => Error(location, "BS0045", "Expected a unary operator `++` or `--`.");
+
+        public static Diagnostic ParamMatricesNeedSize(Node location)
+            => Error(location, "BS0046", "Matrix arguments in methods must have their size specified -- `matrix` as type is forbidden.");
     }
 }

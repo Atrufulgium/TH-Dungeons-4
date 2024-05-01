@@ -175,7 +175,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
             return new MethodDeclaration(
                 new(methodName, methodNameLoc),
-                new(type),
+                Syntax.Type.FromString(type.Value),
                 arguments,
                 block,
                 location
@@ -218,12 +218,12 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 if (tokens[2].IsOp)
                     Panic(VarDeclNoOps(tokens[2]));
                 tokens = tokens[2..];
-                return new VariableDeclaration(new(name), new(type), location);
+                return new VariableDeclaration(new(name), Syntax.Type.FromString(type.Value), location);
             }
             
             tokens = tokens[3..];
             var expr = ParseExpression(ref tokens);
-            return new VariableDeclaration(new(name), new(type), location, expr);
+            return new VariableDeclaration(new(name), Syntax.Type.FromString(type.Value), location, expr);
         }
 
         Block ParseBlock(ref ListView<Token> tokens) {
@@ -521,9 +521,14 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
 
                 if (tokens.Count >= 2 && tokens[0].Kind == tokens[1].Kind
                     && tokens[0].Kind is TokenKind.Plus or TokenKind.Minus) {
+                    PostfixUnaryOp op;
+                    if (tokens[0].Kind == TokenKind.Plus)
+                        op = PostfixUnaryOp.FromString("++");
+                    else
+                        op = PostfixUnaryOp.FromString("--");
                     var pf = new PostfixUnaryExpression(
                         id,
-                        tokens[0].Kind == TokenKind.Plus ? "++" : "--",
+                        op,
                         id.Location
                     );
                     tokens = tokens[2..];
@@ -607,9 +612,9 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                         Panic(AssignLHSMustBeIdentifier(lhs.Location));
                         throw new UnreachablePathException();
                     }
-                    lhs = new AssignmentExpression(id, op, rhs, lhs.Location);
+                    lhs = new AssignmentExpression(id, AssignmentOp.FromString(op), rhs, lhs.Location);
                 } else {
-                    lhs = new BinaryExpression(lhs, op, rhs, lhs.Location);
+                    lhs = new BinaryExpression(lhs, BinaryOp.FromString(op), rhs, lhs.Location);
                 }
             }
         }
@@ -760,7 +765,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             var unary = tokens[0];
             tokens = tokens[1..];
             var expr = ParseExpression(ref tokens);
-            return new PrefixUnaryExpression(expr, unary.Value, unary.Location);
+            return new PrefixUnaryExpression(expr, PrefixUnaryOp.FromString(unary.Value), unary.Location);
         }
 
         void ParseParensOpen(ref ListView<Token> tokens) {

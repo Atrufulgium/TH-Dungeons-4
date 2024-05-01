@@ -240,9 +240,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         }
 
         protected virtual Node? VisitMethodDeclaration(MethodDeclaration node) {
-            node = node
-                .WithIdentifier(VisitAs<IdentifierName>(node.Identifier))
-                .WithType(VisitAs<IdentifierName>(node.Type));
+            node = node.WithIdentifier(VisitAs<IdentifierName>(node.Identifier));
 
             List<LocalDeclarationStatement> args = new();
             foreach (var a in node.Arguments) {
@@ -301,9 +299,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         }
 
         protected virtual Node? VisitVariableDeclaration(VariableDeclaration node) {
-            node = node
-                .WithIdentifier(VisitAs<IdentifierName>(node.Identifier))
-                .WithType(VisitAs<IdentifierName>(node.Type));
+            node = node.WithIdentifier(VisitAs<IdentifierName>(node.Identifier));
             if (node.Initializer != null)
                 node = node.WithInitializer(VisitAs<Expression?>(node.Initializer));
             return node;

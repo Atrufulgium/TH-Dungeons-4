@@ -7,11 +7,11 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// </summary>
     internal class PrefixUnaryExpression : Expression {
         public Expression Expression { get; private set; }
-        public string OP { get; private set; }
+        public PrefixUnaryOp OP { get; private set; }
 
         public PrefixUnaryExpression(
             Expression expression,
-            string op,
+            PrefixUnaryOp op,
             Location location
         ) : base(location) {
             Expression = expression;
@@ -19,11 +19,11 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         public override string ToString()
-            => $"[prefix]\nop:\n{Indent(OP)}\nexpression:\n{Indent(Expression)}";
+            => $"[prefix]\nop:\n{Indent(OP.ToString())}\nexpression:\n{Indent(Expression)}";
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var diags = Expression.ValidateTree(path.Append(this));
-            if (OP is not ("!" or "-"))
+            if (OP == PrefixUnaryOp.Error)
                 diags = diags.Append(NotAPrefixUnary(Location));
             return diags;
         }
@@ -31,7 +31,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public PrefixUnaryExpression WithExpression(Expression expression)
             => new(expression, OP, Location);
-        public PrefixUnaryExpression WithOP(string op)
+        public PrefixUnaryExpression WithOP(PrefixUnaryOp op)
             => new(Expression, op, Location);
     }
 }

@@ -8,12 +8,12 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// </summary>
     internal class AssignmentExpression : Expression {
         public IdentifierName LHS { get; private set; }
-        public string OP { get; private set; }
+        public AssignmentOp OP { get; private set; }
         public Expression RHS { get; private set; }
 
         public AssignmentExpression(
             IdentifierName lhs,
-            string op,
+            AssignmentOp op,
             Expression rhs,
             Location location
         ) : base(location) {
@@ -23,11 +23,11 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         public override string ToString()
-            => $"[assignment]\nlhs:\n{Indent(LHS)}\nop:\n{Indent(OP)}\nrhs:\n{Indent(RHS)}";
+            => $"[assignment]\nlhs:\n{Indent(LHS)}\nop:\n{Indent(OP.ToString())}\nrhs:\n{Indent(RHS)}";
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var childValidation = LHS.ValidateTree(path.Append(this));
-            if (OP is not ("=" or "+" or "-" or "*" or "/" or "^" or "&" or "|"))
+            if (OP == AssignmentOp.Error)
                 childValidation = childValidation.Append(InvalidAssignment(this));
             childValidation = childValidation.Concat(RHS.ValidateTree(path.Append(this)));
 
@@ -41,7 +41,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public AssignmentExpression WithLHS(IdentifierName lhs)
             => new(lhs, OP, RHS, Location);
-        public AssignmentExpression WithOP(string op)
+        public AssignmentExpression WithOP(AssignmentOp op)
             => new(LHS, op, RHS, Location);
         public AssignmentExpression WithRHS(Expression rhs)
             => new(LHS, OP, rhs, Location);

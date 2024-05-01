@@ -1,5 +1,4 @@
-﻿using System.Text.RegularExpressions;
-using static Atrufulgium.BulletScript.Compiler.DiagnosticRules;
+﻿using static Atrufulgium.BulletScript.Compiler.DiagnosticRules;
 
 namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
@@ -10,7 +9,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public VariableDeclaration(
             IdentifierName identifier,
-            IdentifierName type,
+            Type type,
             Location location,
             Expression? initializer = null
         ) : base(identifier, type, location) {
@@ -18,17 +17,14 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         public override string ToString()
-            => $"[variable declaration]\nidentifier:\n{Indent(Identifier)}\ntype:\n{Indent(Type)}\n"
+            => $"[variable declaration]\nidentifier:\n{Indent(Identifier)}\ntype:\n{Indent(Type.ToString())}\n"
             + $"initializer:\n{Indent(Initializer)}";
-
-        readonly Regex matrixType = new(@"^matrix[1-4]x[1-4]$");
 
         // The identifier is trivially fine and don't need to be checked.
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             IEnumerable<Diagnostic> diags = new List<Diagnostic>();
-            if (Type.Name is not ("float" or "matrix" or "string")) {
-                if (matrixType.Matches(Type.Name).Count == 0)
-                    diags = diags.Append(UnknownType(Location));
+            if (Type == Type.Error || Type == Type.Void) {
+                diags = diags.Append(UnknownType(Location));
             }
 
             if (Initializer != null)
@@ -38,7 +34,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public VariableDeclaration WithIdentifier(IdentifierName identifier)
             => new(identifier, Type, Location, Initializer);
-        public VariableDeclaration WithType(IdentifierName type)
+        public VariableDeclaration WithType(Type type)
             => new(Identifier, type, Location, Initializer);
         public VariableDeclaration WithInitializer(Expression? initializer)
             => new(Identifier, Type, Location, initializer);

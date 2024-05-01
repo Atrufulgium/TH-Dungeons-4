@@ -174,7 +174,6 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         protected virtual void VisitMethodDeclaration(MethodDeclaration node) {
             Visit(node.Identifier);
-            Visit(node.Type);
             foreach (var a in node.Arguments)
                 Visit(a);
             Visit(node.Body);
@@ -213,7 +212,6 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         protected virtual void VisitVariableDeclaration(VariableDeclaration node) {
             Visit(node.Identifier);
-            Visit(node.Type);
             if (node.Initializer != null)
                 Visit(node.Initializer);
         }

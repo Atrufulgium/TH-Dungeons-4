@@ -9,12 +9,12 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// </summary>
     internal class BinaryExpression : Expression {
         public Expression LHS { get; private set; }
-        public string OP { get; private set; }
+        public BinaryOp OP { get; private set; }
         public Expression RHS { get; private set; }
 
         public BinaryExpression(
             Expression lhs,
-            string op,
+            BinaryOp op,
             Expression rhs,
             Location location
         ) : base(location) {
@@ -24,18 +24,18 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         public override string ToString()
-            => $"[binop]\nlhs:\n{Indent(LHS)}\nop:\n{Indent(OP)}\nrhs:\n{Indent(RHS)}";
+            => $"[binop]\nlhs:\n{Indent(LHS)}\nop:\n{Indent(OP.ToString())}\nrhs:\n{Indent(RHS)}";
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var childValidation = LHS.ValidateTree(path.Append(this));
-            if (OP is not ("+" or "-" or "*" or "/" or "%" or "^" or "&" or "|" or "!=" or "==" or ">=" or "<=" or ">" or "<"))
+            if (OP == BinaryOp.Error)
                 childValidation = childValidation.Append(InvalidBinop(this));
             return childValidation.Concat(RHS.ValidateTree(path.Append(this)));
         }
 
         public BinaryExpression WithLHS(Expression lhs)
             => new(lhs, OP, RHS, Location);
-        public BinaryExpression WithOP(string op)
+        public BinaryExpression WithOP(BinaryOp op)
             => new(LHS, op, RHS, Location);
         public BinaryExpression WithRHS(Expression rhs)
             => new(LHS, OP, rhs, Location);

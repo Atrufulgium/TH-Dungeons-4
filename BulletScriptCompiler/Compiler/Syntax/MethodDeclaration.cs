@@ -18,7 +18,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public MethodDeclaration(
             IdentifierName identifier,
-            IdentifierName type,
+            Type type,
             IList<LocalDeclarationStatement> arguments,
             Block body,
             Location location
@@ -28,19 +28,22 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         public override string ToString()
-            => $"[method declaration]\nidentifier:\n{Indent(Identifier)}\ntype:\n{Indent(Type)}\n"
+            => $"[method declaration]\nidentifier:\n{Indent(Identifier)}\ntype:\n{Indent(Type.ToString())}\n"
             + $"arguments:\n{Indent(Arguments)}\nblock:\n{Indent(Body)}";
 
         // The identifier is trivially fine and don't need to be checked.
         // The arguments may not have initializers.
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var ret = new List<Diagnostic>();
-            if (Type.Name is not ("float" or "matrix" or "string" or "void"))
+
+            if (Type == Type.Error)
                 ret.Add(FunctionTypeWrong(Location));
 
             foreach (var arg in Arguments) {
                 if (arg.Declaration.Initializer != null)
                     ret.Add(MethodDeclarationInitializer(arg.Declaration.Initializer));
+                if (arg.Declaration.Type == Type.MatrixUnspecified)
+                    ret.Add(ParamMatricesNeedSize(arg));
             }
 
             return ret.Concat(Arguments.SelectMany(s => s.ValidateTree(path.Append(this))))
@@ -49,7 +52,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public MethodDeclaration WithIdentifier(IdentifierName identifier)
             => new(identifier, Type, Arguments, Body, Location);
-        public MethodDeclaration WithType(IdentifierName type)
+        public MethodDeclaration WithType(Type type)
             => new(Identifier, type, Arguments, Body, Location);
         public MethodDeclaration WithArguments(IList<LocalDeclarationStatement> arguments)
             => new(Identifier, Type, arguments, Body, Location);

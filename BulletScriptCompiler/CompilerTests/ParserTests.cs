@@ -70,9 +70,7 @@ declarations:
         name:
             main
     type:
-        [identifier name]
-        name:
-            void
+        void
     arguments:
         [local declaration]
         declaration:
@@ -82,9 +80,7 @@ declarations:
                 name:
                     value
             type:
-                [identifier name]
-                name:
-                    float
+                float
             initializer:
                 [none]
     block:
@@ -97,9 +93,7 @@ declarations:
         name:
             on_health<0.50>
     type:
-        [identifier name]
-        name:
-            void
+        void
     arguments:
         [none]
     block:
@@ -149,9 +143,7 @@ declarations:
         name:
             Main
     type:
-        [identifier name]
-        name:
-            void
+        void
     arguments:
         [local declaration]
         declaration:
@@ -161,9 +153,7 @@ declarations:
                 name:
                     value
             type:
-                [identifier name]
-                name:
-                    float
+                float
             initializer:
                 [none]
     block:
@@ -196,9 +186,7 @@ statements:
             name:
                 i
         type:
-            [identifier name]
-            name:
-                float
+            float
         initializer:
             [literal float]
             value:
@@ -219,9 +207,7 @@ statements:
             name:
                 s
         type:
-            [identifier name]
-            name:
-                string
+            string
         initializer:
             [literal string]
             value:
@@ -242,9 +228,7 @@ statements:
             name:
                 m
         type:
-            [identifier name]
-            name:
-                matrix
+            matrix
         initializer:
             [matrix2x3]
             entries:
@@ -282,9 +266,7 @@ statements:
             name:
                 p
         type:
-            [identifier name]
-            name:
-                matrix
+            matrix
         initializer:
             [polar]
             angle:
@@ -338,9 +320,7 @@ statements:
                 name:
                     i
             type:
-                [identifier name]
-                name:
-                    float
+                float
             initializer:
                 [literal float]
                 value:
@@ -747,9 +727,7 @@ statements:
             name:
                 i
         type:
-            [identifier name]
-            name:
-                float
+            float
         initializer:
             [literal float]
             value:
@@ -835,9 +813,7 @@ statements:
             name:
                 a
         type:
-            [identifier name]
-            name:
-                float
+            float
         initializer:
             [invocation]
             target:
@@ -864,9 +840,7 @@ statements:
             name:
                 m
         type:
-            [identifier name]
-            name:
-                matrix2x2
+            matrix2x2
         initializer:
             [matrix2x2]
             entries:
@@ -898,9 +872,7 @@ statements:
             name:
                 m
         type:
-            [identifier name]
-            name:
-                matrix
+            matrix
         initializer:
             [matrix4x4]
             entries:
@@ -968,9 +940,7 @@ statements:
             name:
                 m
         type:
-            [identifier name]
-            name:
-                matrix
+            matrix
         initializer:
             [matrix1x4]
             entries:
@@ -1002,9 +972,7 @@ statements:
             name:
                 m
         type:
-            [identifier name]
-            name:
-                matrix
+            matrix
         initializer:
             [matrix4x1]
             entries:
@@ -1036,9 +1004,7 @@ statements:
             name:
                 m
         type:
-            [identifier name]
-            name:
-                matrix
+            matrix
         initializer:
             [matrix1x1]
             entries:
@@ -1061,9 +1027,7 @@ statements:
             name:
                 m
         type:
-            [identifier name]
-            name:
-                matrix
+            matrix
         initializer:
             [polar]
             angle:
@@ -1090,9 +1054,7 @@ statements:
             name:
                 m
         type:
-            [identifier name]
-            name:
-                matrix
+            matrix
         initializer:
             [matrix1x3]
             entries:
@@ -1169,9 +1131,7 @@ statements:
             name:
                 i
         type:
-            [identifier name]
-            name:
-                float
+            float
         initializer:
             [binop]
             lhs:
@@ -1264,9 +1224,7 @@ statements:
             name:
                 i
         type:
-            [identifier name]
-            name:
-                float
+            float
         initializer:
             [binop]
             lhs:
@@ -1733,8 +1691,13 @@ i = m[1 : 2];
 ", "BS0023", 1);
 
         [TestMethod]
-        public void ErrorTestInitInMethodDecl() => TestFail(@"
+        public void ErrorTestInitInMethodDecl1() => TestFail(@"
 function void my_method(float val = 3) {}
 ", "BS0041", 1);
+
+        [TestMethod]
+        public void ErrorTestInitInMethodDecl2() => TestFail(@"
+function void my_method(matrix val) {}
+", "BS0046", 1);
     }
 }
