@@ -147,10 +147,73 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic ParamMatricesNeedSize(Node location)
             => Error(location, "BS0046", "Matrix arguments in methods must have their size specified -- `matrix` as type is forbidden.");
 
-        public static Diagnostic ClashingTypes(Node location, Syntax.Type from, Syntax.Type to)
+        public static Diagnostic ClashingTypeDef(Node location, Syntax.Type from, Syntax.Type to)
             => Error(location, "BS0047", $"Identifier already exists as type `{from}`, but also gets redefined as incompatible type `{to}`.");
 
-        public static Diagnostic ClashingKinds(Node location)
+        public static Diagnostic ClashingKindDef(Node location)
             => Error(location, "BS0048", "The same identifier cannot be used for both a function and a variable.");
+
+        public static Diagnostic ClashingAssignment(Node location, Syntax.Type definition, Syntax.Type actual)
+            => Error(location, "BS0049", $"The variable assigned to is of type {definition}, but you are trying to assign it an incompatible type {actual}.");
+
+        public static Diagnostic MatricesMustBeFloats(Node location)
+            => Error(location, "BS0050", "Matrices may only contain float entries.");
+
+        public static Diagnostic PolarMustBeFloats(Node location)
+            => Error(location, "BS0051", "The angle and radius in polar notation must be floats.");
+
+        public static Diagnostic IncrementDecrementMustBeFloat(Node location)
+            => Error(location, "BS0052", "The increment and decrement operators `++` and `--` are only valid on floats.");
+
+        public static Diagnostic NegateNotMustBeNumeric(Node location)
+            => Error(location, "BS0053", "The unary negate and not operators `-` and `!` are only valid on floats or matrices.");
+
+        public static Diagnostic CanOnlyIndexMatrices(Node location)
+            => Error(location, "BS0054", "The index operation [] can only be applied to matrices.");
+
+        public static Diagnostic MatrixMulSizeMismatch(Node location, (int, int) size1, (int, int) size2)
+            => Error(location, "BS0055", $"Misformed matrix multiplication sizes {size1} and {size2}. These must either be {size1} and ({size1.Item2}, *) for regular matrix multiplication, or {size1} and {size1} for entrywise multiplication.");
+
+        public static Diagnostic IncompatibleBinop(Node location, Syntax.Type lhs, Syntax.Type rhs, string op)
+            => Error(location, "BS0056", $"Cannot compute expression of form `{lhs}{op}{rhs}`. In most cases, the types must be the same. Strings are also very rigid and only allow `=`, `==` and `!=`.");
+
+        public static Diagnostic ReturnMatricesNeedSize(Node location)
+            => Error(location, "BS0057", "A function may not have `matrix` as return type, the size must be explicitly `matrixAxB`.");
+
+        public static Diagnostic UnknownTypeAtThisPoint(IdentifierName location)
+            => Error(location, "BS0058", $"Using variable `{location.Name}` before its type is well-defined.");
+
+        public static Diagnostic UndefinedMethodOrOverload(Node location)
+            => Error(location, "BS0059", "Unknown method or overload called.");
+
+        public static Diagnostic ConditionMustBeFloat(Node location)
+            => Error(location, "BS0060", "Condition must evaluate to a float.");
+
+        public static Diagnostic RepeatCountMustBeFloat(Node location)
+            => Error(location, "BS0061", "Repeat count must evaluate to a float.");
+
+        public static Diagnostic MismatchingReturnType(Node location, Syntax.Type expected, Syntax.Type actual)
+            => Error(location, "BS0062", $"Expected method to return a {expected}, but instead returned a {actual}.");
+
+        public static Diagnostic VoidMayNotReturnExpression(Node location)
+            => Error(location, "BS0063", "Void-typed methods may only use `return;`, without passing a value.");
+
+        public static Diagnostic MainMethodWrong(Node location)
+            => Error(location, "BS0064", "Main method must have signature `function void main(float)`.");
+
+        public static Diagnostic OnMessageMethodWrong(Node location)
+            => Error(location, "BS0065", "OnMessage method must have signature `function void on_message(float)`.");
+
+        public static Diagnostic OnHealthMethodWrong(Node location)
+            => Error(location, "BS0066", "OnHealth method must have signature `function void on_health<value>()`.");
+
+        public static Diagnostic OnTimeMethodWrong(Node location)
+            => Error(location, "BS0067", "OnTime method must have signature `function void on_time<value>()`.");
+
+        public static Diagnostic OnHealthWithoutArg(Node location)
+            => new(location.Location, DiagnosticLevel.Warning, "BS0068", "Found method `on_health`; did you mean `on_health<value>`?");
+
+        public static Diagnostic OnTimeWithoutArg(Node location)
+            => new(location.Location, DiagnosticLevel.Warning, "BS0068", "Found method `on_time`; did you mean `on_time<value>`?");
     }
 }

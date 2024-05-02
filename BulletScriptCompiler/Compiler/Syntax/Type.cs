@@ -12,6 +12,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         private Type(byte id) => this.id = id;
 
+        // order s.t. compatible types are more specific if lower id.
         /// <summary> Not a valid Type. </summary>
         public static readonly Type Error = new(0);
         /// <summary> Does not represent a type. Only valid for functions. </summary>
@@ -20,8 +21,6 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public static readonly Type Float = new(2);
         /// <summary> A (constant) string. </summary>
         public static readonly Type String = new(3);
-        /// <summary> A matrix whose size is not yet determined. </summary>
-        public static readonly Type MatrixUnspecified = new(4);
         /// <summary> A 1-vector. </summary>
         public static readonly Type Vector1 = new(11);
         /// <summary> A 2-vector. </summary>
@@ -48,6 +47,26 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public static readonly Type Matrix4x3 = new(43);
         /// <summary> A 4x4-matrix. </summary>
         public static readonly Type Matrix4x4 = new(44);
+        /// <summary> A matrix whose size is not yet determined. </summary>
+        public static readonly Type MatrixUnspecified = new(99);
+
+        public static Type Vector(int size) {
+            if (size is < 1 or > 4)
+                throw new ArgumentOutOfRangeException(nameof(size), "Only vectors size 1--4 are allowed.");
+            return new((byte)(size * 10 + 1));
+        }
+
+        public static Type Matrix(int rows, int cols) {
+            if (rows is < 1 or > 4)
+                throw new ArgumentOutOfRangeException(nameof(rows), "Only matrix heights 1--4 are allowed.");
+            if (cols is < 1 or > 4)
+                throw new ArgumentOutOfRangeException(nameof(cols), "Only matrix widths 1--4 are allowed.");
+            if (rows == 1)
+                return Vector(cols);
+            if (cols == 1)
+                return Vector(rows);
+            return new Type((byte)(rows * 10 + cols));
+        }
 
         /// <summary>
         /// If you need to do something with a Type, but don't want to
@@ -66,15 +85,14 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             Func<T> voidFunc,
             Func<T> floatFunc,
             Func<T> stringFunc,
-            Func<T> matrixUnspecifiedFunc,
             Func<int, T> vectorFunc,
-            Func<int, int, T> matrixFunc
+            Func<int, int, T> matrixFunc,
+            Func<T> matrixUnspecifiedFunc
         ) => id switch {
             0 => errorFunc(),
             1 => voidFunc(),
             2 => floatFunc(),
             3 => stringFunc(),
-            4 => matrixUnspecifiedFunc(),
             11 => vectorFunc(1),
             21 => vectorFunc(2),
             31 => vectorFunc(3),
@@ -88,17 +106,22 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             42 => matrixFunc(4,2),
             43 => matrixFunc(4,3),
             44 => matrixFunc(4,4),
+            99 => matrixUnspecifiedFunc(),
             _ => throw new UnreachablePathException(),
         };
 
         /// <summary>
-        /// If this is a <see cref="Vector1"/>, <see cref="Vector2"/>, <see cref="Vector3"/>,
-        /// or <see cref="Vector4"/>, returns <c>true</c> and an integer 1--4
-        /// specifiying which it is.
+        /// If this is a <see cref="Vector1"/> (or <see cref="Float"/>),
+        /// <see cref="Vector2"/>, <see cref="Vector3"/>, or <see cref="Vector4"/>,
+        /// returns <c>true</c> and an integer 1--4 specifiying which it is.
         /// </summary>
         /// <returns></returns>
         public bool TryGetVectorSize(out int size) {
             size = 0;
+            if (id == 2) {
+                size = 1;
+                return true;
+            }
             if (id is not (11 or 21 or 31 or 41)) return false;
             size = id / 10;
             return true;
@@ -106,13 +129,17 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         /// <summary>
         /// If this is any matrix (except <see cref="MatrixUnspecified"/>) or
-        /// vector, returns <c>true</c> and integers 1--4 specifying the rows
-        /// and cols.
+        /// vector or float, returns <c>true</c> and integers 1--4 specifying
+        /// the rows and cols.
         /// Vectors are automatically seen as "standing".
         /// </summary>
         public bool TryGetMatrixSize(out (int rows, int cols) size) {
             size = (0, 0);
-            if (id <= 10)
+            if (id == 2) {
+                size = (1, 1);
+                return true;
+            }
+            if (id <= 10 || id == 99)
                 return false;
             size = (id / 10, id % 10);
             return true;
@@ -164,15 +191,17 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
                 voidFunc: () => "void",
                 floatFunc: () => "float",
                 stringFunc: () => "string",
-                matrixUnspecifiedFunc: () => "matrix",
                 vectorFunc: (int n) => $"matrix1x{n}",
-                matrixFunc: (int r, int c) => $"matrix{r}x{c}"
+                matrixFunc: (int r, int c) => $"matrix{r}x{c}",
+                matrixUnspecifiedFunc: () => "matrix"
             );
 
         /// <summary>
         /// Whether <paramref name="from"/> can also be seen as <paramref name="to"/>.
         /// </summary>
         public static bool TypesAreCompatible(Type from, Type to) {
+            if (from == to)
+                return true;
             if (from == MatrixUnspecified && to.IsMatrix)
                 return true;
             if (from.IsMatrix && to == MatrixUnspecified)
@@ -182,6 +211,16 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             if ((from == MatrixUnspecified || from == Vector1) && to == Float)
                 return true;
             return false;
+        }
+
+        /// <summary>
+        /// If <see cref="TypesAreCompatible(Type, Type)"/>, returns the more
+        /// specific type of the two. Otherwise returns <see cref="Error"/>.
+        /// </summary>
+        public static Type GetMoreSpecificType(Type a, Type b) {
+            if (!TypesAreCompatible(a, b))
+                return Error;
+            return new(Math.Min(a.id, b.id));
         }
     }
 }

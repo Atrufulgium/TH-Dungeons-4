@@ -23,6 +23,6 @@
         /// </summary>
         public static Location CompilerIntroduced => default;
 
-        public override string ToString() => line > 0 && col > 0 ? $"Line {line}, col {col}" : "Not user code";
+        public override string ToString() => line > 0 && col > 0 ? $"Line {line}, col {col}" : "(Not user code)";
     }
 }

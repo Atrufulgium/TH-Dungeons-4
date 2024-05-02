@@ -5,12 +5,55 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
     /// Keeps track of semantic information (so far) when parsing the meaning
     /// of the syntax tree.
     /// </summary>
-    internal class PartialSymbolTable {
+    internal partial class PartialSymbolTable {
         readonly Dictionary<string, Declaration?> originalDeclarations = new();
         readonly Dictionary<string, MethodDeclaration?> containingMethods = new();
         readonly Dictionary<string, Syntax.Type> types = new();
         // When a method
         readonly Dictionary<string, List<VariableDeclaration>> arguments = new();
+
+        // Data I decided to add later
+        readonly List<(string source, string target)> callGraph = new();
+        readonly HashSet<string> readVariables = new();
+        readonly HashSet<string> writtenVariables = new();
+        readonly Dictionary<Node, string> symbolNameMap = new();
+
+        /// <summary>
+        /// Sets some data that is easier to set in batch format than update
+        /// on the fly. Each list must contain the fully qualified names.
+        /// </summary>
+        /// <param name="callGraph">
+        /// This collection should contain every instance of `target` being
+        /// called, and include the calling method `source`.
+        /// </param>
+        /// <param name="readVariables">
+        /// This collection should contain all variables being read from at
+        /// some point.
+        /// </param>
+        /// <param name="writtenVariables">
+        /// This collection should contain all variables being written to at
+        /// some point.
+        /// </param>
+        /// <param name="symbolNameMap">
+        /// For each node that has some semantic meaning, the name of the thing
+        /// it means.
+        /// </param>
+        public void SetExtraData(
+            IEnumerable<(string source, string target)> callGraph,
+            IEnumerable<string> readVariables,
+            IEnumerable<string> writtenVariables,
+            Dictionary<Node, string> symbolNameMap
+        ) {
+            this.callGraph.Clear();
+            this.callGraph.AddRange(callGraph);
+            this.readVariables.Clear();
+            this.readVariables.UnionWith(readVariables);
+            this.writtenVariables.Clear();
+            this.writtenVariables.UnionWith(writtenVariables);
+            this.symbolNameMap.Clear();
+            foreach (var kv in symbolNameMap)
+                this.symbolNameMap.Add(kv.Key, kv.Value);
+        }
 
         /// <summary>
         /// Tries to update a symbol in the table with the given information.
@@ -32,9 +75,11 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
 
             Syntax.Type targetType = overridenType ?? declaration.Type;
             if (existing && !Syntax.Type.TypesAreCompatible(types[key], targetType))
-                return DiagnosticRules.ClashingTypes(declaration, types[key], targetType);
+                return DiagnosticRules.ClashingTypeDef(declaration, types[key], targetType);
             if (existing && declaration.GetType() != originalDeclarations[key]?.GetType())
-                return DiagnosticRules.ClashingKinds(declaration);
+                return DiagnosticRules.ClashingKindDef(declaration);
+            if (declaration is MethodDeclaration methodDecl2 && methodDecl2.Type == Syntax.Type.MatrixUnspecified)
+                return DiagnosticRules.ReturnMatricesNeedSize(methodDecl2);
 
             originalDeclarations[key] = declaration;
             containingMethods[key] = containingMethod;
@@ -45,12 +90,22 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             return null;
         }
 
+        public Syntax.Type GetType(string fullyQualifiedName) {
+            bool exists = originalDeclarations.ContainsKey(fullyQualifiedName);
+
+            if (exists)
+                return types[fullyQualifiedName];
+            return Syntax.Type.Error;
+        }
+
         /// <summary>
         /// Gets a fully qualified name of a declaration.
         /// This allows for multiple same-named variables in different scopes.
         /// This allows for multiple method overloads.
         /// </summary>
-        static string GetFullyQualifiedName(Declaration declaration, MethodDeclaration? containingMethod) {
+        public string GetFullyQualifiedName(Declaration declaration, MethodDeclaration? containingMethod = null) {
+            // Note: declarations don't need to search up whether the name
+            // exists already.
             string name;
             if (declaration is MethodDeclaration methodDecl)
                 name = GetMethodName(methodDecl);
@@ -64,7 +119,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             return $"{GetMethodName(containingMethod)}.{name}";
         }
 
-        static string GetMethodName(MethodDeclaration method) {
+        string GetMethodName(MethodDeclaration method) {
             string name = method.Identifier.Name + "(";
             bool first = true;
             foreach (var arg in method.Arguments) {
@@ -76,6 +131,51 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                 name += arg.Declaration.Type;
             }
             name += ")";
+            return name;
+        }
+
+        /// <summary>
+        /// Gets a fully qualified name of a method, as determined by its name
+        /// and arguments.
+        /// </summary>
+        public string GetFullyQualifiedMethodName(IdentifierName node, IEnumerable<Syntax.Type> argTypes) {
+            string name = node.Name + "(";
+            bool first = true;
+            foreach (var arg in argTypes) {
+                if (!first)
+                    name += ",";
+                else
+                    first = false;
+                name += arg;
+            }
+            name += ")";
+
+            return name;
+        }
+
+        /// <summary>
+        /// Gets a fully qualified name of a variable.
+        /// </summary>
+        public string GetFullyQualifiedName(IdentifierName node, MethodDeclaration? containingMethod = null) {
+            string name = node.Name;
+            if (containingMethod != null)
+                name = $"{GetMethodName(containingMethod)}.{name}";
+            bool exists = originalDeclarations.ContainsKey(name);
+
+            // If it does not exist, try higher scopes.
+            var testKey = name;
+            while (true) {
+                int i = testKey.IndexOf('.');
+                if (i == -1)
+                    break;
+                testKey = testKey[(i + 1)..];
+                if (originalDeclarations.ContainsKey(testKey)) {
+                    name = testKey;
+                    exists = true;
+                    break;
+                }
+            }
+
             return name;
         }
     }

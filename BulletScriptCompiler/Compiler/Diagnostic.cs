@@ -36,4 +36,21 @@
         Warning = 2,
         Error = 3
     }
+
+    public static class DiagnosticExtensions {
+        /// <summary>
+        /// Whether a collection of diagnostics contains a diagonstic of level
+        /// <see cref="DiagnosticLevel.Warning"/>.
+        /// </summary>
+        public static bool ContainsWarnings(this IEnumerable<Diagnostic> diagnostics)
+            => diagnostics.Where(d => d.DiagnosticLevel == DiagnosticLevel.Warning).Any();
+
+
+        /// <summary>
+        /// Whether a collection of diagnostics contains a diagonstic of level
+        /// <see cref="DiagnosticLevel.Error"/>.
+        /// </summary>
+        public static bool ContainsErrors(this IEnumerable<Diagnostic> diagnostics)
+            => diagnostics.Where(d => d.DiagnosticLevel == DiagnosticLevel.Error).Any();
+    }
 }

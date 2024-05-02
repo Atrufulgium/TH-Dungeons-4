@@ -51,6 +51,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// Adds all intrinsic methods to <paramref name="table"/>.
         /// </summary>
         public static void ApplyIntrinsicMethods(PartialSymbolTable table) {
+            return;
             void AddIntrinsic(string name, Syntax.Type returnType, params (Syntax.Type type, string name)[] args) {
                 var loc = Location.CompilerIntroduced;
                 MethodDeclaration fakeMethod = new(

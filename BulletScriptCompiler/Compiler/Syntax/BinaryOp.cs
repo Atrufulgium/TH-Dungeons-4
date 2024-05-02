@@ -105,6 +105,8 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             return Error;
         }
 
+        // This is used in
+        /// <see cref="Semantics.SemanticVisitors.GetStatementInformationWalker.CombineBinopTypes(Type, Type, string)"/>
         public override string ToString()
             => Handle(
                 errorFunc: () => "invalid binary op",
