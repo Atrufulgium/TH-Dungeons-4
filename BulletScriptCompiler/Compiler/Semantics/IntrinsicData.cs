@@ -39,7 +39,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             AddIntrinsic("spawnspeed", Float, new LiteralExpression(1, loc));
             AddIntrinsic("spawnrelative", Float, new LiteralExpression(1, loc));
             AddIntrinsic("usepivot", Float, new LiteralExpression(0, loc));
-            AddIntrinsic("bullettype", Float, new LiteralExpression("\"error\"", loc));
+            AddIntrinsic("bullettype", Syntax.Type.String, new LiteralExpression("\"error\"", loc));
 
             return res;
         }
@@ -51,7 +51,6 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// Adds all intrinsic methods to <paramref name="table"/>.
         /// </summary>
         public static void ApplyIntrinsicMethods(PartialSymbolTable table) {
-            return;
             void AddIntrinsic(string name, Syntax.Type returnType, params (Syntax.Type type, string name)[] args) {
                 var loc = Location.CompilerIntroduced;
                 MethodDeclaration fakeMethod = new(

@@ -1,4 +1,5 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Parsing;
+using CompilerTests;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Atrufulgium.BulletScript.Compiler.Tests {
@@ -7,26 +8,22 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
     public class ParserTests {
 
         static void TestCompile(string code, string tree) {
-            string actualTree = Compile(code);
-            tree = tree.ReplaceLineEndings().Trim();
-            actualTree = actualTree.ReplaceLineEndings().Trim();
-            // (newlines for nicer test output)
-            Assert.AreEqual("\n" + tree + "\n", "\n" + actualTree + "\n");
+            TestHelpers.AssertTrimmedStringsEqual(Compile(code), tree);
         }
         static string Compile(string code) {
             var (tokens, diags) = new Lexer().ToTokens(code);
-            AssertNoErrorDiagnostics(diags);
+            TestHelpers.AssertNoErrorDiagnostics(diags);
             var (root, diags2) = new Parser().ToTree(tokens);
-            AssertNoErrorDiagnostics(diags2);
+            TestHelpers.AssertNoErrorDiagnostics(diags2);
             if (root == null)
                 Assert.Fail("Unexpected null tree, without any diagnostics.");
             var diags3 = root.ValidateTree();
-            AssertNoErrorDiagnostics(diags3);
+            TestHelpers.AssertNoErrorDiagnostics(diags3);
             return root.ToString();
         }
         static void TestFail(string code, string expectedErrorID, int expectedLine) {
             var (tokens, diags) = new Lexer().ToTokens(code);
-            AssertNoErrorDiagnostics(diags);
+            TestHelpers.AssertNoErrorDiagnostics(diags);
             var (root, diags2) = new Parser().ToTree(tokens);
             if (root != null)
                 diags2 = diags2.Union(root.ValidateTree()).ToList();
@@ -42,17 +39,6 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
                 }
             } else {
                 msg += " No errors at all.";
-            }
-            Assert.Fail(msg);
-        }
-
-        static void AssertNoErrorDiagnostics(IEnumerable<Diagnostic> diagnostics) {
-            var errorDiags = diagnostics.Where(d => d.DiagnosticLevel == DiagnosticLevel.Error);
-            if (!errorDiags.Any())
-                return;
-            string msg = "";
-            foreach (var err in errorDiags) {
-                msg += "\n" + err.ToString();
             }
             Assert.Fail(msg);
         }
@@ -1699,5 +1685,10 @@ function void my_method(float val = 3) {}
         public void ErrorTestInitInMethodDecl2() => TestFail(@"
 function void my_method(matrix val) {}
 ", "BS0046", 1);
+
+        [TestMethod]
+        public void ErrorTestIncrDecrOnNonIdentifiers() => TestFail(@"
+float i = (1+1)++;
+", "BS0024", 1);
     }
 }

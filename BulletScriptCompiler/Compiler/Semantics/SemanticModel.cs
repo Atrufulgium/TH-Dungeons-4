@@ -48,8 +48,16 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                 return;
 
             symbolTable = table.ToSymbolTable(root);
+            var pass4diags = SymbolTable.TestIllegalCallChains(symbolTable);
+            diagnostics.AddRange(pass4diags);
+            if (pass4diags.ContainsErrors()) {
+                symbolTable = null;
+                return;
+            }
         }
 
+        public string ToString(bool includeCompilerSymbols)
+            => symbolTable?.ToString(includeCompilerSymbols) ?? "(Empty table.)";
         public override string ToString()
             => symbolTable?.ToString() ?? "(Empty table.)";
     }

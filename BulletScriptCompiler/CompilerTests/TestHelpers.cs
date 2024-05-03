@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Atrufulgium.BulletScript.Compiler;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections;
 
 namespace CompilerTests {
@@ -37,5 +38,23 @@ namespace CompilerTests {
 
         public static void AssertCollectionsEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual)
             => AssertICollectionsEqual(expected.ToList(), actual.ToList());
+
+        public static void AssertNoErrorDiagnostics(IEnumerable<Diagnostic> diagnostics) {
+            var errorDiags = diagnostics.Where(d => d.DiagnosticLevel == DiagnosticLevel.Error);
+            if (!errorDiags.Any())
+                return;
+            string msg = "";
+            foreach (var err in errorDiags) {
+                msg += "\n" + err.ToString();
+            }
+            Assert.Fail(msg);
+        }
+
+        public static void AssertTrimmedStringsEqual(string expected, string actual) {
+            expected = expected.ReplaceLineEndings().Trim();
+            actual = actual.ReplaceLineEndings().Trim();
+            // (newlines for nicer test output)
+            Assert.AreEqual("\n" + expected + "\n", "\n" + actual + "\n");
+        }
     }
 }

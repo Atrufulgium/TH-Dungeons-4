@@ -1,4 +1,5 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Parsing;
+using Atrufulgium.BulletScript.Compiler.Semantics;
 using Atrufulgium.BulletScript.Compiler.Syntax;
 
 namespace Atrufulgium.BulletScript.Compiler {
@@ -78,8 +79,10 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic PolarIsntAnIndex(Location location)
             => Error(location, "BS0023", "You cannot access a matrix with a polar expression [a:b], only with a regular matrix.");
 
+        public static Diagnostic UnexpectedTerm(Location location, string weird)
+            => Error(location, "BS0024", $"Unexpected `{weird}`.");
         public static Diagnostic UnexpectedTerm(Token location)
-            => Error(location, "BS0024", $"Unexpected `{location.Value}`.");
+            => UnexpectedTerm(location.Location, location.Value);
 
         public static Diagnostic AssignLHSMustBeIdentifier(Location location)
             => Error(location, "BS0025", "The left-hand side of an assignment must be an identifier name.");
@@ -215,5 +218,12 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         public static Diagnostic OnTimeWithoutArg(Node location)
             => new(location.Location, DiagnosticLevel.Warning, "BS0068", "Found method `on_time`; did you mean `on_time<value>`?");
+
+        public static Diagnostic RecursiveCall(Location location, List<MethodSymbol> problemPath)
+            => Error(location, "BS0069", $"Recursion is not allowed. Recursion: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}.");
+
+        public static Diagnostic IllegalWaitCall(Location location, List<MethodSymbol> problemPath)
+            => Error(location, "BS0070", $"The special on_X methods may not call `wait`. Path: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}");
+
     }
 }

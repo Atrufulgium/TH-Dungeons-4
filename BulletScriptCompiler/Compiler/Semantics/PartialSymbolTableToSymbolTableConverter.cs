@@ -8,7 +8,6 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// Requires all data to be present and complete. This is not verified.
         /// </summary>
         public SymbolTable ToSymbolTable(Root root) {
-            Dictionary<Node, ISymbol> result = new();
             Dictionary<string, ISymbol> fqnResult = new();
             // We need these because we cannot update the symbol directly.
             Dictionary<string, IList<MethodSymbol>> symbolCalledBys = new();
@@ -40,15 +39,31 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                     List<MethodSymbol> calledBy = new();
                     List<MethodSymbol> calls = new();
 
+                    List<VariableSymbol> hackyIntrinsics = new();
+
                     foreach (var arg in arguments[fqn]) {
-                        // TODO: This access fails exactly for the intrinsic methods.
-                        // For now, 
-                        /// <see cref="IntrinsicData.ApplyIntrinsicMethods(PartialSymbolTable)"/>
-                        // is commented out, but this should be fixed top priority.
-                        argSymbols.Add((VariableSymbol)fqnResult[GetFullyQualifiedName(arg, method)]);
+                        var argFqn = GetFullyQualifiedName(arg, method);
+                        if (fqnResult.TryGetValue(argFqn, out var varSymbol)) {
+                            argSymbols.Add((VariableSymbol)varSymbol);
+                        } else {
+                            // For intrinsic methods, the fqnResult does not contain
+                            // the arguments yet. So we need to create that variable
+                            // symbol this branch.
+                            varSymbol = new VariableSymbol(
+                                argFqn,
+                                arg,
+                                null,
+                                arg.Type,
+                                true,
+                                false
+                            );
+                            fqnResult[argFqn] = varSymbol;
+                            argSymbols.Add((VariableSymbol)varSymbol);
+                            hackyIntrinsics.Add((VariableSymbol)varSymbol);
+                        }
                     }
 
-                    fqnResult[fqn] = new MethodSymbol(
+                    var methodSymbol = new MethodSymbol(
                         fqn,
                         method,
                         types[fqn],
@@ -56,9 +71,22 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                         calledBy,
                         calls
                     );
+                    fqnResult[fqn] = methodSymbol;
 
                     symbolCalledBys[fqn] = calledBy;
                     symbolCalls[fqn] = calls;
+                    
+                    // The intrinsics do not get updated below, so might as well
+                    // do it now.
+                    // Why did I think it was a good idea to have special nodes
+                    // not in the tree, when I *know* that breaks everything...
+                    // (Note that if this did get modified in both, the
+                    //  `AddContainingSymbol` in the second case would throw,
+                    //  so we know this is really necessary.)
+                    foreach (var intrinsicArg in hackyIntrinsics) {
+                        VariableSymbol.AddContainingSymbol(intrinsicArg, methodSymbol);
+                        VariableSymbol.Seal(intrinsicArg);
+                    }
                 }
             }
 
@@ -87,11 +115,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                 symbolCalledBys[target].Add((MethodSymbol)fqnResult[source]);
             }
 
-            // We now have everything we need to convert `fqnResult` into `result`.
-            foreach (var kv in symbolNameMap)
-                result.Add(kv.Key, fqnResult[kv.Value]);
-
-            return SymbolTable.Create(root, result);
+            return SymbolTable.Create(root, new Dictionary<Node, string>(symbolNameMap), fqnResult);
         }
     }
 }

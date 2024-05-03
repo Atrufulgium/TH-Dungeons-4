@@ -161,6 +161,8 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             if (containingMethod != null)
                 name = $"{GetMethodName(containingMethod)}.{name}";
             bool exists = originalDeclarations.ContainsKey(name);
+            if (exists)
+                return name;
 
             // If it does not exist, try higher scopes.
             var testKey = name;

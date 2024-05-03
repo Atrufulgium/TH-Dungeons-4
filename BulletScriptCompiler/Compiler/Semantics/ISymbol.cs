@@ -42,6 +42,28 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         public Syntax.Type Type { get; }
     }
 
+    internal static class SymbolExtensions {
+        /// <summary>
+        /// Whether this symbol exists in user code, or is introduced by the
+        /// compiler.
+        /// </summary>
+        public static bool IsCompilerIntroduced(this ISymbol symbol)
+            => symbol.OriginalDefinition == null || symbol.OriginalDefinition.Location.line == 0;
+
+        /// <summary>
+        /// Tries to grab the symbol belonging to a node. If this node does not
+        /// have a location (not even a compiler-introduced one), this returns
+        /// <c>false</c>.
+        /// </summary>
+        public static bool TryGetLocation(this ISymbol symbol, out Location location) {
+            location = default;
+            if (symbol.OriginalDefinition == null)
+                return false;
+            location = symbol.OriginalDefinition.Location;
+            return true;
+        }
+    }
+
     /// <summary>
     /// A symbol representing the meaning of a variable.
     /// </summary>
@@ -51,7 +73,9 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         public MethodSymbol? ContainingSymbol { get; private set; }
         public Syntax.Type Type { get; private set; }
         /// <summary>
-        /// Whether this variable is read from at any point.
+        /// Whether this variable is read from at any point. Automatically
+        /// <c>true</c> for bullet variables such as <c>autoclear</c>, even if
+        /// <c>spawn()</c> is never called.
         /// </summary>
         public bool ReadFrom { get; private set; }
         /// <summary>
@@ -59,6 +83,15 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// declaration.
         /// </summary>
         public bool WrittenTo { get; private set; }
+
+        /// <summary>
+        /// Whether this symbol represents an implicit bullet variable such as
+        /// <c>autoclear</c>.
+        /// </summary>
+        public bool IsBulletVariable => FullyQualifiedName is "autoclear"
+            or "bullettype" or "clearimmune" or "clearingtype" or "harmsenemies"
+            or "harmsplayers" or "spawnposition" or "spawnrelative"
+            or "spawnrotation" or "spawnspeed" or "usepivot";
 
         bool seal = false;
 
@@ -76,7 +109,10 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             Type = type;
             ReadFrom = readFrom;
             WrittenTo = writtenTo;
+            ReadFrom |= IsBulletVariable;
         }
+
+        public override string ToString() => FullyQualifiedName;
 
         // A hack because there's a cyclic dependency between method symbols
         // having parameters and variables having a containing symbol.
@@ -111,12 +147,22 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         public IReadOnlyCollection<VariableSymbol> Parameters { get; private set; }
         /// <summary>
         /// What methods this method is called by (directly).
+        /// <br/>
+        /// This of course does not take into account calls from the VM
+        /// directly, only the bulletscript code itself.
         /// </summary>
         public IReadOnlyCollection<MethodSymbol> CalledBy { get; private set; }
         /// <summary>
         /// What methods this method calls (directly).
         /// </summary>
         public IReadOnlyCollection<MethodSymbol> Calls { get; private set; }
+
+        /// <summary>
+        /// Whether this method is a method called directly from the VM.
+        /// </summary>
+        public bool IsSpecialMethod => FullyQualifiedName is "main(float)" or "on_message(float)"
+            || FullyQualifiedName.StartsWith("on_health<")
+            || FullyQualifiedName.StartsWith("on_time<");
 
         public MethodSymbol(
             string fullyQualifiedName,
@@ -133,5 +179,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             CalledBy = new ReadOnlyCollection<MethodSymbol>(calledBy);
             Calls = new ReadOnlyCollection<MethodSymbol>(calls);
         }
+
+        public override string ToString() => FullyQualifiedName;
     }
 }

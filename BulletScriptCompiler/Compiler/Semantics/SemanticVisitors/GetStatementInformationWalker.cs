@@ -281,6 +281,10 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
                 AddDiagnostic(IncrementDecrementMustBeFloat(node.Expression));
             // Again, there is only one thing this can be when correct, so assume that.
             nodeTypes[node] = BType.Float;
+
+            // "Read" gets handled by the child identifier.
+            if (node.Expression is IdentifierName name)
+                writtenVariables.Add(table.GetFullyQualifiedName(name, currentMethod));
         }
 
         protected override void VisitPrefixUnaryExpression(PrefixUnaryExpression node) {

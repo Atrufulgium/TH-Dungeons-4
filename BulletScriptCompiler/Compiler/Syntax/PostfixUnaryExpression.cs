@@ -25,6 +25,10 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             var diags = Expression.ValidateTree(path.Append(this));
             if (OP == PostfixUnaryOp.Error)
                 diags = diags.Append(NotAPostfixUnary(Location));
+            if (OP == PostfixUnaryOp.Increment || OP == PostfixUnaryOp.Decrement) {
+                if (Expression is not IdentifierName)
+                    throw new NotSupportedException("++ and -- should be applied to identifiers, and the tree should not've reached this state.");
+            }
             return diags;
         }
 
