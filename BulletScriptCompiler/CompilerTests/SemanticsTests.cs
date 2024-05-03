@@ -11,6 +11,18 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
         static void TestTable(string code, string symbolTable, bool includeIntrinsics = false) {
             TestHelpers.AssertTrimmedStringsEqual(symbolTable, Compile(code, includeIntrinsics));
         }
+        static void TestFail(string code, string errorID, int errorLine) {
+            var (tokens, diags) = new Lexer().ToTokens(code);
+            TestHelpers.AssertNoErrorDiagnostics(diags);
+            var (root, diags2) = new Parser().ToTree(tokens);
+            TestHelpers.AssertNoErrorDiagnostics(diags2);
+            if (root == null)
+                Assert.Fail("Unexpected null tree, without any diagnostics.");
+            var diags3 = root.ValidateTree();
+            TestHelpers.AssertNoErrorDiagnostics(diags3);
+            var semanticModel = new SemanticModel(root);
+            TestHelpers.AssertContainsDiagnostic(semanticModel.Diagnostics, errorID, errorLine);
+        }
 
         static string Compile(string code, bool includeIntrinsics = false) {
             var (tokens, diags) = new Lexer().ToTokens(code);
@@ -342,5 +354,201 @@ usepivot                                   | (Not user code)      | [n/a]       
 wait(float)                                | (Not user code)      | [n/a]                | void      |    0 | 
 wait(float).seconds                        | (Not user code)      | (Not user code)      | float     |    0 | Read
 ", includeIntrinsics: true);
+
+        [TestMethod]
+        public void ErrorTestTypes1() => TestFail(@"
+float x;
+string x;
+", "BS0047", 2);
+
+        [TestMethod]
+        public void ErrorTestTypes2() => TestFail(@"
+float x;
+x = ""hi"";
+", "BS0049", 2);
+
+        [TestMethod]
+        public void ErrorTestTypes3() => TestFail(@"
+matrix x = [[1 2] 3];
+", "BS0050", 1);
+
+        [TestMethod]
+        public void ErrorTestTypes4() => TestFail(@"
+matrix x = [[1 2] : 3];
+", "BS0051", 1);
+
+        [TestMethod]
+        public void ErrorTestTypes5() => TestFail(@"
+matrix x = [1];
+x++;
+", "BS0052", 2);
+
+        [TestMethod]
+        public void ErrorTestTypes6() => TestFail(@"
+string s = ""hi"";
+s = -s;
+", "BS0053", 2);
+
+        [TestMethod]
+        public void ErrorTestTypes7() => TestFail(@"
+string s = ""hi"";
+float f = s[0];
+", "BS0054", 2);
+
+        [TestMethod]
+        public void ErrorTestTypes8() => TestFail(@"
+matrix a = [1 2];
+matrix b = [1 2 3; 4 5 6; 7 8 9; 10 11 12];
+matrix c = a * b;
+", "BS0055", 3);
+
+        [TestMethod]
+        public void ErrorTestTypes9() => TestFail(@"
+float a = 3;
+string b = ""hi"";
+float c = a * b;
+", "BS0056", 3);
+
+        [TestMethod]
+        public void ErrorTestConditionTypes1() => TestFail(@"
+for (; ""hi"";) {}
+", "BS0060", 1);
+
+        [TestMethod]
+        public void ErrorTestConditionTypes2() => TestFail(@"
+repeat ([1 2 3]) {}
+", "BS0061", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodTypes1() => TestFail(@"
+function matrix identity() {
+    return [1 0; 0 1];
+}
+", "BS0057", 1);
+
+        [TestMethod]
+        public void ErrorTestMethodTypes2() => TestFail(@"
+function matrix2x2 identity(float i) {
+    if (i == 2) {
+        return [1 0; 0 1];
+    }
+    return [1 0 0; 0 1 0; 0 0 1];
+}
+", "BS0062", 5);
+
+        [TestMethod]
+        public void ErrorTestMethodTypes3() => TestFail(@"
+function matrix2x2 identity(float i) {
+    if (i == 2) {
+        return [1 0; 0 1];
+    }
+    return;
+}
+", "BS0062", 5);
+
+        [TestMethod]
+        public void ErrorTestMethodTypes4() => TestFail(@"
+function void identity(float i) {
+    return [1 0 0; 0 1 0; 0 0 1];
+}
+", "BS0063", 2);
+
+        [TestMethod]
+        public void ErrorTestIlldefined1() => TestFail(@"
+matrix a;
+matrix b = a + [1 0];
+", "BS0058", 2);
+
+        [TestMethod]
+        public void ErrorTestIlldefined1point5() => TestFail(@"
+matrix b = a + [1 0];
+", "BS0058", 1);
+
+        [TestMethod]
+        public void ErrorTestIlldefined2() => TestFail(@"
+my_unknown_method(230);
+", "BS0059", 1);
+
+        [TestMethod]
+        public void ErrorTestsSpecialMethod1() => TestFail(@"
+function float main(float value) {
+    return 3;
+}
+", "BS0064", 1);
+
+        [TestMethod]
+        public void ErrorTestsSpecialMethod2() => TestFail(@"
+function void main(float value, float value2) {
+    return;
+}
+", "BS0064", 1);
+
+        [TestMethod]
+        public void ErrorTestsSpecialMethod3() => TestFail(@"
+function void main() {
+    return;
+}
+", "BS0064", 1);
+
+        [TestMethod]
+        public void ErrorTestsSpecialMethod4() => TestFail(@"
+function void on_message() { }
+", "BS0065", 1);
+
+        [TestMethod]
+        public void ErrorTestsSpecialMethod5() => TestFail(@"
+function void on_health<0.5>(float value) { }
+", "BS0066", 1);
+
+        [TestMethod]
+        public void ErrorTestsSpecialMethod6() => TestFail(@"
+function float on_time<0.5>() { return 3; }
+", "BS0067", 1);
+
+        [TestMethod]
+        public void ErrorTestsSpecialMethod7() => TestFail(@"
+function void on_health() {}
+", "BS0068", 1);
+
+        [TestMethod]
+        public void ErrorTestsSpecialMethod8() => TestFail(@"
+function void on_time() {}
+", "BS0069", 1);
+
+        // These chained method tests don't particularly care about location
+        // But the system requires it anyway...
+        [TestMethod]
+        public void ErrorTestsRecursion1() => TestFail(@"
+function void A1() { A1(); }
+", "BS0070", 1);
+
+        [TestMethod]
+        public void ErrorTestsRecursion2() => TestFail(@"
+function void A1() { A2(); }
+function void A2() { A1(); }
+", "BS0070", 1);
+
+        [TestMethod]
+        public void ErrorTestsRecursion3() => TestFail(@"
+function void A1() { A2(); }
+function void A2() { A3(); }
+function void A3() { A4(); }
+function void A4() { A1(); }
+", "BS0070", 1);
+
+        [TestMethod]
+        public void ErrorTestsRecursion4() => TestFail(@"
+function void A() { A3(); }
+function void A1() { A2(); }
+function void A2() { A3(); }
+function void A3() { A4(); }
+function void A4() { A1(); }
+", "BS0070", 4);
+
+        [TestMethod]
+        public void ErrorTestIllegalWait() => TestFail(@"
+function void on_message(float value) { A1(); }
+function void A1() { wait(1); }
+", "BS0071", 2);
     }
 }

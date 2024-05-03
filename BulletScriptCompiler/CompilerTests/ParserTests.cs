@@ -27,20 +27,7 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
             var (root, diags2) = new Parser().ToTree(tokens);
             if (root != null)
                 diags2 = diags2.Union(root.ValidateTree()).ToList();
-            foreach (var diag in diags2) {
-                if (diag.ID == expectedErrorID && diag.Location.line == expectedLine + 1)
-                    return;
-            }
-            string msg = $"Did not encounter error \"{expectedErrorID}\" at line {expectedLine + 1}.";
-            if (diags2.Any()) {
-                msg += " Errors:\n";
-                foreach (var diag in diags2) {
-                    msg += $"{diag}\n";
-                }
-            } else {
-                msg += " No errors at all.";
-            }
-            Assert.Fail(msg);
+            TestHelpers.AssertContainsDiagnostic(diags2, expectedErrorID, expectedLine);
         }
 
         [TestMethod]

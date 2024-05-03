@@ -217,13 +217,13 @@ namespace Atrufulgium.BulletScript.Compiler {
             => new(location.Location, DiagnosticLevel.Warning, "BS0068", "Found method `on_health`; did you mean `on_health<value>`?");
 
         public static Diagnostic OnTimeWithoutArg(Node location)
-            => new(location.Location, DiagnosticLevel.Warning, "BS0068", "Found method `on_time`; did you mean `on_time<value>`?");
+            => new(location.Location, DiagnosticLevel.Warning, "BS0069", "Found method `on_time`; did you mean `on_time<value>`?");
 
         public static Diagnostic RecursiveCall(Location location, List<MethodSymbol> problemPath)
-            => Error(location, "BS0069", $"Recursion is not allowed. Recursion: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}.");
+            => Error(location, "BS0070", $"Recursion is not allowed. Recursion: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}.");
 
         public static Diagnostic IllegalWaitCall(Location location, List<MethodSymbol> problemPath)
-            => Error(location, "BS0070", $"The special on_X methods may not call `wait`. Path: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}");
+            => Error(location, "BS0071", $"The special on_X methods may not call `wait`. Path: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}");
 
     }
 }

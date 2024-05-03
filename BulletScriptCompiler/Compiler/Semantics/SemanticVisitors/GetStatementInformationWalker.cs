@@ -81,7 +81,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
                     AddDiagnostic(OnHealthMethodWrong(node));
             } else if (node.Identifier.Name.StartsWith("on_time<")) {
                 if (currentExpectedReturnType != BType.Void || node.Arguments.Count != 0)
-                    AddDiagnostic(OnHealthMethodWrong(node));
+                    AddDiagnostic(OnTimeMethodWrong(node));
             } else if (node.Identifier.Name == "on_health") {
                 AddDiagnostic(OnHealthWithoutArg(node.Identifier));
             } else if (node.Identifier.Name == "on_time") {
@@ -137,9 +137,12 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             BType? overridenType = null;
             if (node.Declaration.Initializer != null)
                 overridenType = GetType(node.Declaration.Initializer);
-            var res = table.TryUpdate(node.Declaration, currentMethod, overridenType);
-            if (res != null)
-                AddDiagnostic(res);
+            // No point in parsing stuff if we're off the rails already
+            if (overridenType != BType.Error) {
+                var res = table.TryUpdate(node.Declaration, currentMethod, overridenType);
+                if (res != null)
+                    AddDiagnostic(res);
+            }
         }
 
         protected override void VisitRepeatStatement(RepeatStatement node) {
@@ -152,14 +155,19 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
         protected override void VisitReturnStatement(ReturnStatement node) {
             base.VisitReturnStatement(node);
             if (node.ReturnValue is Expression e) {
-                var actualType = GetType(e);
-                if (BType.TypesAreCompatible(currentExpectedReturnType, actualType)) {
-                    currentExpectedReturnType = BType.GetMoreSpecificType(currentExpectedReturnType, actualType);
+                if (currentExpectedReturnType == BType.Void) {
+                    AddDiagnostic(VoidMayNotReturnExpression(node.ReturnValue));
                 } else {
-                    AddDiagnostic(MismatchingReturnType(node, currentExpectedReturnType, actualType));
+                    var actualType = GetType(e);
+                    if (BType.TypesAreCompatible(currentExpectedReturnType, actualType)) {
+                        currentExpectedReturnType = BType.GetMoreSpecificType(currentExpectedReturnType, actualType);
+                    } else {
+                        AddDiagnostic(MismatchingReturnType(node, currentExpectedReturnType, actualType));
+                    }
                 }
             } else {
-                AddDiagnostic(VoidMayNotReturnExpression(node));
+                if (currentExpectedReturnType != BType.Void)
+                    AddDiagnostic(MismatchingReturnType(node, currentExpectedReturnType, BType.Void));
             }
         }
 
@@ -202,7 +210,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             // note: not being called from invocation.
             var fqn = table.GetFullyQualifiedName(node, currentMethod);
             var type = table.GetType(fqn);
-            if (type == BType.Error)
+            if (type == BType.Error || type == BType.MatrixUnspecified)
                 AddDiagnostic(UnknownTypeAtThisPoint(node));
             nodeTypes[node] = type;
             if (!isAssignmentLHSIdentifier)
@@ -390,7 +398,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
                 AddDiagnostic(IncompatibleBinop(location, lhs, rhs, op));
             }
             if (isAssignment)
-                AddDiagnostic(ClashingTypeDef(location, lhs, rhs));
+                AddDiagnostic(ClashingAssignment(location, lhs, rhs));
         }
     }
 }

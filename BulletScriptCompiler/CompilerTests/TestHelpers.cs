@@ -50,6 +50,33 @@ namespace CompilerTests {
             Assert.Fail(msg);
         }
 
+        /// <summary>
+        /// Whether a collection of diagnostics contains a given diagnostic.
+        /// <br/>
+        /// <paramref name="errorLine"/> is offset by 1 to match the one-indexed
+        /// nature of "lines".
+        /// </summary>
+        public static void AssertContainsDiagnostic(
+            IEnumerable<Diagnostic> diagnostics,
+            string errorID,
+            int errorLine
+        ) {
+            foreach (var diag in diagnostics) {
+                if (diag.ID == errorID && diag.Location.line == errorLine + 1)
+                    return;
+            }
+            string msg = $"Did not encounter error \"{errorID}\" at line {errorLine + 1}.";
+            if (diagnostics.Any()) {
+                msg += " Errors:\n";
+                foreach (var diag in diagnostics) {
+                    msg += $"{diag}\n";
+                }
+            } else {
+                msg += " No errors at all.";
+            }
+            Assert.Fail(msg);
+        }
+
         public static void AssertTrimmedStringsEqual(string expected, string actual) {
             expected = expected.ReplaceLineEndings().Trim();
             actual = actual.ReplaceLineEndings().Trim();
