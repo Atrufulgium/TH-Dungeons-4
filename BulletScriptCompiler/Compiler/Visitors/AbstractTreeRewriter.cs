@@ -260,7 +260,13 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         protected virtual Node? VisitLiteralExpression(LiteralExpression node) => node;
 
-        protected virtual Node? VisitLocalDeclarationStatement(LocalDeclarationStatement node)
+        protected virtual Node? VisitLocalDeclarationStatement(LocalDeclarationStatement node) {
+            if (node is LocalDeclarationStatementWithoutInit noInit)
+                return VisitLocalDeclarationStatementWithoutInit(noInit);
+            return node.WithDeclaration(VisitAs<VariableDeclaration>(node.Declaration));
+        }
+
+        protected virtual Node? VisitLocalDeclarationStatementWithoutInit(LocalDeclarationStatementWithoutInit node)
             => node.WithDeclaration(VisitAs<VariableDeclaration>(node.Declaration));
 
         protected virtual Node? VisitMatrixExpression(MatrixExpression node) {

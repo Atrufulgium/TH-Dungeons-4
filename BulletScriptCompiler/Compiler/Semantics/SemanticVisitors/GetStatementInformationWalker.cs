@@ -238,8 +238,18 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             // ignore the identifier's "known" nodeType
             var fqn = table.GetFullyQualifiedMethodName(node.Target, node.Arguments.Select(a => GetType(a)));
             var type = table.GetType(fqn);
-            if (type == BType.Error)
-                AddDiagnostic(UndefinedMethodOrOverload(node));
+            if (type == BType.Error) {
+                // Don't do the diagnostic if any of the *arguments* are errors.
+                bool honestTypeError = true;
+                foreach (var a in node.Arguments) {
+                    if (GetType(a) == BType.Error) {
+                        honestTypeError = false;
+                        break;
+                    }
+                }
+                if (honestTypeError)
+                    AddDiagnostic(UndefinedMethodOrOverload(node));
+            }
             nodeTypes[node] = type;
 
             if (currentMethod != null)

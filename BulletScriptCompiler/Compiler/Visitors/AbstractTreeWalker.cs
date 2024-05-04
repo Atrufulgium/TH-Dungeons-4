@@ -188,6 +188,14 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         protected virtual void VisitLiteralExpression(LiteralExpression node) { }
 
         protected virtual void VisitLocalDeclarationStatement(LocalDeclarationStatement node) {
+            if (node is LocalDeclarationStatementWithoutInit noInit) {
+                VisitLocalDeclarationStatementWithoutInit(noInit);
+                return;
+            }
+            Visit(node.Declaration);
+        }
+
+        protected virtual void VisitLocalDeclarationStatementWithoutInit(LocalDeclarationStatementWithoutInit node) {
             Visit(node.Declaration);
         }
 

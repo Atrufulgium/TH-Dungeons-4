@@ -1,6 +1,7 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors;
 using Atrufulgium.BulletScript.Compiler.Syntax;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Atrufulgium.BulletScript.Compiler.Semantics {
     /// <summary>
@@ -21,14 +22,14 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// error diagnostics. If <c>true</c>, this semantic model is safe to
         /// be queried.
         /// </summary>
-        public bool Valid => symbolTable != null;
-        readonly SymbolTable? symbolTable = null;
+        public bool Valid => SymbolTable != null;
+        SymbolTable? SymbolTable { get; set; } = null;
 
         // Empty model.
         private SemanticModel() {
             diagnostics = new();
             Diagnostics = new ReadOnlyCollection<Diagnostic>(diagnostics);
-            symbolTable = null;
+            SymbolTable = null;
         }
 
         public SemanticModel(Root root) {
@@ -54,20 +55,36 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             if (pass3.Diagnostics.ContainsErrors())
                 return;
 
-            symbolTable = table.ToSymbolTable(root);
-            var pass4diags = SymbolTable.TestIllegalCallChains(symbolTable);
+            SymbolTable = table.ToSymbolTable(root);
+            var pass4diags = SymbolTable.TestIllegalCallChains(SymbolTable);
             diagnostics.AddRange(pass4diags);
             if (pass4diags.ContainsErrors()) {
-                symbolTable = null;
+                SymbolTable = null;
                 return;
             }
         }
 
+        public ISymbol? GetSymbolInfo(Node node) {
+            CheckValidModel();
+            return SymbolTable!.GetSymbolInfo(node);
+        }
+
+        // Only `IdentifierName` isn't simple as invocation names are also
+        // identifiers and don't have corresponding info.
+        // The rest is trivial and always works.
+        public MethodSymbol GetSymbolInfo(InvocationExpression node)
+            => (MethodSymbol)GetSymbolInfo((Node)node)!;
+
         public string ToString(bool includeCompilerSymbols)
-            => symbolTable?.ToString(includeCompilerSymbols) ?? "(Empty table.)";
+            => SymbolTable?.ToString(includeCompilerSymbols) ?? "(Empty table.)";
         public override string ToString()
-            => symbolTable?.ToString() ?? "(Empty table.)";
+            => SymbolTable?.ToString() ?? "(Empty table.)";
 
         public static SemanticModel Empty => new();
+
+        private void CheckValidModel() {
+            if (!Valid)
+                throw new InvalidOperationException("The semantic model is not valid and cannot answer any semantic questions.");
+        }
     }
 }
