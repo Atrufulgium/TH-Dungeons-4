@@ -1,7 +1,6 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors;
 using Atrufulgium.BulletScript.Compiler.Syntax;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Atrufulgium.BulletScript.Compiler.Semantics {
     /// <summary>

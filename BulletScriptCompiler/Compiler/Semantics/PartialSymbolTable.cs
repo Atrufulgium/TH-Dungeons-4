@@ -11,6 +11,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         readonly Dictionary<string, Syntax.Type> types = new();
         // When a method
         readonly Dictionary<string, List<VariableDeclaration>> arguments = new();
+        readonly HashSet<string> intrinsics = new();
 
         // Data I decided to add later
         readonly List<(string source, string target)> callGraph = new();
@@ -65,10 +66,12 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// <param name="declaration"> The node to add to the table. </param>
         /// <param name="containingMethod"> If this is inside a method, what method it is in. </param>
         /// <param name="overridenType"> If you want to disregard the type of the declaration, set this. </param>
+        /// <param name="isIntrinsicMethod"> Whether this method is intrinsic. </param>
         public Diagnostic? TryUpdate(
             Declaration declaration,
             MethodDeclaration? containingMethod = null,
-            Syntax.Type? overridenType = null
+            Syntax.Type? overridenType = null,
+            bool isIntrinsicMethod = false
         ) {
             string key = GetFullyQualifiedName(declaration, containingMethod);
             bool existing = originalDeclarations.ContainsKey(key);
@@ -87,6 +90,12 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
 
             if (declaration is MethodDeclaration methodDecl)
                 arguments[key] = methodDecl.Arguments.Select(l => l.Declaration).ToList();
+
+            if (isIntrinsicMethod)
+                intrinsics.Add(key);
+            else
+                intrinsics.Remove(key);
+
             return null;
         }
 

@@ -69,7 +69,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                     new Block(Array.Empty<Statement>(), loc),
                     loc
                 );
-                var res = table.TryUpdate(fakeMethod);
+                var res = table.TryUpdate(fakeMethod, isIntrinsicMethod: true);
             }
 
             // Remark: These are *not* checked for correctness like everything else.

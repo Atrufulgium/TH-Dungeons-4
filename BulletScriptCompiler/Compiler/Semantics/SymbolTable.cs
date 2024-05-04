@@ -14,9 +14,15 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         readonly Dictionary<string, ISymbol> fqn2symbol;
         readonly Dictionary<ISymbol, string> symbol2fqn;
         readonly HashSet<Node> treeNodes;
+        readonly HashSet<ISymbol> intrinsics;
 
         // Private with a factory to discourage creating this.
-        private SymbolTable(Root root, Dictionary<Node, string> node2fqn, Dictionary<string, ISymbol> fqn2symbol) {
+        private SymbolTable(
+            Root root,
+            Dictionary<Node, string> node2fqn,
+            Dictionary<string, ISymbol> fqn2symbol,
+            IEnumerable<string> intrinsicFqns
+        ) {
             this.node2fqn = node2fqn;
             this.fqn2symbol = fqn2symbol;
             var reverseKvs = fqn2symbol.Select(kv => new KeyValuePair<ISymbol, string>(kv.Value, kv.Key));
@@ -25,6 +31,13 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             var walker = new AllNodesWalker();
             walker.Visit(root);
             treeNodes = walker.treeNodes;
+
+            intrinsics = new();
+            foreach (var f in intrinsicFqns) {
+                if (fqn2symbol.TryGetValue(f, out var symbol)) {
+                    intrinsics.Add(symbol);
+                }
+            }
         }
         /// <summary>
         /// Create a new symbol table from given data.
@@ -32,8 +45,12 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// There is literally only one spot in the codebase where this should
         /// be needed.
         /// </summary>
-        public static SymbolTable Create(Root root, Dictionary<Node, string> node2fqn, Dictionary<string, ISymbol> fqn2symbol)
-            => new(root, node2fqn, fqn2symbol);
+        public static SymbolTable Create(
+            Root root,
+            Dictionary<Node, string> node2fqn,
+            Dictionary<string, ISymbol> fqn2symbol,
+            IEnumerable<string> intrinsicFqns
+        ) => new(root, node2fqn, fqn2symbol, intrinsicFqns);
 
         /// <summary>
         /// Tries to get the symbol info corresponding to a node.
@@ -153,6 +170,8 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                 } else if (symbol is MethodSymbol method) {
                     string indent = "";
                     SortedSet<string> comments = new();
+                    if (intrinsics.Contains(method))
+                        comments.Add("Intrinsic method");
                     foreach (var methodSymbol in method.Calls)
                         comments.Add($"Calls {methodSymbol.FullyQualifiedName}");
                     foreach (var methodSymbol in method.CalledBy)

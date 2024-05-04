@@ -115,7 +115,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                 symbolCalledBys[target].Add((MethodSymbol)fqnResult[source]);
             }
 
-            return SymbolTable.Create(root, new Dictionary<Node, string>(symbolNameMap), fqnResult);
+            return SymbolTable.Create(root, new Dictionary<Node, string>(symbolNameMap), fqnResult, intrinsics);
         }
     }
 }
