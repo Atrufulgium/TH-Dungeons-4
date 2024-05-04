@@ -1,4 +1,5 @@
-﻿using Atrufulgium.BulletScript.Compiler.Syntax;
+﻿using Atrufulgium.BulletScript.Compiler.Semantics;
+using Atrufulgium.BulletScript.Compiler.Syntax;
 
 namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
@@ -35,5 +36,10 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         /// Add a diagnostic to <see cref="Diagnostics"/>.
         /// </summary>
         public void AddDiagnostic(Diagnostic diagnostic);
+
+        /// <summary>
+        /// Sets the semantic model the tree has access to.
+        /// </summary>
+        public SemanticModel Model { set; }
     }
 }

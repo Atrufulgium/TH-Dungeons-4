@@ -6,7 +6,7 @@
         public Expression Condition { get; private set; }
         public Block Body { get; private set; }
 
-        public WhileStatement(Expression condition, Block body, Location location) : base(location) {
+        public WhileStatement(Expression condition, Block body, Location location = default) : base(location) {
             Condition = condition;
             Body = body;
         }

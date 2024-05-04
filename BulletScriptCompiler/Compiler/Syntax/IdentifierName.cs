@@ -7,7 +7,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     internal class IdentifierName : Expression {
         public string Name { get; private set; }
 
-        public IdentifierName(string name, Location location) : base(location) {
+        public IdentifierName(string name, Location location = default) : base(location) {
             Name = name;
         }
 

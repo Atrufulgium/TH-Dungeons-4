@@ -5,7 +5,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// Represents the <c>break;</c> statement in a loop.
     /// </summary>
     internal class BreakStatement : Statement {
-        public BreakStatement(Location location) : base(location) { }
+        public BreakStatement(Location location = default) : base(location) { }
 
         public override string ToString()
             => "[break]";

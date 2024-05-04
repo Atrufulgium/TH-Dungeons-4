@@ -16,7 +16,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public LiteralExpression(
             string value,
-            Location location
+            Location location = default
         ) : base(location) {
             if (value[0] != '"' || value[^1] != '"')
                 throw new ArgumentException("The string must be enclosed in \".");
@@ -26,7 +26,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public LiteralExpression(
             float value,
-            Location location
+            Location location = default
         ) : base(location) {
             StringValue = null;
             FloatValue = value;

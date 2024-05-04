@@ -6,7 +6,7 @@
         public Expression? Count { get; private set; }
         public Block Body { get; private set; }
 
-        public RepeatStatement(Block body, Location location, Expression? count = null) : base(location) {
+        public RepeatStatement(Block body, Location location = default, Expression? count = null) : base(location) {
             Count = count;
             Body = body;
         }

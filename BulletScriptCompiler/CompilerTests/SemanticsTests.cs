@@ -1,6 +1,6 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Parsing;
 using Atrufulgium.BulletScript.Compiler.Semantics;
-using CompilerTests;
+using Atrufulgium.BulletScript.Compiler.Tests.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Atrufulgium.BulletScript.Compiler.Tests {

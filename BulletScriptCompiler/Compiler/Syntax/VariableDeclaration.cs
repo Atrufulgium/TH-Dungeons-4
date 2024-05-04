@@ -10,7 +10,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public VariableDeclaration(
             IdentifierName identifier,
             Type type,
-            Location location,
+            Location location = default,
             Expression? initializer = null
         ) : base(identifier, type, location) {
             Initializer = initializer;

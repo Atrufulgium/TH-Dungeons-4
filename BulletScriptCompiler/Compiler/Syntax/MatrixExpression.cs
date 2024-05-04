@@ -14,7 +14,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             IList<Expression> entries,
             int rows,
             int cols,
-            Location location
+            Location location = default
         ) : base(location) {
             Entries = new(entries);
             Rows = rows;

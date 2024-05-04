@@ -29,11 +29,17 @@
         /// Check whether there are any obvious syntactic problems with the tree,
         /// with a given path of parent nodes. This must include "obvious"
         /// things, as well as things already checked by the <see cref="Parsing.Parser"/>.
+        /// <br/>
+        /// Be sure to call the base method.
         /// </summary>
         /// <param name="path">
         /// The path used to reach this node.
         /// </param>
-        public abstract IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path);
+        public virtual IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
+            if (this is ITransientNode)
+                throw new InvalidOperationException("Transient nodes may not be part of the final tree.");
+            return Array.Empty<Diagnostic>();
+        }
         /// <summary>
         /// Checks whether there are any obvious syntactic problems with the tree.
         /// </summary>

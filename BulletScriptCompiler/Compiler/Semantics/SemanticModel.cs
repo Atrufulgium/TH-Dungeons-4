@@ -24,6 +24,13 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         public bool Valid => symbolTable != null;
         readonly SymbolTable? symbolTable = null;
 
+        // Empty model.
+        private SemanticModel() {
+            diagnostics = new();
+            Diagnostics = new ReadOnlyCollection<Diagnostic>(diagnostics);
+            symbolTable = null;
+        }
+
         public SemanticModel(Root root) {
             diagnostics = new();
             Diagnostics = new ReadOnlyCollection<Diagnostic>(diagnostics);
@@ -60,5 +67,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             => symbolTable?.ToString(includeCompilerSymbols) ?? "(Empty table.)";
         public override string ToString()
             => symbolTable?.ToString() ?? "(Empty table.)";
+
+        public static SemanticModel Empty => new();
     }
 }

@@ -88,7 +88,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
                 AddDiagnostic(OnTimeWithoutArg(node.Identifier));
             }
 
-            symbolNameMap.Add(node, table.GetFullyQualifiedName(node));
+            symbolNameMap[node] = table.GetFullyQualifiedName(node);
         }
 
         protected override void VisitVariableDeclaration(VariableDeclaration node) {
@@ -102,7 +102,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             if (node.Initializer != null)
                 base.Visit(node.Initializer);
 
-            symbolNameMap.Add(node, table.GetFullyQualifiedName(node, currentMethod));
+            symbolNameMap[node] = table.GetFullyQualifiedName(node, currentMethod);
         }
 
         /// <summary>
@@ -216,7 +216,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             if (!isAssignmentLHSIdentifier)
                 readVariables.Add(fqn);
 
-            symbolNameMap.Add(node, fqn);
+            symbolNameMap[node] = fqn;
         }
 
         protected override void VisitIndexExpression(IndexExpression node) {
@@ -245,7 +245,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             if (currentMethod != null)
                 callGraph.Add((table.GetFullyQualifiedName(currentMethod), fqn));
 
-            symbolNameMap.Add(node, fqn);
+            symbolNameMap[node] = fqn;
         }
 
         protected override void VisitLiteralExpression(LiteralExpression node) {

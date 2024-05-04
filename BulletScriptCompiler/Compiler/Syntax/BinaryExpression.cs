@@ -16,7 +16,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             Expression lhs,
             BinaryOp op,
             Expression rhs,
-            Location location
+            Location location = default
         ) : base(location) {
             LHS = lhs;
             OP = op;

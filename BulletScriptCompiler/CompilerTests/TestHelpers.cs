@@ -1,8 +1,11 @@
-﻿using Atrufulgium.BulletScript.Compiler;
+﻿using Atrufulgium.BulletScript.Compiler.Parsing;
+using Atrufulgium.BulletScript.Compiler.Semantics;
+using Atrufulgium.BulletScript.Compiler.Syntax;
+using Atrufulgium.BulletScript.Compiler.Visitors;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections;
 
-namespace CompilerTests {
+namespace Atrufulgium.BulletScript.Compiler.Tests.Helpers {
     internal static class TestHelpers {
         public static void AssertICollectionsEqual(ICollection expected, ICollection actual) {
             try {
@@ -82,6 +85,40 @@ namespace CompilerTests {
             actual = actual.ReplaceLineEndings().Trim();
             // (newlines for nicer test output)
             Assert.AreEqual("\n" + expected + "\n", "\n" + actual + "\n");
+        }
+
+        /// <summary>
+        /// Whether a compilation process with given passes produces the
+        /// tree we expect.
+        /// </summary>
+        public static void AssertGeneratesTree(
+            string code,
+            string tree,
+            params IVisitor[] visitors
+        ) {
+            var (tokens, diags) = new Lexer().ToTokens(code);
+            AssertNoErrorDiagnostics(diags);
+            var (root, diags2) = new Parser().ToTree(tokens);
+            AssertNoErrorDiagnostics(diags2);
+            if (root == null)
+                Assert.Fail("Unexpected null tree, without any diagnostics.");
+            var diags3 = root.ValidateTree();
+            AssertNoErrorDiagnostics(diags3);
+            var semanticModel = new SemanticModel(root);
+            AssertNoErrorDiagnostics(semanticModel.Diagnostics);
+            
+            foreach (var visitor in visitors) {
+                visitor.Model = semanticModel;
+                visitor.Visit(root);
+                AssertNoErrorDiagnostics(visitor.Diagnostics);
+                root = (Root?)visitor.VisitResult ?? throw new AssertFailedException($"The resulting tree after pass {visitor} was null. This is not allowed.");
+                var diagsN = root.ValidateTree();
+                AssertNoErrorDiagnostics(diagsN);
+                semanticModel = new SemanticModel(root);
+                AssertNoErrorDiagnostics(semanticModel.Diagnostics);
+            }
+
+            AssertTrimmedStringsEqual(tree, root.ToString());
         }
     }
 }

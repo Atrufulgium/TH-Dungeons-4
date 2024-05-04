@@ -1,4 +1,5 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Helpers;
+using Atrufulgium.BulletScript.Compiler.Semantics;
 using Atrufulgium.BulletScript.Compiler.Syntax;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
@@ -48,6 +49,17 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// instead, it would have disappeared.
     /// </list>
     /// These are not the only options, but do give a general idea of your options.
+    /// <para>
+    /// Also note that despite all return types being nullable, <b>the base
+    /// methods do not return null, ever</b>.
+    /// <br/>
+    /// ou only need to consider <c>null</c> in case you yourself introduce it.
+    /// Go ham with the forgiving operator.
+    /// </para>
+    /// <para>
+    /// Similarly, all the base methods <b>return the type they accept</b>.
+    /// Again, hard to put in the type system, so go ham with casts.
+    /// </para>
     /// </remarks>
     internal abstract class AbstractTreeRewriter : IVisitor {
 
@@ -59,8 +71,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         public void AddDiagnostic(Diagnostic diagnostic) => diagnostics.Add(diagnostic);
 
+        public SemanticModel Model { set; protected get; }
+
         public AbstractTreeRewriter() {
             Diagnostics = new ReadOnlyCollection<Diagnostic>(diagnostics);
+            Model = SemanticModel.Empty;
         }
 
         void IVisitor.Visit(Node node) {
@@ -83,6 +98,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         // these otherwise nicely behaving methods.)
 
         public virtual Node? Visit(Node node) {
+            if (node is ITransientNode inode) throw new PersistentTransientException(inode);
             if (node is Declaration decl) return VisitDeclaration(decl);
             if (node is Expression expr) return VisitExpression(expr);
             if (node is Statement stat) return VisitStatement(stat);
@@ -175,7 +191,9 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             List<Statement> resultingBlock = new();
             foreach (var s in node.Statements) {
                 var statement = Visit(s);
-                if (statement != null)
+                if (statement is MultipleStatements m) {
+                    resultingBlock.AddRange(m.Flatten());
+                } else if (statement != null)
                     resultingBlock.Add((Statement)statement);
             }
             return node.WithStatements(resultingBlock);
@@ -292,7 +310,9 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             List<Statement> stats = new();
             foreach (var s in node.RootLevelStatements) {
                 var stat = Visit(s);
-                if (stat != null)
+                if (stat is MultipleStatements m) {
+                    stats.AddRange(m.Flatten());
+                } else if (stat != null)
                     stats.Add((Statement)stat);
             }
             return node.WithRootLevelStatements(stats);

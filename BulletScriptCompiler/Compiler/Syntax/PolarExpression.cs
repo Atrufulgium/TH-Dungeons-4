@@ -9,7 +9,7 @@
         public PolarExpression(
             Expression angle,
             Expression radius,
-            Location location
+            Location location = default
         ) : base(location) {
             Angle = angle;
             Radius = radius;

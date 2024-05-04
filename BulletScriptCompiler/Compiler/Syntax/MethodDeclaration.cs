@@ -21,7 +21,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             Type type,
             IList<LocalDeclarationStatement> arguments,
             Block body,
-            Location location
+            Location location = default
         ) : base(identifier, type, location) {
             Arguments = new(arguments);
             Body = body;

@@ -7,7 +7,7 @@
 
         public LocalDeclarationStatement(
             VariableDeclaration declaration,
-            Location location
+            Location location = default
         ) : base(location) {
             Declaration = declaration;
         }

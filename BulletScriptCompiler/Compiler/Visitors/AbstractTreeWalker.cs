@@ -1,4 +1,5 @@
-﻿using Atrufulgium.BulletScript.Compiler.Syntax;
+﻿using Atrufulgium.BulletScript.Compiler.Semantics;
+using Atrufulgium.BulletScript.Compiler.Syntax;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
@@ -42,8 +43,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         public void AddDiagnostic(Diagnostic diagnostic) => diagnostics.Add(diagnostic);
 
+        public SemanticModel Model { set; protected get; }
+
         public AbstractTreeWalker() {
             Diagnostics = new ReadOnlyCollection<Diagnostic>(diagnostics);
+            Model = SemanticModel.Empty;
         }
 
         void IVisitor.Visit(Node node) {

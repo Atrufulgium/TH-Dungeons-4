@@ -18,7 +18,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public ForStatement(
             Expression condition,
             Block body,
-            Location location,
+            Location location = default,
             Statement? initializer = null,
             Expression? increment = null
         ) : base(location) {

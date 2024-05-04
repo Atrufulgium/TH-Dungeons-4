@@ -11,7 +11,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public IndexExpression(
             Expression expression,
             MatrixExpression index,
-            Location location
+            Location location = default
         ) : base(location) {
             Expression = expression;
             Index = index;

@@ -9,7 +9,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         public ExpressionStatement(
             Expression statement,
-            Location location
+            Location location = default
         ) : base(location) {
             Statement = statement;
         }

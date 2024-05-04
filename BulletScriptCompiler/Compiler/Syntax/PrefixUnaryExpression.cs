@@ -12,7 +12,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public PrefixUnaryExpression(
             Expression expression,
             PrefixUnaryOp op,
-            Location location
+            Location location = default
         ) : base(location) {
             Expression = expression;
             OP = op;

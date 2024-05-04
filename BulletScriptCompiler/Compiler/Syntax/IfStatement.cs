@@ -10,7 +10,7 @@
         public IfStatement(
             Expression condition,
             Block trueBranch,
-            Location location,
+            Location location = default,
             Block? falseBranch = null
         ) : base(location) {
             Condition = condition;

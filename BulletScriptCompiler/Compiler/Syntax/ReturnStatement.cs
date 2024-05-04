@@ -6,7 +6,7 @@
         public Expression? ReturnValue { get; private set; }
 
         public ReturnStatement(
-            Location location,
+            Location location = default,
             Expression? returnValue = null
         ) : base(location) {
             ReturnValue = returnValue;

@@ -12,7 +12,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public InvocationExpression(
             IdentifierName target,
             IList<Expression> arguments,
-            Location location
+            Location location = default
         ) : base(location) {
             Target = target;
             Arguments = new(arguments);

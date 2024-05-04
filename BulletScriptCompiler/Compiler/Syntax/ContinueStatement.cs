@@ -5,7 +5,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// Represents the <c>continue;</c> statement in a loop.
     /// </summary>
     internal class ContinueStatement : Statement {
-        public ContinueStatement(Location location) : base(location) { }
+        public ContinueStatement(Location location = default) : base(location) { }
 
         public override string ToString()
             => "[continue]";
