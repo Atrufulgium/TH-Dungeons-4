@@ -38,6 +38,16 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                     intrinsics.Add(symbol);
                 }
             }
+
+            // Add a few more nodes that are missing as sugar to not really
+            // need to be _that_ obnoxious about every node.
+            foreach (var node in node2fqn.Keys.ToList()) {
+                if (node is VariableDeclaration varDecl) {
+                    node2fqn[varDecl.Identifier] = node2fqn[node];
+                } else if (node is MethodDeclaration methDecl) {
+                    node2fqn[methDecl.Identifier] = node2fqn[node];
+                }
+            }
         }
         /// <summary>
         /// Create a new symbol table from given data.

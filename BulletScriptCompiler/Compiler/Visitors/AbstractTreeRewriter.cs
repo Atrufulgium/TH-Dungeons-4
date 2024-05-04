@@ -322,7 +322,9 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 List<Declaration> decls = new();
                 foreach (var d in node.Declarations) {
                     var decl = Visit(d);
-                    if (decl != null)
+                    if (decl is MultipleDeclarations md) {
+                        decls.AddRange(md.Flatten());
+                    } else if (decl != null)
                         decls.Add((Declaration)decl);
                 }
                 return node.WithDeclarations(decls);

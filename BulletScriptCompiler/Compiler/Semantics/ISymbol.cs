@@ -140,7 +140,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// Whether this is an intrinsic method that does not have a definition
         /// in bulletscript code.
         /// </summary>
-        public bool Intrinsic { get; private set; }
+        public bool IsIntrinsic { get; private set; }
         /// <summary>
         /// In order, all arguments of this method.
         /// </summary>
@@ -176,7 +176,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             FullyQualifiedName = fullyQualifiedName;
             OriginalDefinition = originalDefinition;
             Type = returnType;
-            Intrinsic = isIntrinsic;
+            IsIntrinsic = isIntrinsic;
             Parameters = new ReadOnlyCollection<VariableSymbol>(parameters);
             CalledBy = new ReadOnlyCollection<MethodSymbol>(calledBy);
             Calls = new ReadOnlyCollection<MethodSymbol>(calls);
