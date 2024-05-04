@@ -187,5 +187,12 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 );
             return ret.WithAppendedStatements(repeatStatement);
         }
+
+        protected override Node? VisitConditionalGotoStatement(ConditionalGotoStatement node)
+            => throw new VisitorAssumptionFailedException("Assume only user-code nodes exist.");
+        protected override Node? VisitGotoLabelStatement(GotoLabelStatement node)
+            => throw new VisitorAssumptionFailedException("Assume only user-code nodes exist.");
+        protected override Node? VisitGotoStatement(GotoStatement node)
+            => throw new VisitorAssumptionFailedException("Assume only user-code nodes exist.");
     }
 }

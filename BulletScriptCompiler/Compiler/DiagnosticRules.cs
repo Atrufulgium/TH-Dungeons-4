@@ -225,5 +225,7 @@ namespace Atrufulgium.BulletScript.Compiler {
         public static Diagnostic IllegalWaitCall(Location location, List<MethodSymbol> problemPath)
             => Error(location, "BS0071", $"The special on_X methods may not call `wait`. Path: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}");
 
+        public static Diagnostic InternalMalformedConditionalGoto(Node node)
+            => Error(node.Location, "BS1000", "A ConditionalGotoStatement may only have a block with a single goto statement. The condition must be a `identifier`.");
     }
 }

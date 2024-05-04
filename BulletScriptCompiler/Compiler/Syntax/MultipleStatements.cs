@@ -6,7 +6,16 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// supported (e.g. a <see cref="Block"/>) when doing rewrites, return this
     /// and the statements get flattened into the surrounding list of statements.
     /// <br/>
-    /// These may be nested.
+    /// These may be nested. This node is only valid when it ends up in the
+    /// statement list of:
+    /// <list type="bullet">
+    /// <item>
+    /// <see cref="Visitors.AbstractTreeRewriter.VisitBlock(Block)"/>; and
+    /// </item>
+    /// <item>
+    /// <see cref="Visitors.AbstractTreeRewriter.VisitRoot(Root)"/>.
+    /// </item>
+    /// </list>
     /// </summary>
     internal class MultipleStatements : Statement, ITransientNode {
         public ReadOnlyCollection<Statement> Statements { get; private set; }

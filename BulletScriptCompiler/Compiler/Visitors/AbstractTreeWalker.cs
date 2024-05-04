@@ -105,8 +105,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         protected virtual void VisitStatement(Statement node) {
             if (node is LoopStatement loop) { VisitLoopStatement(loop); return; }
             if (node is BreakStatement brea) { VisitBreakStatement(brea); return; }
+            if (node is ConditionalGotoStatement cond) { VisitConditionalGotoStatement(cond); return; }
             if (node is ContinueStatement cont) { VisitContinueStatement(cont); return; }
             if (node is ExpressionStatement expr) { VisitExpressionStatement(expr); return; }
+            if (node is GotoLabelStatement gotl) { VisitGotoLabelStatement(gotl); return; }
+            if (node is GotoStatement got) { VisitGotoStatement(got); return; }
             if (node is IfStatement ifs) { VisitIfStatement(ifs); return; }
             if (node is LocalDeclarationStatement loco) { VisitLocalDeclarationStatement(loco); return; }
             if (node is ReturnStatement ret) { VisitReturnStatement(ret); return; }
@@ -130,6 +133,12 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         protected virtual void VisitBreakStatement(BreakStatement node) { }
 
+        protected virtual void VisitConditionalGotoStatement(ConditionalGotoStatement node) {
+            Visit(node.Condition);
+            // Skip over the intermediate block as we do NOT want to read that.
+            Visit(node.TrueBranch.Statements[0]);
+        }
+
         protected virtual void VisitContinueStatement(ContinueStatement node) { }
 
         protected virtual void VisitExpressionStatement(ExpressionStatement node) {
@@ -145,9 +154,20 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             Visit(node.Body);
         }
 
+        protected virtual void VisitGotoLabelStatement(GotoLabelStatement node) { }
+
+        protected virtual void VisitGotoStatement(GotoStatement node) {
+            Visit(node.Target);
+        }
+
         protected virtual void VisitIdentifierName(IdentifierName node) { }
 
         protected virtual void VisitIfStatement(IfStatement node) {
+            if (node is ConditionalGotoStatement cond) {
+                VisitConditionalGotoStatement(cond);
+                return;
+            }
+
             Visit(node.Condition);
             Visit(node.TrueBranch);
             if (node.FalseBranch != null)

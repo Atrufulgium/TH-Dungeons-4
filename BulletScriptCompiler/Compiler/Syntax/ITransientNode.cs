@@ -2,7 +2,8 @@
     /// <summary>
     /// This interface represents syntax nodes that are <b>invalid</b> in the
     /// final resulting tree. However, they are "syntax sugar" when doing
-    /// rewrites with <see cref="Visitors.AbstractTreeRewriter"/>.
+    /// rewrites with <see cref="Visitors.AbstractTreeRewriter"/> and may only
+    /// be returned and only in certain contexts.
     /// <br/>
     /// Transient nodes may have <see cref="Node.ValidateTree(IEnumerable{Node})"/>
     /// a simple <see cref="PersistentTransientException"/>.

@@ -89,7 +89,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         [DoesNotReturn]
         void ThrowUnknownNodeException(Node node)
-            => throw new NotImplementedException($"TreeWalker has no knowledge of {node.GetType()} nodes.");
+            => throw new NotImplementedException($"TreeRewriter has no knowledge of {node.GetType()} nodes.");
 
         // Note when adding syntax nodes:
         // Always include intermediate classes in the hierarchy for broader
@@ -170,6 +170,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             if (node is BreakStatement brea) return VisitBreakStatement(brea);
             if (node is ContinueStatement cont) return VisitContinueStatement(cont);
             if (node is ExpressionStatement expr) return VisitExpressionStatement(expr);
+            if (node is GotoStatement got) return VisitGotoStatement(got);
+            if (node is GotoLabelStatement gotl) return VisitGotoLabelStatement(gotl);
             if (node is IfStatement ifs) return VisitIfStatement(ifs);
             if (node is LocalDeclarationStatement loco) return VisitLocalDeclarationStatement(loco);
             if (node is ReturnStatement ret) return VisitReturnStatement(ret);
@@ -201,6 +203,12 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         protected virtual Node? VisitBreakStatement(BreakStatement node) => node;
 
+        protected virtual Node? VisitConditionalGotoStatement(ConditionalGotoStatement node)
+            => node
+            .WithCondition(VisitAs<IdentifierName>(node.Condition))
+            // Skip over the intermediate block as we do NOT want to modify that.
+            .WithTarget(VisitAs<GotoStatement>(node.TrueBranch.Statements[0]));
+
         protected virtual Node? VisitContinueStatement(ContinueStatement node) => node;
 
         protected virtual Node? VisitExpressionStatement(ExpressionStatement node)
@@ -215,9 +223,16 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             return node.WithBody(VisitAs<Block>(node.Body));
         }
 
+        protected virtual Node? VisitGotoLabelStatement(GotoLabelStatement node) => node;
+
+        protected virtual Node? VisitGotoStatement(GotoStatement node)
+            => node.WithTarget(VisitAs<GotoLabelStatement>(node));
+
         protected virtual Node? VisitIdentifierName(IdentifierName node) => node;
 
         protected virtual Node? VisitIfStatement(IfStatement node) {
+            if (node is ConditionalGotoStatement cond) return VisitConditionalGotoStatement(cond);
+
             node = node
                 .WithCondition(VisitAs<Expression>(node.Condition))
                 .WithTrueBranch(VisitAs<Block>(node.TrueBranch));
