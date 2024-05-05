@@ -93,6 +93,100 @@ declarations:
 ", new ExtractMethodArgsRewriter());
 
         [TestMethod]
+        public void TestArithmetic() => TestHelpers.AssertGeneratesTree(@"
+function float A(float a) { return a; }
+function void B(float b) { b = 1 + A(b); }
+", @"
+[root]
+declarations:
+    [variable declaration]
+    identifier:
+        [identifier name]
+        name:
+            A(float)#a
+    type:
+        float
+    initializer:
+        [none]
+    [method declaration]
+    identifier:
+        [identifier name]
+        name:
+            A
+    type:
+        float
+    arguments:
+        [none]
+    block:
+        [block]
+        statements:
+            [return]
+            value:
+                [identifier name]
+                name:
+                    A(float)#a
+    [variable declaration]
+    identifier:
+        [identifier name]
+        name:
+            B(float)#b
+    type:
+        float
+    initializer:
+        [none]
+    [method declaration]
+    identifier:
+        [identifier name]
+        name:
+            B
+    type:
+        void
+    arguments:
+        [none]
+    block:
+        [block]
+        statements:
+            [expression statement]
+            statement:
+                [assignment]
+                lhs:
+                    [identifier name]
+                    name:
+                        A(float)#a
+                op:
+                    =
+                rhs:
+                    [identifier name]
+                    name:
+                        B(float)#b
+            [expression statement]
+            statement:
+                [assignment]
+                lhs:
+                    [identifier name]
+                    name:
+                        B(float)#b
+                op:
+                    =
+                rhs:
+                    [binop]
+                    lhs:
+                        [literal float]
+                        value:
+                            1
+                    op:
+                        +
+                    rhs:
+                        [invocation]
+                        target:
+                            [identifier name]
+                            name:
+                                A
+                        args:
+                            [none]
+", new ExtractMethodArgsRewriter());
+
+        [TestMethod]
         public void TestIntrinsic() => TestHelpers.AssertGeneratesTree(@"
 function void A(float a) { a = sin(a); }
 ", @"

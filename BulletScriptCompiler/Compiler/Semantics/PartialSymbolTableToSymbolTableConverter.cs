@@ -69,7 +69,8 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                         types[fqn],
                         argSymbols,
                         calledBy,
-                        calls
+                        calls,
+                        isIntrinsic: intrinsics.Contains(fqn)
                     );
                     fqnResult[fqn] = methodSymbol;
 
@@ -115,7 +116,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                 symbolCalledBys[target].Add((MethodSymbol)fqnResult[source]);
             }
 
-            return SymbolTable.Create(root, new Dictionary<Node, string>(symbolNameMap), fqnResult, intrinsics);
+            return SymbolTable.Create(root, new Dictionary<Node, string>(symbolNameMap), fqnResult);
         }
     }
 }

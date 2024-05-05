@@ -144,7 +144,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// <summary>
         /// In order, all arguments of this method.
         /// </summary>
-        public IReadOnlyCollection<VariableSymbol> Parameters { get; private set; }
+        public IReadOnlyList<VariableSymbol> Parameters { get; private set; }
         /// <summary>
         /// What methods this method is called by (directly).
         /// <br/>

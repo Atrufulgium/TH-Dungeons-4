@@ -73,6 +73,8 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         // The rest is trivial and always works.
         public MethodSymbol GetSymbolInfo(InvocationExpression node)
             => (MethodSymbol)GetSymbolInfo((Node)node)!;
+        public MethodSymbol GetSymbolInfo(MethodDeclaration node)
+            => (MethodSymbol)GetSymbolInfo((Node)node)!;
 
         public string ToString(bool includeCompilerSymbols)
             => SymbolTable?.ToString(includeCompilerSymbols) ?? "(Empty table.)";

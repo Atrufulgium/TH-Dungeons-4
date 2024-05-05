@@ -11,19 +11,19 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
     internal class SymbolTable : IEnumerable<ISymbol> {
 
         readonly Dictionary<Node, string> node2fqn;
+        readonly Dictionary<Node, string> sugarNode2fqn;
         readonly Dictionary<string, ISymbol> fqn2symbol;
         readonly Dictionary<ISymbol, string> symbol2fqn;
         readonly HashSet<Node> treeNodes;
-        readonly HashSet<ISymbol> intrinsics;
 
         // Private with a factory to discourage creating this.
         private SymbolTable(
             Root root,
             Dictionary<Node, string> node2fqn,
-            Dictionary<string, ISymbol> fqn2symbol,
-            IEnumerable<string> intrinsicFqns
+            Dictionary<string, ISymbol> fqn2symbol
         ) {
             this.node2fqn = node2fqn;
+            sugarNode2fqn = new();
             this.fqn2symbol = fqn2symbol;
             var reverseKvs = fqn2symbol.Select(kv => new KeyValuePair<ISymbol, string>(kv.Value, kv.Key));
             symbol2fqn = new(reverseKvs);
@@ -32,20 +32,15 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             walker.Visit(root);
             treeNodes = walker.treeNodes;
 
-            intrinsics = new();
-            foreach (var f in intrinsicFqns) {
-                if (fqn2symbol.TryGetValue(f, out var symbol)) {
-                    intrinsics.Add(symbol);
-                }
-            }
-
             // Add a few more nodes that are missing as sugar to not really
             // need to be _that_ obnoxious about every node.
+            // To ensure this sugar is not counted as a "ref", put these in a
+            // separate dictionary.
             foreach (var node in node2fqn.Keys.ToList()) {
                 if (node is VariableDeclaration varDecl) {
-                    node2fqn[varDecl.Identifier] = node2fqn[node];
+                    sugarNode2fqn[varDecl.Identifier] = node2fqn[node];
                 } else if (node is MethodDeclaration methDecl) {
-                    node2fqn[methDecl.Identifier] = node2fqn[node];
+                    sugarNode2fqn[methDecl.Identifier] = node2fqn[node];
                 }
             }
         }
@@ -58,9 +53,8 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         public static SymbolTable Create(
             Root root,
             Dictionary<Node, string> node2fqn,
-            Dictionary<string, ISymbol> fqn2symbol,
-            IEnumerable<string> intrinsicFqns
-        ) => new(root, node2fqn, fqn2symbol, intrinsicFqns);
+            Dictionary<string, ISymbol> fqn2symbol
+        ) => new(root, node2fqn, fqn2symbol);
 
         /// <summary>
         /// Tries to get the symbol info corresponding to a node.
@@ -81,6 +75,8 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             CheckInTree(node);
             if (node2fqn.ContainsKey(node))
                 return fqn2symbol[node2fqn[node]];
+            if (sugarNode2fqn.ContainsKey(node))
+                return fqn2symbol[sugarNode2fqn[node]];
             return null;
         }
 
@@ -180,7 +176,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                 } else if (symbol is MethodSymbol method) {
                     string indent = "";
                     SortedSet<string> comments = new();
-                    if (intrinsics.Contains(method))
+                    if (method.IsIntrinsic)
                         comments.Add("Intrinsic method");
                     foreach (var methodSymbol in method.Calls)
                         comments.Add($"Calls {methodSymbol.FullyQualifiedName}");

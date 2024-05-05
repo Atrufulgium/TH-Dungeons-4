@@ -66,6 +66,9 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             identifierNameUpdates.Clear();
             addedDeclarations.Clear();
 
+            var methodSymbol = Model.GetSymbolInfo(node);
+
+            // Don't give updates for intrinsics
             foreach (var arg in node.Arguments) {
                 // if null, just throw...
                 // it should be impossible to be null
@@ -80,7 +83,6 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 );
             }
 
-            var methodSymbol = (MethodSymbol)Model.GetSymbolInfo(node)!;
             node = (MethodDeclaration)base.VisitMethodDeclaration(node)!;
 
             // Conveniently updates everything but `main` and `on_message`.
@@ -93,30 +95,47 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             );
         }
 
-        // Not overriding Invocation as that is part of a this.
-        // Doing a this directly is more convenient then.
-        // By assumption, all invocations are part of an ExpressionStatement.
-        // Any stragglers will turn into a semantic error afterwards.
-        protected override Node? VisitExpressionStatement(ExpressionStatement expressionStatement) {
-            if (expressionStatement.Statement is not InvocationExpression node)
-                return base.VisitExpressionStatement(expressionStatement);
+        // Not overriding Invocation as you'd expected as then we'd return a
+        // MultipleStatement in a place that's not supported.
+        // Instead, keep track of a list of added statements and replace
+        // invocations with an empty list.
+        // This is guaranteed to go well as methods are not contained in one
+        // another.
+        bool insideInvocation = false;
+        readonly List<Statement> prependedStatements = new();
 
-            // Hooray, we're relevant.
+        protected override Node? VisitStatement(Statement node) {
+            prependedStatements.Clear();
+            node = (Statement)base.VisitStatement(node)!;
+
+            if (prependedStatements.Count == 0)
+                return node;
+            return new MultipleStatements(
+                new MultipleStatements(prependedStatements),
+                node
+            );
+        }
+
+        protected override Node? VisitInvocationExpression(InvocationExpression node) {
+            if (insideInvocation)
+                throw new VisitorAssumptionFailedException("Assumed no invocation is contained in another.");
+
             var methodSymbol = Model.GetSymbolInfo(node);
-            if (methodSymbol.IsIntrinsic)
-                return base.VisitInvocationExpression(node);
 
-            // The fun part
-            var argSymbols = methodSymbol.Parameters.ToList();
+            insideInvocation = true;
             node = (InvocationExpression)base.VisitInvocationExpression(node)!;
+            insideInvocation = false;
 
-            List<Statement> prependedStatements = new();
+            // Intrinsics don't need to do anything.
+            if (methodSymbol.IsIntrinsic)
+                return node;
+
             var args = node.Arguments;
             for (int i = 0; i < args.Count; i++) {
                 prependedStatements.Add(
                     new ExpressionStatement(
                         new AssignmentExpression(
-                            GetUpdatedVarName(argSymbols[i]),
+                            GetUpdatedVarName(methodSymbol.Parameters[i]),
                             AssignmentOp.Set,
                             args[i]
                         )
@@ -125,13 +144,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             }
 
             node = node.WithArguments(Array.Empty<Expression>());
+            // The `main` and `on_message` exceptions.
             if (methodSymbol.IsSpecialMethod && methodSymbol.Parameters.Count == 1)
                 node = node.WithArguments(new List<Expression> { new LiteralExpression(0) });
 
-            return new MultipleStatements(
-                new MultipleStatements(prependedStatements),
-                new ExpressionStatement(node)
-            );
+            return node;
         }
 
         protected override Node? VisitIdentifierName(IdentifierName node) {
