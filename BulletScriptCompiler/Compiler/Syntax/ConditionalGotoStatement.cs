@@ -1,12 +1,12 @@
 ﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
-    /// A non-user node representing either
+    /// A non-user node representing
     /// <code>
     ///     if (condition) { goto condition-true; }
     ///     ..
     ///     condition-true:
     /// </code>
-    /// or
+    /// that can also be used to simulate if-else blocks as follows:
     /// <code>
     ///     if (condition) { goto condition-true; }
     ///     ..
