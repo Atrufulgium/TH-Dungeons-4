@@ -17,7 +17,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     ///     type1 method_arg1;
     ///     ..
     ///     typeN method_argN;
-    ///     type method() {
+    ///     type method-type1-..-typeN() {
     ///         ..
     ///     }
     /// </code>
@@ -40,7 +40,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     ///     method_arg1 = arg_1;
     ///     ..
     ///     method_argN = arg_N;
-    ///     method();
+    ///     method-type1-..-typeN();
     /// </code>
     /// similar to the above.
     /// <br/>
@@ -61,6 +61,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         // What to rename each parameter to when putting it outside the method.
         readonly Dictionary<VariableSymbol, IdentifierName> identifierNameUpdates = new();
+        readonly Dictionary<MethodSymbol, IdentifierName> methodNameUpdates = new();
         readonly List<Declaration> addedDeclarations = new();
         protected override Node? VisitMethodDeclaration(MethodDeclaration node) {
             identifierNameUpdates.Clear();
@@ -91,7 +92,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
             return new MultipleDeclarations(
                 new MultipleDeclarations(addedDeclarations),
-                node
+                node.WithIdentifier(methodNameUpdates[methodSymbol])
             );
         }
 
@@ -143,7 +144,9 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 );
             }
 
-            node = node.WithArguments(Array.Empty<Expression>());
+            node = node
+                .WithArguments(Array.Empty<Expression>())
+                .WithTarget(methodNameUpdates[methodSymbol]);
             // The `main` and `on_message` exceptions.
             if (methodSymbol.IsSpecialMethod && methodSymbol.Parameters.Count == 1)
                 node = node.WithArguments(new List<Expression> { new LiteralExpression(0) });
@@ -165,10 +168,45 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         protected override Node? VisitRoot(Root node) {
             if (node.Declarations.Count == 0)
                 return node;
+            new MethodNameUpdateWalker(methodNameUpdates, Model).Visit(node);
             return base.VisitRoot(node);
         }
 
         static IdentifierName GetUpdatedVarName(VariableSymbol symbol)
             => new(symbol.FullyQualifiedName.Replace('.', '#'));
+
+        private class MethodNameUpdateWalker : AbstractTreeWalker {
+
+            readonly Dictionary<MethodSymbol, IdentifierName> updates;
+
+            public MethodNameUpdateWalker(Dictionary<MethodSymbol, IdentifierName> updates, SemanticModel model) {
+                this.updates = updates;
+                Model = model;
+            }
+
+            protected override void VisitMethodDeclaration(MethodDeclaration node) {
+                var symbol = Model.GetSymbolInfo(node);
+                updates[symbol] = GetUpdatedMethodName(node);
+            }
+
+            protected override void VisitRoot(Root node) {
+                if (node.Declarations.Count == 0)
+                    return;
+                base.VisitRoot(node);
+            }
+
+            IdentifierName GetUpdatedMethodName(MethodDeclaration node) {
+                string name = node.Identifier.Name;
+                var symbol = Model.GetSymbolInfo(node);
+                // Don't update the two exceptions.
+                if (symbol.FullyQualifiedName is "main(float)" or "on_message(float)")
+                    return new(name);
+                // The rest, append all types to maintain overload ability.
+                foreach (var arg in symbol.Parameters) {
+                    name += $"-{arg.Type}";
+                }
+                return new(name);
+            }
+        }
     }
 }

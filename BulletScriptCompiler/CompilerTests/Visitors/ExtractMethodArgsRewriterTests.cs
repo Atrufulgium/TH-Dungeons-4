@@ -26,7 +26,7 @@ declarations:
     identifier:
         [identifier name]
         name:
-            A
+            A-float
     type:
         void
     arguments:
@@ -60,7 +60,7 @@ declarations:
     identifier:
         [identifier name]
         name:
-            B
+            B-float
     type:
         void
     arguments:
@@ -87,7 +87,7 @@ declarations:
                 target:
                     [identifier name]
                     name:
-                        A
+                        A-float
                 args:
                     [none]
 ", new ExtractMethodArgsRewriter());
@@ -112,7 +112,7 @@ declarations:
     identifier:
         [identifier name]
         name:
-            A
+            A-float
     type:
         float
     arguments:
@@ -138,7 +138,7 @@ declarations:
     identifier:
         [identifier name]
         name:
-            B
+            B-float
     type:
         void
     arguments:
@@ -181,7 +181,7 @@ declarations:
                         target:
                             [identifier name]
                             name:
-                                A
+                                A-float
                         args:
                             [none]
 ", new ExtractMethodArgsRewriter());
@@ -205,7 +205,7 @@ declarations:
     identifier:
         [identifier name]
         name:
-            A
+            A-float
     type:
         void
     arguments:
@@ -255,7 +255,7 @@ declarations:
     identifier:
         [identifier name]
         name:
-            A
+            A-float
     type:
         void
     arguments:
@@ -375,6 +375,54 @@ declarations:
         [block]
         statements:
             [none]
+", new ExtractMethodArgsRewriter());
+
+        [TestMethod]
+        public void TestOverload() => TestHelpers.AssertGeneratesTree(@"
+function void A() {}
+function float A(float a) { return a; }
+", @"
+[root]
+declarations:
+    [method declaration]
+    identifier:
+        [identifier name]
+        name:
+            A
+    type:
+        void
+    arguments:
+        [none]
+    block:
+        [block]
+        statements:
+            [none]
+    [variable declaration]
+    identifier:
+        [identifier name]
+        name:
+            A(float)#a
+    type:
+        float
+    initializer:
+        [none]
+    [method declaration]
+    identifier:
+        [identifier name]
+        name:
+            A-float
+    type:
+        float
+    arguments:
+        [none]
+    block:
+        [block]
+        statements:
+            [return]
+            value:
+                [identifier name]
+                name:
+                    A(float)#a
 ", new ExtractMethodArgsRewriter());
     }
 }
