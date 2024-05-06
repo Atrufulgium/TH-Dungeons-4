@@ -173,6 +173,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             if (node is GotoStatement got) return VisitGotoStatement(got);
             if (node is GotoLabelStatement gotl) return VisitGotoLabelStatement(gotl);
             if (node is IfStatement ifs) return VisitIfStatement(ifs);
+            if (node is IntrinsicInvocationAssignmentStatement iias) return VisitIntrinsicInvocationAssignmentStatement(iias);
+            if (node is IntrinsicInvocationStatement iis) return VisitIntrinsicInvocationStatement(iis);
             if (node is LocalDeclarationStatement loco) return VisitLocalDeclarationStatement(loco);
             if (node is ReturnStatement ret) return VisitReturnStatement(ret);
             ThrowUnknownNodeException(node);
@@ -245,6 +247,14 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             => node
             .WithExpression(VisitAs<Expression>(node.Expression))
             .WithIndex(VisitAs<MatrixExpression>(node.Index));
+
+        protected virtual Node? VisitIntrinsicInvocationAssignmentStatement(IntrinsicInvocationAssignmentStatement node)
+            => node
+            .WithIdentifier(VisitAs<IdentifierName>(node.Identifier))
+            .WithInvocation(VisitAs<InvocationExpression>(node.Invocation));
+
+        protected virtual Node? VisitIntrinsicInvocationStatement(IntrinsicInvocationStatement node)
+            => node.WithInvocation(VisitAs<InvocationExpression>(node.Invocation));
 
         protected virtual Node? VisitInvocationExpression(InvocationExpression node) {
             node = node.WithTarget(VisitAs<IdentifierName>(node.Target));
