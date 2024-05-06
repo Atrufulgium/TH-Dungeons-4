@@ -14,6 +14,14 @@
         public override string ToString()
             => $"[repeat loop]\ncount:\n{Indent(Count)}\nbody:\n{Indent(Body)}";
 
+        public override string ToCompactString() {
+            string res = "[repeat loop]            repeat ";
+            if (Count != null)
+                res += $"({Count.ToCompactString()}) ";
+            res += $"\n{CompactIndent(Body)}";
+            return res;
+        }
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => (Count?.ValidateTree(path.Append(this)) ?? new List<Diagnostic>())
             .Concat(Body.ValidateTree(path.Append(this)));

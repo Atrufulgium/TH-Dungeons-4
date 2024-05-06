@@ -15,6 +15,9 @@
         public override string ToString()
             => $"[return]\nvalue:\n{Indent(ReturnValue)}";
 
+        public override string ToCompactString()
+            => ReturnValue == null ? "[return]                 [none]" : $"[return]                 {ReturnValue.ToCompactString()}";
+
         // Return may not be in a non-function, but that's impossible.
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => ReturnValue?.ValidateTree(path.Append(this)) ?? new List<Diagnostic>();

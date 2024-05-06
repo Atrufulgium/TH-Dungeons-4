@@ -32,6 +32,10 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             => $"[for loop]\ninitializer:\n{Indent(Initializer)}\ncondition:\n{Indent(Condition)}\n"
             + $"increment:\n{Indent(Increment)}\nbody:\n{Indent(Body)}";
 
+        public override string ToCompactString()
+            => $"[for loop]               for ({Initializer?.ToCompactString() ?? ""}; {Condition.ToCompactString()};" +
+            $" {Increment?.ToCompactString() ?? ""})\n{CompactIndent(Body)}";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var diags = (Initializer?.ValidateTree(path.Append(this)) ?? new List<Diagnostic>())
                 .Concat(Condition.ValidateTree(path.Append(this)))

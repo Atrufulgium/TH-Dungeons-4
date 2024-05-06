@@ -21,6 +21,9 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => $"[prefix]\nop:\n{Indent(OP.ToString())}\nexpression:\n{Indent(Expression)}";
 
+        public override string ToCompactString()
+            => $"({OP}{Expression.ToCompactString()})";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var diags = Expression.ValidateTree(path.Append(this));
             if (OP == PrefixUnaryOp.Error)

@@ -20,6 +20,9 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => $"[index]\nexpression:\n{Indent(Expression)}\nindex:\n{Indent(Index)}";
 
+        public override string ToCompactString()
+            => $"({Expression.ToCompactString()}){Index.ToCompactString()}";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var ret = Expression.ValidateTree(path.Append(this));
             // Indices may only be 1x1, 1x2, or 2x1.

@@ -40,6 +40,11 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             throw new UnreachablePathException();
         }
 
+        public override string ToCompactString()
+            => StringValue != null ? StringValue :
+                FloatValue != null ? FloatValue.ToString()!:
+                throw new UnreachablePathException();
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => new List<Diagnostic>();
 

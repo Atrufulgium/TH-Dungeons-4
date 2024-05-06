@@ -10,6 +10,9 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => "[break]";
 
+        public override string ToCompactString()
+            => "[break]                 ";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             if (path.OfType<LoopStatement>().Any())
                 return new List<Diagnostic>();

@@ -66,9 +66,6 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// <item><b>ASSUMPTIONS AFTER:</b> There are no methods. </item>
     /// </list>
     /// </remarks>
-    // TODO: Add labels so that main is respected when starting at instruction 0.
-    // Alternatively, for setup, the VM has to run everything until it encounters
-    // a method label naturally.
     internal class RemoveMethodsRewriter : AbstractTreeRewriter {
 
         // The approach here is a little different from the usual trees.
@@ -81,6 +78,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         // abstractions are bad.
 
         readonly List<Statement> variableDeclarationStatements = new();
+        readonly List<Statement> mainStatements = new(); // Main must come first so that init can smoothly go into this
         readonly List<Statement> methodDeclarationStatements = new();
 
         readonly Dictionary<MethodSymbol, int> callCount = new();
@@ -90,6 +88,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         readonly Dictionary<MethodSymbol, GotoLabelStatement> methodLabels = new();
 
         readonly Dictionary<MethodSymbol, IdentifierName> methodEntryVariableName = new();
+
+        readonly GotoLabelStatement endLabel = new("the end");
 
         protected override Node? VisitRoot(Root node) {
             if (node.Declarations.Count == 0)
@@ -111,8 +111,19 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             }
 
             node = (Root)base.VisitRoot(node)!;
+
+            if (mainStatements.Count == 0) {
+                // If there's a main we smoothly go in there from init.
+                // Otherwise, we don't want to enter any method.
+                mainStatements.Add(new GotoStatement(endLabel));
+            }
+
+            // Those endLabel gotos need a final resting place to go.
+            methodDeclarationStatements.Add(endLabel);
+
             return node.WithRootLevelStatements(
                 variableDeclarationStatements
+                .Concat(mainStatements)
                 .Concat(methodDeclarationStatements)
                 .ToList()
             );
@@ -145,7 +156,9 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         }
 
         GotoLabelStatement currentReturnTarget = new("");
+        bool methodHasReturn = false;
         protected override Node? VisitMethodDeclaration(MethodDeclaration node) {
+            methodHasReturn = false;
             if (node.Type != Syntax.Type.Void)
                 throw new VisitorAssumptionFailedException("Assumed methods return void.");
 
@@ -165,24 +178,36 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
             var body = (Block)base.VisitBlock(node.Body)!;
 
-            methodDeclarationStatements.Add(methodLabels[methodSymbol]);
+            List<Statement> writeTarget = methodDeclarationStatements;
+            if (methodSymbol.FullyQualifiedName == "main(float)")
+                writeTarget = mainStatements;
+
+            writeTarget.Add(methodLabels[methodSymbol]);
             foreach (var statement in body.Statements) {
                 if (statement is MultipleStatements ms)
-                    methodDeclarationStatements.AddRange(ms.Flatten());
+                    writeTarget.AddRange(ms.Flatten());
                 else
-                    methodDeclarationStatements.Add(statement);
+                    writeTarget.Add(statement);
             }
-            methodDeclarationStatements.Add(currentReturnTarget);
+            
+            if (methodHasReturn)
+                writeTarget.Add(currentReturnTarget);
             var retEntryLabels = entryLabels[methodSymbol];
+
+            if (retEntryLabels.Length == 0) {
+                writeTarget.Add(new GotoStatement(endLabel));
+                return null;
+            }
+
             IdentifierName returnTest = new("global#returntest");
-            methodDeclarationStatements.Add(
+            writeTarget.Add(
                 new LocalDeclarationStatementWithoutInit(
                     returnTest, Syntax.Type.Float
                 )
             );
             for (int i = 0; i < retEntryLabels.Length; i++) {
                 // The number in the label and `i` here match.
-                methodDeclarationStatements.Add(
+                writeTarget.Add(
                     new ExpressionStatement(
                         new AssignmentExpression(
                             returnTest,
@@ -195,7 +220,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                         )
                     )
                 );
-                methodDeclarationStatements.Add(
+                writeTarget.Add(
                     new ConditionalGotoStatement(
                         returnTest,
                         retEntryLabels[i]
@@ -205,8 +230,10 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             return null;
         }
 
-        protected override Node? VisitReturnStatement(ReturnStatement node)
-            => new GotoStatement(currentReturnTarget);
+        protected override Node? VisitReturnStatement(ReturnStatement node) {
+            methodHasReturn = true;
+            return new GotoStatement(currentReturnTarget);
+        }
 
         // (Visited via ExpressionStatement instead.)
         protected override Node? VisitInvocationExpression(InvocationExpression node)

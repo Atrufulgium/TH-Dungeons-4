@@ -24,6 +24,31 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => $"[matrix{Rows}x{Cols}]\nentries:\n{Indent(Entries)}";
 
+        public override string ToCompactString() {
+            string res = "[";
+            bool firstRow = true;
+            for (int row = 0; row < Rows; row++) {
+                if (firstRow) {
+                    firstRow = false;
+                } else {
+                    res += ";";
+                }
+
+                bool firstCol = false;
+                for (int col = 0; col < Cols; col++) {
+                    if (firstCol) {
+                        firstCol = false;
+                    } else {
+                        res += " ";
+                    }
+
+                    res += Entries[row * Cols + col].ToCompactString();
+                }
+            }
+            res += "]";
+            return res;
+        }
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Entries.SelectMany(e => e.ValidateTree(path.Append(this)));
 

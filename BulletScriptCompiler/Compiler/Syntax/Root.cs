@@ -30,6 +30,15 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             return ret;
         }
 
+        public override string ToCompactString() {
+            string ret = "[root]\n";
+            if (Declarations.Count > 0)
+                ret += CompactIndent(Declarations);
+            else
+                ret += CompactIndent(RootLevelStatements);
+            return ret;
+        }
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Declarations.SelectMany(d => d.ValidateTree(path.Append(this)))
             .Concat(RootLevelStatements.SelectMany(s => s.ValidateTree(path.Append(this))));

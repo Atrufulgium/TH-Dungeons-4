@@ -21,6 +21,13 @@
         public override string ToString()
             => $"[if]\ncondition:\n{Indent(Condition)}\ntrue:\n{Indent(TrueBranch)}\nfalse:\n{Indent(FalseBranch)}";
 
+        public override string ToCompactString() {
+            string res = $"[if]                     if ({Condition.ToCompactString()})\n{CompactIndent(TrueBranch)}";
+            if (FalseBranch != null)
+                res += $"\nelse\n{CompactIndent(FalseBranch)}";
+            return res;
+        }
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Condition.ValidateTree(path.Append(this))
             .Concat(TrueBranch.ValidateTree(path.Append(this)))

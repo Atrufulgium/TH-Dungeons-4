@@ -18,6 +18,9 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => $"[identifier name]\nname:\n{Indent(Name)}";
 
+        public override string ToCompactString()
+            => Name;
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => new List<Diagnostic>();
 

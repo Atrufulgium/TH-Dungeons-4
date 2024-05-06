@@ -94,6 +94,7 @@ namespace Atrufulgium.BulletScript.Compiler.Tests.Helpers {
         public static void AssertGeneratesTree(
             string code,
             string tree,
+            bool compactTree = false,
             params IVisitor[] visitors
         ) {
             var (tokens, diags) = new Lexer().ToTokens(code);
@@ -118,7 +119,13 @@ namespace Atrufulgium.BulletScript.Compiler.Tests.Helpers {
                 AssertNoErrorDiagnostics(semanticModel.Diagnostics);
             }
 
-            AssertTrimmedStringsEqual(tree, root.ToString());
+            AssertTrimmedStringsEqual(tree, compactTree ? root.ToCompactString() : root.ToString());
         }
+
+        public static void AssertGeneratesTree(
+            string code,
+            string tree,
+            params IVisitor[] visitors
+        ) => AssertGeneratesTree(code, tree, compactTree: false, visitors);
     }
 }

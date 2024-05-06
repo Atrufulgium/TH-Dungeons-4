@@ -15,6 +15,9 @@
         public override string ToString()
             => $"[local declaration]\ndeclaration:\n{Indent(Declaration)}";
 
+        public override string ToCompactString()
+            => Declaration.ToCompactString();
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Declaration.ValidateTree(path.Append(this));
 

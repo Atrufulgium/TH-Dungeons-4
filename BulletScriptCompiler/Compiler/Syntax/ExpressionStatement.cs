@@ -17,6 +17,9 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => $"[expression statement]\nstatement:\n{Indent(Statement)}";
 
+        public override string ToCompactString()
+            => $"[expression]             {Statement.ToCompactString()}";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var childValidations = Statement.ValidateTree(path.Append(this));
             if (Statement is not (AssignmentExpression or InvocationExpression or PostfixUnaryExpression))

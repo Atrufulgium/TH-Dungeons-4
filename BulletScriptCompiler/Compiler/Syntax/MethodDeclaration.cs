@@ -31,6 +31,21 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             => $"[method declaration]\nidentifier:\n{Indent(Identifier)}\ntype:\n{Indent(Type.ToString())}\n"
             + $"arguments:\n{Indent(Arguments)}\nblock:\n{Indent(Body)}";
 
+        public override string ToCompactString() {
+            string res = $"[method declaration]     {Type} {Identifier.Name} (";
+            bool first = true;
+            foreach (var arg in Arguments) {
+                if (first) {
+                    first = false;
+                } else {
+                    res += ",";
+                }
+                res += $"{arg.Declaration.Type} {arg.Declaration.Identifier.Name}";
+            }
+            res += $")\n{CompactIndent(Body)}";
+            return res;
+        }
+
         // The identifier is trivially fine and don't need to be checked.
         // The arguments may not have initializers.
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {

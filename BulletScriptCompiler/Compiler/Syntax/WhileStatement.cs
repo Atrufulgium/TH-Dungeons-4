@@ -14,6 +14,9 @@
         public override string ToString()
             => $"[while loop]\ncondition:\n{Indent(Condition)}\nbody:\n{Indent(Body)}";
 
+        public override string ToCompactString()
+            => $"[while loop]             while ({Condition})\n{CompactIndent(Body)}";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Condition.ValidateTree(path.Append(this))
             .Concat(Body.ValidateTree(path.Append(this)));

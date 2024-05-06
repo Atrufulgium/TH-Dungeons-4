@@ -25,6 +25,13 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => $"[assignment]\nlhs:\n{Indent(LHS)}\nop:\n{Indent(OP.ToString())}\nrhs:\n{Indent(RHS)}";
 
+        public override string ToCompactString() {
+            string op = OP.ToString();
+            if (op != "=")
+                op = $"{op}=";
+            return $"{LHS.Name} {op} {RHS.ToCompactString()}";
+        }
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var childValidation = LHS.ValidateTree(path.Append(this));
             if (OP == AssignmentOp.Error)

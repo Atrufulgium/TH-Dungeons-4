@@ -25,6 +25,11 @@
         protected static string Indent<T>(IReadOnlyCollection<T>? nodes) where T : Node
             => nodes == null ? Indent((string?)null) : Indent(string.Join('\n', nodes));
 
+        protected static string CompactIndent(string? str) => Indent(str);
+        protected static string CompactIndent(Node? node) => CompactIndent(node?.ToCompactString());
+        protected static string CompactIndent<T>(IReadOnlyCollection<T>? nodes) where T : Node
+            => nodes == null ? CompactIndent((string?)null) : CompactIndent(string.Join('\n', nodes.Select(n => n.ToCompactString())));
+
         /// <summary>
         /// Check whether there are any obvious syntactic problems with the tree,
         /// with a given path of parent nodes. This must include "obvious"
@@ -45,5 +50,15 @@
         /// </summary>
         public IEnumerable<Diagnostic> ValidateTree()
             => ValidateTree(new List<Node>() { this } );
+
+        /// <summary>
+        /// A more compact representation of the syntax tree in which only
+        /// statements take up newlines.
+        /// <br/>
+        /// Non-emittable statements should use [] for their type, and emittable
+        /// should use &lt;&gt; for their type.
+        /// </summary>
+        /// <returns></returns>
+        public abstract string ToCompactString();
     }
 }

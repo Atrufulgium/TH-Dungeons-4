@@ -18,6 +18,9 @@
         public override string ToString()
             => $"[polar]\nangle:\n{Indent(Angle)}\nradius:\n{Indent(Radius)}";
 
+        public override string ToCompactString()
+            => $"[{Angle.ToCompactString()}:{Radius.ToCompactString()}]";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Angle.ValidateTree(path.Append(this))
             .Concat(Radius.ValidateTree(path.Append(this)));

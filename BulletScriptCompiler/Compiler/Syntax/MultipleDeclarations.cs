@@ -31,6 +31,9 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => $"[multiple declarations]\ndeclarations:\n{Indent(Declarations)}";
 
+        public override string ToCompactString()
+            => $"[multiple declarations]\n{CompactIndent(Declarations)}";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => throw new PersistentTransientException(this);
 

@@ -16,6 +16,9 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         public override string ToString()
             => $"[block]\nstatements:\n{Indent(Statements)}";
 
+        public override string ToCompactString()
+            => CompactIndent(Statements);
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => Statements.SelectMany(s => s.ValidateTree(path.Append(this)));
 

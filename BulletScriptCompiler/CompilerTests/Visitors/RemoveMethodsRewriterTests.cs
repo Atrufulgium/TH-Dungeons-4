@@ -8,269 +8,81 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors.Tests {
 
         [TestMethod]
         public void TestSimple() => TestHelpers.AssertGeneratesTree(@"
-float a;
+float a = 6;
 function void A() { a = 3; C(); }
 function void B() { A(); C(); }
 function void C() { a = 5; }
 ", @"
 [root]
-statements:
-    [local declaration]
-    declaration:
-        [variable declaration]
-        identifier:
-            [identifier name]
-            name:
-                a
-        type:
-            float
-        initializer:
-            [none]
-    [local declaration noinit]
-    identifier:
-        [identifier name]
-        name:
-            A()#entry
-    type:
-        float
-    [local declaration noinit]
-    identifier:
-        [identifier name]
-        name:
-            B()#entry
-    type:
-        float
-    [local declaration noinit]
-    identifier:
-        [identifier name]
-        name:
-            C()#entry
-    type:
-        float
-    [label]
-    name:
-        A()
-    [expression statement]
-    statement:
-        [assignment]
-        lhs:
-            [identifier name]
-            name:
-                a
-        op:
-            =
-        rhs:
-            [literal float]
-            value:
-                3
-    [expression statement]
-    statement:
-        [assignment]
-        lhs:
-            [identifier name]
-            name:
-                C()#entry
-        op:
-            =
-        rhs:
-            [literal float]
-            value:
-                0
-    [goto]
-    target:
-        [label]
-        name:
-            C()
-    [label]
-    name:
-        C()#return-to-entry#0
-    [label]
-    name:
-        A()#return
-    [local declaration noinit]
-    identifier:
-        [identifier name]
-        name:
-            global#returntest
-    type:
-        float
-    [expression statement]
-    statement:
-        [assignment]
-        lhs:
-            [identifier name]
-            name:
-                global#returntest
-        op:
-            =
-        rhs:
-            [binop]
-            lhs:
-                [identifier name]
-                name:
-                    A()#entry
-            op:
-                ==
-            rhs:
-                [literal float]
-                value:
-                    0
-    [conditional goto]
-    condition:
-        [identifier name]
-        name:
-            global#returntest
-    target:
-        [goto]
-        target:
-            [label]
-            name:
-                A()#return-to-entry#0
-    [label]
-    name:
-        B()
-    [expression statement]
-    statement:
-        [assignment]
-        lhs:
-            [identifier name]
-            name:
-                A()#entry
-        op:
-            =
-        rhs:
-            [literal float]
-            value:
-                0
-    [goto]
-    target:
-        [label]
-        name:
-            A()
-    [label]
-    name:
-        A()#return-to-entry#0
-    [expression statement]
-    statement:
-        [assignment]
-        lhs:
-            [identifier name]
-            name:
-                C()#entry
-        op:
-            =
-        rhs:
-            [literal float]
-            value:
-                1
-    [goto]
-    target:
-        [label]
-        name:
-            C()
-    [label]
-    name:
-        C()#return-to-entry#1
-    [label]
-    name:
-        B()#return
-    [local declaration noinit]
-    identifier:
-        [identifier name]
-        name:
-            global#returntest
-    type:
-        float
-    [label]
-    name:
-        C()
-    [expression statement]
-    statement:
-        [assignment]
-        lhs:
-            [identifier name]
-            name:
-                a
-        op:
-            =
-        rhs:
-            [literal float]
-            value:
-                5
-    [label]
-    name:
-        C()#return
-    [local declaration noinit]
-    identifier:
-        [identifier name]
-        name:
-            global#returntest
-    type:
-        float
-    [expression statement]
-    statement:
-        [assignment]
-        lhs:
-            [identifier name]
-            name:
-                global#returntest
-        op:
-            =
-        rhs:
-            [binop]
-            lhs:
-                [identifier name]
-                name:
-                    C()#entry
-            op:
-                ==
-            rhs:
-                [literal float]
-                value:
-                    0
-    [conditional goto]
-    condition:
-        [identifier name]
-        name:
-            global#returntest
-    target:
-        [goto]
-        target:
-            [label]
-            name:
-                C()#return-to-entry#0
-    [expression statement]
-    statement:
-        [assignment]
-        lhs:
-            [identifier name]
-            name:
-                global#returntest
-        op:
-            =
-        rhs:
-            [binop]
-            lhs:
-                [identifier name]
-                name:
-                    C()#entry
-            op:
-                ==
-            rhs:
-                [literal float]
-                value:
-                    1
-    [conditional goto]
-    condition:
-        [identifier name]
-        name:
-            global#returntest
-    target:
-        [goto]
-        target:
-            [label]
-            name:
-                C()#return-to-entry#1
-", new RemoveMethodsRewriter());
+    [variable declaration]   float a = 6
+    <variable declaration>   float A()#entry
+    <variable declaration>   float B()#entry
+    <variable declaration>   float C()#entry
+    <goto>                   goto the end
+    <goto label>             A():
+    [expression]             a = 3
+    [expression]             C()#entry = 0
+    <goto>                   goto C()
+    <goto label>             C()#return-to-entry#0:
+    <variable declaration>   float global#returntest
+    [expression]             global#returntest = (A()#entry == 0)
+    <conditional goto>       if global#returntest goto A()#return-to-entry#0
+    <goto label>             B():
+    [expression]             A()#entry = 0
+    <goto>                   goto A()
+    <goto label>             A()#return-to-entry#0:
+    [expression]             C()#entry = 1
+    <goto>                   goto C()
+    <goto label>             C()#return-to-entry#1:
+    <goto>                   goto the end
+    <goto label>             C():
+    [expression]             a = 5
+    <variable declaration>   float global#returntest
+    [expression]             global#returntest = (C()#entry == 0)
+    <conditional goto>       if global#returntest goto C()#return-to-entry#0
+    [expression]             global#returntest = (C()#entry == 1)
+    <conditional goto>       if global#returntest goto C()#return-to-entry#1
+    <goto label>             the end:
+", compactTree: true, new RemoveMethodsRewriter());
+
+        [TestMethod]
+        public void TestMainAndReturn() => TestHelpers.AssertGeneratesTree(@"
+float a = 6;
+function void A() { a = 3; return; C(); }
+function void main(float value) { A(); C(); }
+function void C() { a = 5; }
+", @"
+[root]
+    [variable declaration]   float a = 6
+    <variable declaration>   float A()#entry
+    <variable declaration>   float main(float)#entry
+    <variable declaration>   float C()#entry
+    <goto label>             main(float):
+    [expression]             A()#entry = 0
+    <goto>                   goto A()
+    <goto label>             A()#return-to-entry#0:
+    [expression]             C()#entry = 1
+    <goto>                   goto C()
+    <goto label>             C()#return-to-entry#1:
+    <goto>                   goto the end
+    <goto label>             A():
+    [expression]             a = 3
+    <goto>                   goto A()#return
+    [expression]             C()#entry = 0
+    <goto>                   goto C()
+    <goto label>             C()#return-to-entry#0:
+    <goto label>             A()#return:
+    <variable declaration>   float global#returntest
+    [expression]             global#returntest = (A()#entry == 0)
+    <conditional goto>       if global#returntest goto A()#return-to-entry#0
+    <goto label>             C():
+    [expression]             a = 5
+    <variable declaration>   float global#returntest
+    [expression]             global#returntest = (C()#entry == 0)
+    <conditional goto>       if global#returntest goto C()#return-to-entry#0
+    [expression]             global#returntest = (C()#entry == 1)
+    <conditional goto>       if global#returntest goto C()#return-to-entry#1
+    <goto label>             the end:
+", compactTree: true, new RemoveMethodsRewriter());
     }
 }

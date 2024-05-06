@@ -13,6 +13,9 @@
         public override string ToString()
             => $"[goto]\ntarget:\n{Indent(Target)}";
 
+        public override string ToCompactString()
+            => $"<goto>                   goto {Target.Name}";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => new List<Diagnostic>();
 

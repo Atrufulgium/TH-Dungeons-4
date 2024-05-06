@@ -13,6 +13,9 @@
         public override string ToString()
             => $"[label]\nname:\n{Indent(Name)}";
 
+        public override string ToCompactString()
+            => $"<goto label>             {Name}:";
+
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => new List<Diagnostic>();
     }
