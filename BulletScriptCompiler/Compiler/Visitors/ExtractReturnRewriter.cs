@@ -55,7 +55,6 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// <item><b>ASSUMPTIONS AFTER:</b> Idem, and all methods are void-typed. </item>
     /// </list>
     /// </remarks>
-    // TODO: I don't check the "all branches return" _anywhere_ yet.
     internal class ExtractReturnRewriter : AbstractTreeRewriter {
 
         static IdentifierName ReturnName(MethodSymbol symbol) => new($"{symbol.FullyQualifiedName}#return");

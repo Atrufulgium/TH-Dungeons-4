@@ -54,10 +54,16 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             if (pass3.Diagnostics.ContainsErrors())
                 return;
 
+            CheckFlowWalker pass4 = new();
+            pass4.Visit(root);
+            diagnostics.AddRange(pass4.Diagnostics);
+            if (pass4.Diagnostics.ContainsErrors())
+                return;
+
             SymbolTable = table.ToSymbolTable(root);
-            var pass4diags = SymbolTable.TestIllegalCallChains(SymbolTable);
-            diagnostics.AddRange(pass4diags);
-            if (pass4diags.ContainsErrors()) {
+            var pass5diags = SymbolTable.TestIllegalCallChains(SymbolTable);
+            diagnostics.AddRange(pass5diags);
+            if (pass5diags.ContainsErrors()) {
                 SymbolTable = null;
                 return;
             }

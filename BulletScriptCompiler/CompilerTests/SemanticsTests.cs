@@ -550,5 +550,43 @@ function void A4() { A1(); }
 function void on_message(float value) { A1(); }
 function void A1() { wait(1); }
 ", "BS0071", 2);
+
+        [TestMethod]
+        public void ErrorNotAllBranchesReturn() => TestFail(@"
+function float my_method(float value) {
+    if (value == 3) {
+        if (value == 3) {
+            return 3;
+        }
+    } else {
+        if (value == 3) {
+            return 3;
+        } else {
+            return 3;
+        }
+    }
+}
+", "BS0072", 1);
+
+        [TestMethod]
+        public void WarningUnreachableCode() => TestFail(@"
+function float my_method(float value) {
+    if (value == 3) {
+        if (value == 3) {
+            return 3;
+        } else {
+            return 3;
+            value = 4;
+        }
+    } else {
+        if (value == 3) {
+            return 3;
+        } else {
+            return 3;
+        }
+    }
+}
+", "BS0073", 7);
+
     }
 }

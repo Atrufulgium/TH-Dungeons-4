@@ -7,12 +7,17 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         static Diagnostic Error(Location location, string id, string msg)
             => new(location, DiagnosticLevel.Error, id, msg);
-
         static Diagnostic Error(Token token, string id, string msg)
             => Error(token.Location, id, msg);
-
         static Diagnostic Error(Node node, string id, string msg)
             => Error(node.Location, id, msg);
+
+        static Diagnostic Warning(Location location, string id, string msg)
+            => new(location, DiagnosticLevel.Warning, id, msg);
+        static Diagnostic Warning(Token token, string id, string msg)
+            => Warning(token.Location, id, msg);
+        static Diagnostic Warning(Node node, string id, string msg)
+            => Warning(node.Location, id, msg);
 
         public static Diagnostic UnterminatedString(Location location, string token)
             => Error(location, "BS0001",
@@ -25,7 +30,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             );
 
         public static Diagnostic EmptyProgram()
-            => new(new(0, 0), DiagnosticLevel.Warning, "BS0003", "You compiled an empty program. This is probably not intended.");
+            => Warning(new Location(0, 0), "BS0003", "You compiled an empty program. This is probably not intended.");
 
         public static Diagnostic ExpectedDeclaration(Location location)
             => Error(location, "BS0004", "Expected a declaration such as `float number` or `function void method()` designated by a `float`, `function`, `method`, or `string` keyword.");
@@ -214,16 +219,22 @@ namespace Atrufulgium.BulletScript.Compiler {
             => Error(location, "BS0067", "OnTime method must have signature `function void on_time<value>()`.");
 
         public static Diagnostic OnHealthWithoutArg(Node location)
-            => new(location.Location, DiagnosticLevel.Warning, "BS0068", "Found method `on_health`; did you mean `on_health<value>`?");
+            => Warning(location, "BS0068", "Found method `on_health`; did you mean `on_health<value>`?");
 
         public static Diagnostic OnTimeWithoutArg(Node location)
-            => new(location.Location, DiagnosticLevel.Warning, "BS0069", "Found method `on_time`; did you mean `on_time<value>`?");
+            => Warning(location, "BS0069", "Found method `on_time`; did you mean `on_time<value>`?");
 
         public static Diagnostic RecursiveCall(Location location, List<MethodSymbol> problemPath)
             => Error(location, "BS0070", $"Recursion is not allowed. Recursion: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}.");
 
         public static Diagnostic IllegalWaitCall(Location location, List<MethodSymbol> problemPath)
             => Error(location, "BS0071", $"The special on_X methods may not call `wait`. Path: {string.Join(" -> ", problemPath.Select(m => m.FullyQualifiedName))}");
+
+        public static Diagnostic NotAllBranchesReturn(Node location)
+            => Error(location, "BS0072", "Not all code paths return a value.\n(This analysis does not take into account infinite loops; you may need to add a dummy return at the end of the method even though it's never reached.)");
+
+        public static Diagnostic UnreachableCode(Node location)
+            => Warning(location, "BS0073", "Unreachable code detected.");
 
         public static Diagnostic InternalMalformedConditionalGoto(Node node)
             => Error(node.Location, "BS1000", "A ConditionalGotoStatement may only have a block with a single goto statement. The condition must be a `identifier`.");
