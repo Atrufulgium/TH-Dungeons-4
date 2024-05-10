@@ -115,6 +115,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             if (node is IntrinsicInvocationStatement iis) { VisitIntrinsicInvocationStatement(iis); return; }
             if (node is LocalDeclarationStatement loco) { VisitLocalDeclarationStatement(loco); return; }
             if (node is ReturnStatement ret) { VisitReturnStatement(ret); return; }
+            if (node is SimpleAssignmentStatement sas) { VisitSimpleAssignmentStatement(sas); return; }
             ThrowUnknownNodeException(node);
         }
 
@@ -251,6 +252,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 Visit(d);
             foreach (var s in node.RootLevelStatements)
                 Visit(s);
+        }
+
+        protected virtual void VisitSimpleAssignmentStatement(SimpleAssignmentStatement node) {
+            Visit(node.LHS);
+            Visit(node.RHS);
         }
 
         protected virtual void VisitVariableDeclaration(VariableDeclaration node) {

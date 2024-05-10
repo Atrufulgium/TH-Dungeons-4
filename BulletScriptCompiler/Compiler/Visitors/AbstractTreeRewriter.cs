@@ -177,6 +177,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             if (node is IntrinsicInvocationStatement iis) return VisitIntrinsicInvocationStatement(iis);
             if (node is LocalDeclarationStatement loco) return VisitLocalDeclarationStatement(loco);
             if (node is ReturnStatement ret) return VisitReturnStatement(ret);
+            if (node is SimpleAssignmentStatement sas) return VisitSimpleAssignmentStatement(sas);
             ThrowUnknownNodeException(node);
             throw new UnreachablePathException();
         }
@@ -350,6 +351,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             }
             return node.WithRootLevelStatements(stats);
         }
+
+        protected virtual Node? VisitSimpleAssignmentStatement(SimpleAssignmentStatement node)
+            => node
+            .WithLHS(VisitAs<IdentifierName>(node.LHS))
+            .WithRHS(VisitAs<Expression>(node.RHS));
 
         protected virtual Node? VisitVariableDeclaration(VariableDeclaration node) {
             node = node.WithIdentifier(VisitAs<IdentifierName>(node.Identifier));

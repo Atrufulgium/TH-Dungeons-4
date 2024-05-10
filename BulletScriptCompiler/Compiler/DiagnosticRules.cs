@@ -238,5 +238,14 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         public static Diagnostic InternalMalformedConditionalGoto(Node node)
             => Error(node.Location, "BS1000", "A ConditionalGotoStatement may only have a block with a single goto statement. The condition must be a `identifier`.");
+
+        public static Diagnostic InternalSimpleAssignmentNotSimple(SimpleAssignmentStatement node)
+            => Error(node.Location, "BS1001", $"A simple assignment was nog simple enough:\n    {node.ToCompactString()}");
+
+        public static Diagnostic InternalSimpleAssBinopCannotBeConst(SimpleAssignmentStatement node)
+            => Error(node.Location, "BS1002", $"A simple assignment may not be `literal op literal`:\n    {node.ToCompactString()}");
+
+        public static Diagnostic InternalSimpleAssIndexCannotBeConst(SimpleAssignmentStatement node)
+            => Error(node.Location, "BS1003", $"You cannot index a literal:\n    {node.ToCompactString()}");
     }
 }
