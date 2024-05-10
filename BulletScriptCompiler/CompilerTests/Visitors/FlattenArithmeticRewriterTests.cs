@@ -89,6 +89,53 @@ float a = (m + m)[1];
     [variable declaration]   float a = (arithmetic#result#matrix2x2#0)[ 1]
 ", compactTree: true, new FlattenArithmeticRewriter());
 
-        // TODO: Does this fuck up function calls?
+        [TestMethod]
+        public void TestInvocation() => TestHelpers.AssertGeneratesTree(@"
+function float A(float value) { return value; }
+function float B(float value) { return value; }
+function float C(float value) { return value; }
+function float D(float value) { return value; }
+function float E(float value) { return value; }
+
+function void main(float value) {
+    float i = E(length([D(4) D(C(3) + B(A(1))) 5]));
+    float j = C(B(A(1)));
+}
+", @"
+[root]
+    [method declaration]     float A(float value)
+            [return]                 value
+    [method declaration]     float B(float value)
+            [return]                 value
+    [method declaration]     float C(float value)
+            [return]                 value
+    [method declaration]     float D(float value)
+            [return]                 value
+    [method declaration]     float E(float value)
+            [return]                 value
+    [method declaration]     void main(float value)
+            <variable declaration>   float arithmetic#result#float#0
+            [expression]             arithmetic#result#float#0 = D(4)
+            <variable declaration>   float arithmetic#result#float#1
+            [expression]             arithmetic#result#float#1 = C(3)
+            <variable declaration>   float arithmetic#result#float#2
+            [expression]             arithmetic#result#float#2 = A(1)
+            <variable declaration>   float arithmetic#result#float#3
+            [expression]             arithmetic#result#float#3 = B(arithmetic#result#float#2)
+            <variable declaration>   float arithmetic#result#float#4
+            [expression]             arithmetic#result#float#4 = (arithmetic#result#float#1 + arithmetic#result#float#3)
+            <variable declaration>   float arithmetic#result#float#5
+            [expression]             arithmetic#result#float#5 = D(arithmetic#result#float#4)
+            <variable declaration>   matrix1x3 arithmetic#result#matrix1x3#0
+            [expression]             arithmetic#result#matrix1x3#0 = [ arithmetic#result#float#0 arithmetic#result#float#5 5]
+            <variable declaration>   float arithmetic#result#float#6
+            [expression]             arithmetic#result#float#6 = length(arithmetic#result#matrix1x3#0)
+            [variable declaration]   float i = E(arithmetic#result#float#6)
+            <variable declaration>   float arithmetic#result#float#0
+            [expression]             arithmetic#result#float#0 = A(1)
+            <variable declaration>   float arithmetic#result#float#1
+            [expression]             arithmetic#result#float#1 = B(arithmetic#result#float#0)
+            [variable declaration]   float j = C(arithmetic#result#float#1)
+", compactTree: true, new FlattenArithmeticRewriter());
     }
 }

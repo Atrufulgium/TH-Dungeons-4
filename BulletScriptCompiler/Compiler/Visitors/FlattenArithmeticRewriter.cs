@@ -19,7 +19,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// operations.
     /// <br/>
     /// In fact, it handles <i>all</i> expressions, and for instance also pulls
-    /// matrix entries out of matrices.
+    /// matrix entries out of matrices, and invocation arguments out of calls.
     /// </list>
     /// </summary>
     /// <remarks>
@@ -43,7 +43,6 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         // Depth-first, whenever we encounter arithmetic beyond the first op,
         // make it a variable of the correct type, and replace the calculation
         // with a reference to that variable.
-        // The logic is nearly identical to FlattenNestedCallsRewriter.
         readonly List<Statement> prependedStatements = new();
         // Bottom layer invocation does not need to be replaced.
         int layer = -1;
