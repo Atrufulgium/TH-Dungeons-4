@@ -188,6 +188,15 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             var res = CombineBinopTypes(lhs, rhs, node.OP.ToString());
             CheckIntroducedError(node.RHS, lhs, rhs, res, node.OP.ToString(), true);
             nodeTypes[node] = res;
+
+            // We may be in a "lhs coarser type than rhs" situation
+            // In that case, update lhs.
+            // (e.g. `matrix m; m = [1];` goes wrong if not for this.)
+            // TODO: Actually do this.
+            if (lhs != res) {
+
+            }
+
             writtenVariables.Add(table.GetFullyQualifiedName(node.LHS, currentMethod));
             if (node.OP != AssignmentOp.Set)
                 readVariables.Add(table.GetFullyQualifiedName(node.LHS, currentMethod));
@@ -210,8 +219,12 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             // note: not being called from invocation.
             var fqn = table.GetFullyQualifiedName(node, currentMethod);
             var type = table.GetType(fqn);
+            // If we write to a variable that's not initialised properly yet,
+            // don't judge it as "wrong". Only when reading.
+            // Writing is assignment LHS, otherwise we are reading.
             if (type == BType.Error || type == BType.MatrixUnspecified)
-                AddDiagnostic(UnknownTypeAtThisPoint(node));
+                if (!isAssignmentLHSIdentifier)
+                    AddDiagnostic(UnknownTypeAtThisPoint(node));
             nodeTypes[node] = type;
             if (!isAssignmentLHSIdentifier)
                 readVariables.Add(fqn);
