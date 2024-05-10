@@ -31,7 +31,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
         /// declaration gets assigned a type, all its references won't be
         /// updated with it. Do not use directly, use <see cref="GetType(Expression)"/>.
         /// </summary>
-        readonly Dictionary<Expression, BType> nodeTypes = new();
+        public readonly Dictionary<Expression, BType> nodeTypes = new();
 
         readonly List<(string source, string target)> callGraph = new();
         readonly HashSet<string> readVariables = new();
@@ -223,7 +223,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             base.VisitIndexExpression(node);
             // check whether expression is matrixtyped
             // this then always returns float
-            if (!GetType(node).IsMatrix)
+            if (!GetType(node.Expression).IsMatrix)
                 AddDiagnostic(CanOnlyIndexMatrices(node.Expression));
             nodeTypes[node] = BType.Float;
         }

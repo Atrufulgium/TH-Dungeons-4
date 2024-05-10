@@ -30,21 +30,14 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         int varID = 0;
         IdentifierName GetNewVar() => new($"invocation#result#{varID++}");
 
-        // As the semantic model only works for nodes in the tree, we first
-        // walk the tree just to get the type of every invocation.
-        // After this, we do the actual updates. Depth-first, whenever we
-        // encounter a call beyond the first, make it a variable of the correct
-        // type, and replace the invocation with a reference to that variable.
-        Dictionary<InvocationExpression, Syntax.Type> types = new();
+        // Depth-first, whenever we encounter a call beyond the first, make it
+        // a variable of the correct type, and replace the invocation with a
+        // reference to that variable.
         readonly List<Statement> prependedStatements = new();
         // Bottom layer invocation does not need to be replaced.
         int layer = -1;
         protected override Node? VisitStatement(Statement node) {
             prependedStatements.Clear();
-            // Grab types
-            var typeGrabber = new InvocationTypeGrabberWalker() { Model = Model };
-            typeGrabber.Visit(node);
-            types = typeGrabber.types;
 
             node = (Statement)base.VisitStatement(node)!;
             if (prependedStatements.Count == 0)
@@ -72,21 +65,12 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 new LocalDeclarationStatement(
                     new VariableDeclaration(
                         name,
-                        types[key],
+                        Model.GetExpressionType(key),
                         initializer: node
                     )
                 )
             );
             return name;
-        }
-
-        private class InvocationTypeGrabberWalker : AbstractTreeWalker {
-            public readonly Dictionary<InvocationExpression, Syntax.Type> types = new();
-
-            protected override void VisitInvocationExpression(InvocationExpression node) {
-                types[node] = Model.GetSymbolInfo(node).Type;
-                base.VisitInvocationExpression(node);
-            }
         }
     }
 }

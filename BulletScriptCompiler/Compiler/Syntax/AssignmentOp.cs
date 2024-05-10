@@ -101,5 +101,25 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
                 andFunc: () => "&",
                 orFunc: () => "|"
             );
+
+        /// <summary>
+        /// If a assignment operator corresponds to a binary operator, returns
+        /// true and outputs that operator.
+        /// </summary>
+        public static bool TryGetBinop(AssignmentOp op, out BinaryOp binaryOp) {
+            binaryOp = op.Handle(
+                errorFunc: () => BinaryOp.Error,
+                setFunc: () => BinaryOp.Error,
+                addFunc: () => BinaryOp.Add,
+                subFunc: () => BinaryOp.Sub,
+                mulFunc: () => BinaryOp.Mul,
+                divFunc: () => BinaryOp.Div,
+                modFunc: () => BinaryOp.Mod,
+                powFunc: () => BinaryOp.Pow,
+                andFunc: () => BinaryOp.And,
+                orFunc:  () => BinaryOp.Or
+            );
+            return binaryOp != BinaryOp.Error;
+        }
     }
 }

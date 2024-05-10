@@ -15,6 +15,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// </summary>
         public IReadOnlyCollection<Diagnostic> Diagnostics { get; private init; }
         readonly List<Diagnostic> diagnostics;
+        readonly Dictionary<Expression, Syntax.Type> expressionTypes = new();
 
         /// <summary>
         /// Whether the parsing of the syntax tree went without encountering
@@ -53,6 +54,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             diagnostics.AddRange(pass3.Diagnostics);
             if (pass3.Diagnostics.ContainsErrors())
                 return;
+            expressionTypes = pass3.nodeTypes;
 
             CheckFlowWalker pass4 = new();
             pass4.Visit(root);
@@ -81,6 +83,11 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             => (MethodSymbol)GetSymbolInfo((Node)node)!;
         public MethodSymbol GetSymbolInfo(MethodDeclaration node)
             => (MethodSymbol)GetSymbolInfo((Node)node)!;
+
+        public Syntax.Type GetExpressionType(Expression node) {
+            CheckValidModel();
+            return expressionTypes[node];
+        }
 
         public string ToString(bool includeCompilerSymbols)
             => SymbolTable?.ToString(includeCompilerSymbols) ?? "(Empty table.)";
