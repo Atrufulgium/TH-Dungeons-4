@@ -507,8 +507,19 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             // - Prefix `-` and `!` operators
             if (tokens.Count < 2) EoFPanic();
 
-            if (tokens[0].Kind == TokenKind.ParensStart)
-                return ParseParenthesisedExpression(ref tokens);
+            if (tokens[0].Kind == TokenKind.ParensStart) {
+                // Usually parens are a full single term and we can return.
+                // However, indexing is allowed on parenthesised expressions,
+                // in which case this is not yet a full term.
+                var expression = ParseParenthesisedExpression(ref tokens);
+                if (tokens.Count == 0 || tokens[0].Kind != TokenKind.BracketStart)
+                    return expression;
+                // We're a ( .. )[ .. ] construction.
+                var index = ParseMatrixLike(ref tokens);
+                if (index is MatrixExpression mat)
+                    return new IndexExpression(expression, mat, expression.Location);
+                Panic(PolarIsntAnIndex(index.Location));
+            }
 
             if (tokens[0].Kind == TokenKind.Identifier) {
                 if (tokens[1].Kind == TokenKind.ParensStart
@@ -764,7 +775,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                 Panic(NotAPrefixUnary(tokens[0]));
             var unary = tokens[0];
             tokens = tokens[1..];
-            var expr = ParseExpression(ref tokens);
+            var expr = ParseTerm(ref tokens);
             return new PrefixUnaryExpression(expr, PrefixUnaryOp.FromString(unary.Value), unary.Location);
         }
 

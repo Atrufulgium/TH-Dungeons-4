@@ -1294,6 +1294,87 @@ statements:
                         2
 ");
 
+        // Whoops forgot this is nice syntax to have
+        [TestMethod]
+        public void CompileTestIndex2() => TestCompile(@"
+i = (m + m)[2];
+", @"
+[root]
+statements:
+    [expression statement]
+    statement:
+        [assignment]
+        lhs:
+            [identifier name]
+            name:
+                i
+        op:
+            =
+        rhs:
+            [index]
+            expression:
+                [binop]
+                lhs:
+                    [identifier name]
+                    name:
+                        m
+                op:
+                    +
+                rhs:
+                    [identifier name]
+                    name:
+                        m
+            index:
+                [matrix1x1]
+                entries:
+                    [literal float]
+                    value:
+                        2
+");
+
+        // Forgot to test how these interact, and discovered layer that I was
+        // a dumbo and called 1 wrong method causing this to go wrong.
+        [TestMethod]
+        public void CompileTestPrefixesAndBinaries() => TestCompile(@"
+i = -1 + 2 + 3;
+", @"
+[root]
+statements:
+    [expression statement]
+    statement:
+        [assignment]
+        lhs:
+            [identifier name]
+            name:
+                i
+        op:
+            =
+        rhs:
+            [binop]
+            lhs:
+                [prefix]
+                op:
+                    -
+                expression:
+                    [literal float]
+                    value:
+                        1
+            op:
+                +
+            rhs:
+                [binop]
+                lhs:
+                    [literal float]
+                    value:
+                        2
+                op:
+                    +
+                rhs:
+                    [literal float]
+                    value:
+                        3
+");
+
         [TestMethod]
         public void ErrorTestStatementInDeclarationMode() => TestFail(@"
 function void hoi() {}

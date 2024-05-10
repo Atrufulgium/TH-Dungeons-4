@@ -100,7 +100,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             => Error(location, "BS0027", "Matrix is empty/has an empty row. Matrices must be between 1x1 and 4x4.");
 
         public static Diagnostic JaggedMatrix(Location location)
-            => Error(location, "BS0028", "Matrix is not square.");
+            => Error(location, "BS0028", "Matrix is not square.\n(Note that starting an entry with parentheses or a - is ambiguous; e.g. `[a -b]` gets interpreted as `[a-b]`.)");
 
         public static Diagnostic LargeMatrix(Location location, int rows, int cols)
             => Error(location, "BS0029", $"Matrix is {rows}x{cols}. Matrices must be between 1x1 and 4x4.");
