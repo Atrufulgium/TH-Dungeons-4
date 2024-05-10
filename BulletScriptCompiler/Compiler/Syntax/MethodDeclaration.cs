@@ -32,7 +32,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             + $"arguments:\n{Indent(Arguments)}\nblock:\n{Indent(Body)}";
 
         public override string ToCompactString() {
-            string res = $"[method declaration]     {Type} {Identifier.Name} (";
+            string res = $"[method declaration]     {Type} {Identifier.Name}(";
             bool first = true;
             foreach (var arg in Arguments) {
                 if (first) {

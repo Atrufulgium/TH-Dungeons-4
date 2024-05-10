@@ -11,9 +11,23 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors.Tests {
 float a = 1 + 2 + 3;
 ", @"
 [root]
-    <variable declaration>   float arithmetic#result#0
-    [expression]             arithmetic#result#0 = (2 + 3)
-    [variable declaration]   float a = (1 + arithmetic#result#0)
+    <variable declaration>   float arithmetic#result#float#0
+    [expression]             arithmetic#result#float#0 = (2 + 3)
+    [variable declaration]   float a = (1 + arithmetic#result#float#0)
+", compactTree: true, new FlattenArithmeticRewriter());
+
+        [TestMethod]
+        public void TestSimpleBinop2() => TestHelpers.AssertGeneratesTree(@"
+float a = 1 + 2 + 3;
+float a = 1 + 2 + 3;
+", @"
+[root]
+    <variable declaration>   float arithmetic#result#float#0
+    [expression]             arithmetic#result#float#0 = (2 + 3)
+    [variable declaration]   float a = (1 + arithmetic#result#float#0)
+    <variable declaration>   float arithmetic#result#float#0
+    [expression]             arithmetic#result#float#0 = (2 + 3)
+    [variable declaration]   float a = (1 + arithmetic#result#float#0)
 ", compactTree: true, new FlattenArithmeticRewriter());
 
         [TestMethod]
@@ -29,11 +43,11 @@ float a = -1;
 float a = -1 + 2 + 3;
 ", @"
 [root]
-    <variable declaration>   float arithmetic#result#0
-    [expression]             arithmetic#result#0 = (-1)
-    <variable declaration>   float arithmetic#result#1
-    [expression]             arithmetic#result#1 = (2 + 3)
-    [variable declaration]   float a = (arithmetic#result#0 + arithmetic#result#1)
+    <variable declaration>   float arithmetic#result#float#0
+    [expression]             arithmetic#result#float#0 = (-1)
+    <variable declaration>   float arithmetic#result#float#1
+    [expression]             arithmetic#result#float#1 = (2 + 3)
+    [variable declaration]   float a = (arithmetic#result#float#0 + arithmetic#result#float#1)
 ", compactTree: true, new FlattenArithmeticRewriter());
 
 
@@ -44,11 +58,11 @@ matrix m = [1 a; a+a 0-1];
 ", @"
 [root]
     [variable declaration]   float a = (-1)
-    <variable declaration>   float arithmetic#result#0
-    [expression]             arithmetic#result#0 = (a + a)
-    <variable declaration>   float arithmetic#result#1
-    [expression]             arithmetic#result#1 = (0 - 1)
-    [variable declaration]   matrix m = [ 1 a; arithmetic#result#0 arithmetic#result#1]
+    <variable declaration>   float arithmetic#result#float#0
+    [expression]             arithmetic#result#float#0 = (a + a)
+    <variable declaration>   float arithmetic#result#float#1
+    [expression]             arithmetic#result#float#1 = (0 - 1)
+    [variable declaration]   matrix m = [ 1 a; arithmetic#result#float#0 arithmetic#result#float#1]
 ", compactTree: true, new FlattenArithmeticRewriter());
 
         [TestMethod]
@@ -58,9 +72,9 @@ float a = m[1; 0+1];
 ", @"
 [root]
     [variable declaration]   matrix m = [ 1 2; 3 4]
-    <variable declaration>   float arithmetic#result#0
-    [expression]             arithmetic#result#0 = (0 + 1)
-    [variable declaration]   float a = (m)[ 1; arithmetic#result#0]
+    <variable declaration>   float arithmetic#result#float#0
+    [expression]             arithmetic#result#float#0 = (0 + 1)
+    [variable declaration]   float a = (m)[ 1; arithmetic#result#float#0]
 ", compactTree: true, new FlattenArithmeticRewriter());
 
         [TestMethod]
@@ -70,12 +84,11 @@ float a = (m + m)[1];
 ", @"
 [root]
     [variable declaration]   matrix m = [ 1 2; 3 4]
-    <variable declaration>   matrix2x2 arithmetic#result#0
-    [expression]             arithmetic#result#0 = (m + m)
-    [variable declaration]   float a = (arithmetic#result#0)[ 1]
+    <variable declaration>   matrix2x2 arithmetic#result#matrix2x2#0
+    [expression]             arithmetic#result#matrix2x2#0 = (m + m)
+    [variable declaration]   float a = (arithmetic#result#matrix2x2#0)[ 1]
 ", compactTree: true, new FlattenArithmeticRewriter());
 
         // TODO: Does this fuck up function calls?
-        // TODO: index problem: the index matrix, the entire thing, is replaced with a variable
     }
 }

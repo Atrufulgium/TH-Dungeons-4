@@ -16,9 +16,9 @@ function void ActuallyCalled() { }
 function void main(float value) { ActuallyCalled(); }
 ", @"
 [root]
-    [method declaration]     void ActuallyCalled ()
+    [method declaration]     void ActuallyCalled()
             [none]
-    [method declaration]     void main (float value)
+    [method declaration]     void main(float value)
             [expression]             ActuallyCalled()
 ", compactTree: true, new ThatsUncalledForRewriter());
 

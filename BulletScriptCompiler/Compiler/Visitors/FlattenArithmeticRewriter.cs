@@ -31,8 +31,14 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// </remarks>
     internal class FlattenArithmeticRewriter : AbstractTreeRewriter {
 
-        int varID = 0;
-        IdentifierName GetNewVar() => new($"arithmetic#result#{varID++}");
+        readonly Dictionary<Syntax.Type, int> varIDs = new();
+        IdentifierName GetNewVar(Syntax.Type type) {
+            if (!varIDs.TryGetValue(type, out int val)) {
+                val = 0;
+            }
+            varIDs[type] = val + 1;
+            return new($"arithmetic#result#{type}#{val}");
+        }
 
         // Depth-first, whenever we encounter arithmetic beyond the first op,
         // make it a variable of the correct type, and replace the calculation
@@ -43,6 +49,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         int layer = -1;
         protected override Node? VisitStatement(Statement node) {
             prependedStatements.Clear();
+            varIDs.Clear();
 
             node = (Statement)base.VisitStatement(node)!;
             if (prependedStatements.Count == 0)
@@ -77,10 +84,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             // node with a fresh name that has been set to what this node
             // wanted to achieve, earlier than this return.
 
-            IdentifierName name = GetNewVar();
+            var type = Model.GetExpressionType(key);
+            IdentifierName name = GetNewVar(type);
             prependedStatements.Add(
                 new MultipleStatements(
-                    new LocalDeclarationStatementWithoutInit(name, Model.GetExpressionType(key)),
+                    new LocalDeclarationStatementWithoutInit(name, type),
                     new ExpressionStatement(
                         new AssignmentExpression(
                             name,

@@ -27,8 +27,14 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// </remarks>
     internal class FlattenNestedCallsRewriter : AbstractTreeRewriter {
 
-        int varID = 0;
-        IdentifierName GetNewVar() => new($"invocation#result#{varID++}");
+        readonly Dictionary<Syntax.Type, int> varIDs = new();
+        IdentifierName GetNewVar(Syntax.Type type) {
+            if (!varIDs.TryGetValue(type, out int val)) {
+                val = 0;
+            }
+            varIDs[type] = val + 1;
+            return new($"invocation#result#{type}#{val}");
+        }
 
         // Depth-first, whenever we encounter a call beyond the first, make it
         // a variable of the correct type, and replace the invocation with a
@@ -38,6 +44,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         int layer = -1;
         protected override Node? VisitStatement(Statement node) {
             prependedStatements.Clear();
+            varIDs.Clear();
 
             node = (Statement)base.VisitStatement(node)!;
             if (prependedStatements.Count == 0)
@@ -60,12 +67,13 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
             // Insert the declaration of a variable we will now make the
             // replaced argument.
-            IdentifierName name = GetNewVar();
+            var type = Model.GetExpressionType(key);
+            IdentifierName name = GetNewVar(type);
             prependedStatements.Add(
                 new LocalDeclarationStatement(
                     new VariableDeclaration(
                         name,
-                        Model.GetExpressionType(key),
+                        type,
                         initializer: node
                     )
                 )
