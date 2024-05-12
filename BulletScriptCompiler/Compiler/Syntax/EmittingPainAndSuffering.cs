@@ -153,6 +153,8 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
     internal partial class IntrinsicInvocationStatement {
         List<HLOP> IEmittable.Emit(SemanticModel model) {
             var (name, s1, s2, f1, f2, isLit1, isLit2) = EmitHelpers.GetArgInfo(Invocation, model);
+            var symbol = model.GetSymbolInfo(Invocation);
+            bool isIntrinsicReturningNonVoid = symbol.IsIntrinsic && symbol.Type != Type.Void;
 
             // The one without any vector things, hooray.
             // Still a lot of permutations.
@@ -196,6 +198,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
                    => Invocation.Arguments[2] is LiteralExpression f3 ? HLOP.Gimmick(s1, s2, f3.FloatValue!.Value)
                     : Invocation.Arguments[2] is IdentifierName s3 ? HLOP.Gimmick(s1, s2, s3.Name)
                     : throw new InvalidOperationException("Assumed args are identifiers or literals."),
+                _ when isIntrinsicReturningNonVoid => new List<HLOP>(),
                 _ => throw new NotImplementedException($"Unknown intrinsic {ToCompactString()}")
             };
         }

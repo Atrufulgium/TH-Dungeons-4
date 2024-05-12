@@ -74,7 +74,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 return new MultipleStatements();
 
             foreach (var arg in node.Arguments)
-                if (arg is not IdentifierName or LiteralExpression)
+                if (arg is not (IdentifierName or LiteralExpression))
                     throw new VisitorAssumptionFailedException("Assumed all invocation arguments are identifiers or literals.");
 
             return new IntrinsicInvocationStatement(node);

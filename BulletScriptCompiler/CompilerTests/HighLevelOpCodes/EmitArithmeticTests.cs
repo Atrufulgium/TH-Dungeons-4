@@ -1,21 +1,14 @@
-﻿using Atrufulgium.BulletScript.Compiler.Tests.Helpers;
-using Atrufulgium.BulletScript.Compiler.Visitors;
+﻿using static Atrufulgium.BulletScript.Compiler.Tests.Helpers.TestHelpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes.Tests {
 
     [TestClass]
     public class EmitArithmeticTests {
-
-        static void TestSuccess(string code, string result) {
-            var visitors = Compiler.StandardCompilationOrder;
-            TestHelpers.AssertCompiles(code, visitors);
-            var emitWalker = visitors.OfType<EmitWalker>().First();
-            TestHelpers.AssertTrimmedStringsEqual(result, string.Join('\n', emitWalker.OPCodes));
-        }
+        // Note: indexing is not yet supported and as such, has no tests
 
         [TestMethod]
-        public void EmitBasicArithmeticBinaryCommutative() => TestSuccess(@"
+        public void EmitBasicArithmeticBinaryCommutative() => TestEmittedOpcodes(@"
 float a;
 a = a + a;
 a = 1 + a;
@@ -72,7 +65,7 @@ a = 1 != 1;
 ");
 
         [TestMethod]
-        public void EmitBasicArithmeticBinaryNonCommutative() => TestSuccess(@"
+        public void EmitBasicArithmeticBinaryNonCommutative() => TestEmittedOpcodes(@"
 float a;
 a = a - a;
 a = a - 1;
@@ -150,7 +143,7 @@ a = 1 >= 1;
 ");
 
         [TestMethod]
-        public void EmitBasicArithmeticUnary() => TestSuccess(@"
+        public void EmitBasicArithmeticUnary() => TestEmittedOpcodes(@"
 float a = 0;
 a = !a;
 a = !1;
@@ -167,7 +160,7 @@ a = -1;
 ");
 
         [TestMethod]
-        public void EmitFunkyArtihmetic() => TestSuccess(@"
+        public void EmitFunkyArtihmetic() => TestEmittedOpcodes(@"
 float a = 3;
 float b = 4;
 a = sin(a + b * a ^ sin(-b+5));
@@ -184,14 +177,14 @@ a = sin(a + b * a ^ sin(-b+5));
 ");
 
         [TestMethod]
-        public void EmitAssignIntrinsicVariable() => TestSuccess(@"
+        public void EmitAssignIntrinsicVariable() => TestEmittedOpcodes(@"
 autoclear = !autoclear;
 ", @"
 [op]             Not | [f]        autoclear | [f]        autoclear | --------------------
 ");
 
         [TestMethod]
-        public void EmitString() => TestSuccess(@"
+        public void EmitString() => TestEmittedOpcodes(@"
 string s = ""hi"";
 string t = s;
 float a = s == t;
@@ -221,7 +214,7 @@ loadbackground(s);
 ");
 
         [TestMethod]
-        public void EmitMatrixArithmeticUnary1() => TestSuccess(@"
+        public void EmitMatrixArithmeticUnary1() => TestEmittedOpcodes(@"
 matrix1x3 m = [1 2 3];
 m = -m;
 m = !m;
@@ -235,7 +228,7 @@ m = !m;
 
         // Remember: 2x2 is a special case
         [TestMethod]
-        public void EmitMatrixArithmeticUnary2() => TestSuccess(@"
+        public void EmitMatrixArithmeticUnary2() => TestEmittedOpcodes(@"
 matrix2x2 m = [1 2; 3 4];
 m = -m;
 m = !m;
@@ -249,7 +242,7 @@ m = !m;
 ");
 
         [TestMethod]
-        public void EmitMatrixArithmeticUnary3() => TestSuccess(@"
+        public void EmitMatrixArithmeticUnary3() => TestEmittedOpcodes(@"
 matrix3x2 m = [1 2; 3 4; 5 6];
 m = -m;
 m = !m;
@@ -271,7 +264,7 @@ m = !m;
         // TODO: matrices aren't supported as a module yet.
         // stop being lazy and implement scalar multiplication already.
         [TestMethod]
-        public void EmitMatrixArithmeticBinary() => TestSuccess(@"
+        public void EmitMatrixArithmeticBinary() => TestEmittedOpcodes(@"
 matrix2x3 m1 = [1 2 3; 4 5 6];
 matrix2x3 m2 = m1;
 m1 = m1 + m2;
@@ -323,7 +316,7 @@ m1 = m1 < m2;
         // TODO: matrix associativity is actually interesting here as we may be
         // able to choose a path with matrices with fewer rows.
         [TestMethod]
-        public void EmitMatrixMultiplication() => TestSuccess(@"
+        public void EmitMatrixMultiplication() => TestEmittedOpcodes(@"
 matrix2x1 m = ([1 2 3; 4 5 6] * [1 2; 3 4; 5 6]) * [1 2];
 matrix2x1 m = [1 2 3; 4 5 6] * ([1 2; 3 4; 5 6] * [1 2]);
 ", @"

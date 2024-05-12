@@ -56,7 +56,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         public ConditionalGotoStatement WithCondition(IdentifierName condition)
-            => new(condition, (GotoLabelStatement)TrueBranch.Statements[0], Location);
+            => new(condition, Target, Location);
         public ConditionalGotoStatement WithTarget(GotoLabelStatement target)
             => new((IdentifierName)Condition, target, Location);
         public ConditionalGotoStatement WithTarget(GotoStatement target)

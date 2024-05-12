@@ -229,7 +229,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         protected virtual Node? VisitGotoLabelStatement(GotoLabelStatement node) => node;
 
         protected virtual Node? VisitGotoStatement(GotoStatement node)
-            => node.WithTarget(VisitAs<GotoLabelStatement>(node));
+            => node.WithTarget(VisitAs<GotoLabelStatement>(node.Target));
 
         protected virtual Node? VisitIdentifierName(IdentifierName node) => node;
 

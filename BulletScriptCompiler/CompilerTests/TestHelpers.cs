@@ -136,5 +136,12 @@ namespace Atrufulgium.BulletScript.Compiler.Tests.Helpers {
             string tree,
             params IVisitor[] visitors
         ) => AssertGeneratesTree(code, tree, compactTree: false, visitors);
+
+        public static void TestEmittedOpcodes(string code, string result) {
+            var visitors = Compiler.StandardCompilationOrder;
+            TestHelpers.AssertCompiles(code, visitors);
+            var emitWalker = visitors.OfType<EmitWalker>().First();
+            TestHelpers.AssertTrimmedStringsEqual(result, string.Join('\n', emitWalker.OPCodes));
+        }
     }
 }

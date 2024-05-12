@@ -13,6 +13,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     ///     !(a &lt; b)
     ///     !(a &gt;= b)
     ///     !(a &gt; b)
+    ///     !(!a)
     /// </code>
     /// turn into
     /// <code>
@@ -22,7 +23,9 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     ///     a &gt;= b
     ///     a &lt; b
     ///     a &lt;= b
+    ///     a
     /// </code>
+    /// respectively.
     /// </item>
     /// </list>
     /// </summary>
@@ -45,8 +48,16 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         };
 
         protected override Node? VisitPrefixUnaryExpression(PrefixUnaryExpression node) {
-            if (node.OP != PrefixUnaryOp.Not
-                || node.Expression is not BinaryExpression bin
+            if (node.OP != PrefixUnaryOp.Not)
+                return base.VisitPrefixUnaryExpression(node);
+            
+            // Unaries
+            if (node.Expression is PrefixUnaryExpression un
+                && un.OP == PrefixUnaryOp.Not)
+                return un.Expression;
+
+            // Binaries
+            if (node.Expression is not BinaryExpression bin
                 || !negateMap.ContainsKey(bin.OP))
                 return base.VisitPrefixUnaryExpression(node);
             return bin.WithOP(negateMap[bin.OP]);

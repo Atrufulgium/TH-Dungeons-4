@@ -68,8 +68,10 @@ namespace Atrufulgium.BulletScript.Compiler {
             // expressions, other than literals or identifiers being contained.
             new AcknowledgeSimpleAssignmentsRewriter(),
             // Before:
-            // Tree in statement form.
-            // Everything is emittable.
+            // Tree is in emittable form.
+            new RemoveGotoUnreachableRewriter(),
+            // Before:
+            // Tree is in emittable form.
             new EmitWalker()
         };
     }
