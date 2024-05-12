@@ -20,7 +20,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// Assumptions:
     /// <list type="bullet">
     /// <item><b>ASSUMPTIONS BEFORE:</b> None. </item>
-    /// <item><b>ASSUMPTIONS AFTER:</b> None. </item>
+    /// <item><b>ASSUMPTIONS AFTER:</b> There is no arithmetic containing only literals. </item>
     /// </list>
     /// </remarks>
     internal class ConstantFoldRewriter : AbstractTreeRewriter {
@@ -61,6 +61,19 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                     ltFunc:  () => lit1.WithFloatValue(f1 < f2 ? 1 : 0)
                 );
             }
+
+            // Strings are exceptional.
+            // Not that anyone *ever* triggers this branch.
+            // But it's still needed for the assumption that there is no
+            // `"literal" == "literal"` anywhere.
+            if ((node.OP == BinaryOp.Eq || node.OP == BinaryOp.Neq)
+                && node.LHS is LiteralExpression str1 && str1.StringValue != null
+                && node.RHS is LiteralExpression str2 && str2.StringValue != null) {
+                bool res = str1.StringValue == str2.StringValue;
+                res ^= node.OP == BinaryOp.Neq;
+                return str1.WithFloatValue(res ? 1 : 0);
+            }
+
             return node;
         }
     }

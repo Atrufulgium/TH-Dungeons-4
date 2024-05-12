@@ -67,25 +67,26 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
         // general ops
         public static HLOP Equal(string r, float v, string i)       => new( 1, FloatRef(r), FloatLit(v), FloatRef(i), "Equal");
         public static HLOP Equal(string r, string i, string j)      => new( 2, FloatRef(r), FloatRef(i), FloatRef(j), "Equal");
-        public static HLOP LT(string r, float v, string i)          => new( 3, FloatRef(r), FloatLit(v), FloatRef(i), "LessThan");
-        public static HLOP LT(string r, string i, float v)          => new( 4, FloatRef(r), FloatRef(i), FloatLit(v), "LessThan");
-        public static HLOP LT(string r, string i, string j)         => new( 5, FloatRef(r), FloatRef(i), FloatRef(j), "LessThan");
-        public static HLOP LTE(string r, float v, string i)         => new( 6, FloatRef(r), FloatLit(v), FloatRef(i), "LessThanEqual");
-        public static HLOP LTE(string r, string i, float v)         => new( 7, FloatRef(r), FloatRef(i), FloatLit(v), "LessThanEqual");
-        public static HLOP LTE(string r, string i, string j)        => new( 8, FloatRef(r), FloatRef(i), FloatRef(j), "LessThanEqual");
-        public static HLOP Set(string id, float value)              => new( 9, FloatRef(id), FloatLit(value), "Set");
-        public static HLOP Set(string id1, string id2)              => new(10, FloatRef(id1), FloatRef(id2), "Set");
-        public static HLOP SetString(string id1, string id2)        => new(11, StringRef(id1), StringRef(id2), "SetString");
-        public static HLOP IndexedGet(string id, float value)       => new(12, FloatRef(id), FloatLit(value), "IndexedGet");
-        public static HLOP IndexedGet(string id1, string id2)       => new(13, FloatRef(id1), FloatRef(id2), "IndexedGet");
-        public static HLOP IndexedSet(string id, float v, float v2) => new(14, FloatRef(id), FloatLit(v), FloatLit(v2), "IndexedSet");
-        public static HLOP IndexedSet(string i, float v, string i2) => new(15, FloatRef(i), FloatLit(v), FloatRef(i2), "IndexedSet");
-        public static HLOP IndexedSet(string i, string i2, float v) => new(16, FloatRef(i), FloatRef(i2), FloatLit(v), "IndexedSet");
-        public static HLOP IndexedSet(string i, string j, string k) => new(17, FloatRef(i), FloatRef(j), FloatRef(k), "IndexedSet");
-        public static HLOP Jump(string label)                       => new(18, InstructionRef(label), "Jump");
-        public static HLOP JumpConditional(string label, string id) => new(19, InstructionRef(label), FloatRef(id), "JumpConditional");
-        public static HLOP Pause(float value)                       => new(20, FloatLit(value), "Pause");
-        public static HLOP Pause(string id)                         => new(21, FloatRef(id), "Pause");
+        public static HLOP EqualString(string r, string i, string j)=> new( 3, FloatRef(r), StringRef(i), StringRef(j), "EqualString");
+        public static HLOP LT(string r, float v, string i)          => new( 4, FloatRef(r), FloatLit(v), FloatRef(i), "LessThan");
+        public static HLOP LT(string r, string i, float v)          => new( 5, FloatRef(r), FloatRef(i), FloatLit(v), "LessThan");
+        public static HLOP LT(string r, string i, string j)         => new( 6, FloatRef(r), FloatRef(i), FloatRef(j), "LessThan");
+        public static HLOP LTE(string r, float v, string i)         => new( 7, FloatRef(r), FloatLit(v), FloatRef(i), "LessThanEqual");
+        public static HLOP LTE(string r, string i, float v)         => new( 8, FloatRef(r), FloatRef(i), FloatLit(v), "LessThanEqual");
+        public static HLOP LTE(string r, string i, string j)        => new( 9, FloatRef(r), FloatRef(i), FloatRef(j), "LessThanEqual");
+        public static HLOP Set(string id, float value)              => new(10, FloatRef(id), FloatLit(value), "Set");
+        public static HLOP Set(string id1, string id2)              => new(11, FloatRef(id1), FloatRef(id2), "Set");
+        public static HLOP SetString(string id1, string id2)        => new(12, StringRef(id1), StringRef(id2), "SetString");
+        public static HLOP IndexedGet(string id, float value)       => new(13, FloatRef(id), FloatLit(value), "IndexedGet");
+        public static HLOP IndexedGet(string id1, string id2)       => new(14, FloatRef(id1), FloatRef(id2), "IndexedGet");
+        public static HLOP IndexedSet(string id, float v, float v2) => new(15, FloatRef(id), FloatLit(v), FloatLit(v2), "IndexedSet");
+        public static HLOP IndexedSet(string i, float v, string i2) => new(16, FloatRef(i), FloatLit(v), FloatRef(i2), "IndexedSet");
+        public static HLOP IndexedSet(string i, string i2, float v) => new(17, FloatRef(i), FloatRef(i2), FloatLit(v), "IndexedSet");
+        public static HLOP IndexedSet(string i, string j, string k) => new(18, FloatRef(i), FloatRef(j), FloatRef(k), "IndexedSet");
+        public static HLOP Jump(string label)                       => new(19, InstructionRef(label), "Jump");
+        public static HLOP JumpConditional(string label, string id) => new(20, InstructionRef(label), FloatRef(id), "JumpConditional");
+        public static HLOP Pause(float value)                       => new(21, FloatLit(value), "Pause");
+        public static HLOP Pause(string id)                         => new(22, FloatRef(id), "Pause");
         // misc intrinsics
         public static HLOP Message(string id)                       => new(32, FloatRef(id), "Message");
         public static HLOP Message(float value)                     => new(33, FloatLit(value), "Message");
@@ -193,6 +194,6 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
         public static HLOP Polar(string res, string a, string b)    => new(168, FloatRef(res), FloatRef(a), FloatRef(b), "Polar");
         // matrix mul
         public static HLOP MatrixMul(int u, int v, int w, string res, string a, string b)
-            => new(192 + u + 4* v + 16* w, FloatRef(res), FloatRef(a), FloatRef(b), $"Matrix{u}{v}{w}");
+            => new(192 + u + 4* v + 16* w, FloatRef(res), FloatRef(a), FloatRef(b), $"MatrixMul{u}{v}{w}");
     }
 }

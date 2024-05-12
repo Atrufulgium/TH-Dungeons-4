@@ -162,7 +162,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             => Error(location, "BS0048", "The same identifier cannot be used for both a function and a variable.");
 
         public static Diagnostic ClashingAssignment(Node location, Syntax.Type definition, Syntax.Type actual)
-            => Error(location, "BS0049", $"The variable assigned to is of type {definition}, but you are trying to assign it an incompatible type {actual}.");
+            => Error(location, "BS0049", $"The variable assigned to is of type `{definition}`, but you are trying to assign it an incompatible type `{actual}`.");
 
         public static Diagnostic MatricesMustBeFloats(Node location)
             => Error(location, "BS0050", "Matrices may only contain float entries.");

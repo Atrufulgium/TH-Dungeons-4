@@ -383,6 +383,47 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         static List<HLOP> EmitBinary(SemanticModel model, string lhs, BinaryExpression rhs) {
+            // Almost literally everything is predictable arithmetic.
+            // Exception: string ==, != string.
+            var rhs1Type = model.GetExpressionType(rhs.LHS);
+            var rhs2Type = model.GetExpressionType(rhs.RHS);
+            if ((rhs.OP == BinaryOp.Eq || rhs.OP == BinaryOp.Neq)
+                && rhs1Type == Type.String && rhs2Type == Type.String) {
+                string lhsStr = rhs.LHS is IdentifierName id1 ? id1.Name : ((LiteralExpression)rhs.LHS).StringValue!;
+                string rhsStr = rhs.RHS is IdentifierName id2 ? id2.Name : ((LiteralExpression)rhs.RHS).StringValue!;
+                if (rhs.OP == BinaryOp.Eq)
+                    return HLOP.EqualString(lhs, lhsStr, rhsStr);
+                else
+                    return new() {
+                        HLOP.EqualString(lhs, lhsStr, rhsStr),
+                        HLOP.Not(lhs, lhs)
+                    };
+            }
+            // Exception: matrix multiplication
+            if (rhs.OP == BinaryOp.Mul) {
+                if (!Type.TypesAreCompatible(rhs1Type, rhs2Type)
+                    || (rhs1Type.TryGetMatrixSize(out var size) && size.cols == size.rows && size.cols > 1)) {
+                    rhs1Type.TryGetMatrixSize(out var size1);
+                    rhs2Type.TryGetMatrixSize(out var size2);
+
+                    // Vectors automatically update to match
+                    if (size1.cols != size2.rows) {
+                        // Match opportunity
+                        if (size1.cols == size2.cols || size1.rows == size2.rows) {
+                            // Actually need a match because a vector was screwed with
+                            if (size1.rows == 1 || size1.cols == 1)
+                                size1 = (size1.cols, size1.rows);
+                            if (size2.rows == 1 || size2.cols == 1)
+                                size2 = (size2.cols, size2.rows);
+                        }
+                    }
+
+                    string mat1 = ((IdentifierName)rhs.LHS).Name;
+                    string mat2 = ((IdentifierName)rhs.RHS).Name;
+                    return HLOP.MatrixMul(size1.rows, size1.cols, size2.cols, lhs, mat1, mat2);
+                }
+            }
+
             var type = model.GetExpressionType(rhs);
             // When inverted, lhs and rhs also swap places.
             // Inverted ops need to be postprocessed with a not.
@@ -399,6 +440,11 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             var op = rhs.OP;
 
             List<HLOP> ret;
+            // First a special case: squaring is a separate construct.
+            if (rhs.OP == BinaryOp.Pow && rhs.RHS is LiteralExpression lit && lit.FloatValue!.Value == 2) {
+                ret = VectoredOp(HLOP.Square, lhs, ((IdentifierName)rhs.LHS).Name, type);
+            } else
+
             // An op is either coommutative or noncommutative.
             if (commutativeOps.TryGetValue(op, out var ops))
                 ret = HandleCommutativeBinop(lhs, rhs.LHS, rhs.RHS, type, ops);
@@ -427,7 +473,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             (int rows, int cols) = size;
             List<HLOP> ret = new();
             // Make vectors lay down
-            if (rows == 1) {
+            if (cols == 1) {
                 (rows, cols) = (cols, rows);
             }
             // Handle 2x2 specially

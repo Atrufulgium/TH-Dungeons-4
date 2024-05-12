@@ -30,7 +30,8 @@ namespace Atrufulgium.BulletScript.Compiler {
             new ExplicitIncrementsRewriter(),
             // (No assumptions)
             new SimplifyNotRewriter(),
-            // (No assumptions)
+            // After:
+            // There is are no artihmetic nodes containing only literals.
             new ConstantFoldRewriter(),
             // After:
             // All assignments are simple.

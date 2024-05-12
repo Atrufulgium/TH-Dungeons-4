@@ -349,6 +349,10 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
             if (lhs == BType.Void || rhs == BType.Void)
                 return BType.Error;
 
+            // The one thing excluded from CombineRegularArithmetic.
+            if (lhs == BType.String && rhs == BType.String && opRepresentation == "=")
+                return BType.String;
+
             return opRepresentation switch {
                 "=" or "+" or "-" or "/" or "%" or "^" or "&" or "|" or ">=" or ">" or "<=" or "<"
                     => CombineRegularArithmetic(lhs, rhs),
@@ -404,7 +408,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
 
         static BType CombineEqualities(BType lhs, BType rhs) {
             if (lhs == BType.String && rhs == BType.String)
-                return BType.String;
+                return BType.Float;
             return CombineRegularArithmetic(lhs, rhs);
         }
 
