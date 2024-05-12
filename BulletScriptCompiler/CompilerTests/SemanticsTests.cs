@@ -269,12 +269,15 @@ floor(matrix1x3)                           | (Not user code)      | [n/a]       
 floor(matrix1x3).value                     | (Not user code)      | (Not user code)      | matrix1x3 |    0 | Read
 floor(matrix1x4)                           | (Not user code)      | [n/a]                | matrix1x4 |    0 | Intrinsic method
 floor(matrix1x4).value                     | (Not user code)      | (Not user code)      | matrix1x4 |    0 | Read
-gimmick()                                  | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
-gimmick(float,float)                       | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
-gimmick(float,float).param1                | (Not user code)      | (Not user code)      | float     |    0 | Read
-gimmick(float,float).param2                | (Not user code)      | (Not user code)      | float     |    0 | Read
-gimmick(float)                             | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
-gimmick(float).param1                      | (Not user code)      | (Not user code)      | float     |    0 | Read
+gimmick(string,float,float)                | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
+gimmick(string,float,float).gimmick        | (Not user code)      | (Not user code)      | string    |    0 | Read
+gimmick(string,float,float).param1         | (Not user code)      | (Not user code)      | float     |    0 | Read
+gimmick(string,float,float).param2         | (Not user code)      | (Not user code)      | float     |    0 | Read
+gimmick(string,float)                      | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
+gimmick(string,float).gimmick              | (Not user code)      | (Not user code)      | string    |    0 | Read
+gimmick(string,float).param                | (Not user code)      | (Not user code)      | float     |    0 | Read
+gimmick(string)                            | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
+gimmick(string).gimmick                    | (Not user code)      | (Not user code)      | string    |    0 | Read
 harmsenemies                               | (Not user code)      | [n/a]                | float     |    2 | Read
 harmsplayers                               | (Not user code)      | [n/a]                | float     |    2 | Read
 length(float)                              | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
@@ -289,10 +292,6 @@ loadbackground(string)                     | (Not user code)      | [n/a]       
 loadbackground(string).background_id       | (Not user code)      | (Not user code)      | string    |    0 | Read
 message(float)                             | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
 message(float).value                       | (Not user code)      | (Not user code)      | float     |    0 | Read
-print(float)                               | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
-print(float).value                         | (Not user code)      | (Not user code)      | float     |    0 | Read
-print(string)                              | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
-print(string).value                        | (Not user code)      | (Not user code)      | string    |    0 | Read
 random(float,float)                        | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
 random(float,float).lower                  | (Not user code)      | (Not user code)      | float     |    0 | Read
 random(float,float).upper                  | (Not user code)      | (Not user code)      | float     |    0 | Read
