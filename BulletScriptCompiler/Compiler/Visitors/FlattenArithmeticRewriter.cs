@@ -123,7 +123,13 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         protected override Node? VisitAssignmentExpression(AssignmentExpression node) {
             if (node.OP != AssignmentOp.Set)
                 throw new VisitorAssumptionFailedException($"Assumed all assignments are simple ops `=`, but this one was `{node.OP}=`");
-            return base.VisitAssignmentExpression(node);
+            // Assignments do *not* count towards the expression limit.
+            // Otherwise `a = b + c` would introduce a temp.
+            // That's whack.
+            layer--;
+            var ret = base.VisitAssignmentExpression(node);
+            layer++;
+            return ret;
         }
 
         protected override Node? VisitPostfixUnaryExpression(PostfixUnaryExpression node)

@@ -1,4 +1,6 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
+﻿using Atrufulgium.BulletScript.Compiler.Helpers;
+
+namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     internal interface IOPArgument {
         /// <summary>
         /// Convert a HLOP argument to a low level opcode argument.
@@ -28,6 +30,8 @@
             => 0;
 
         public static None Singleton = new();
+
+        public override string ToString() => new('-', 20);
     }
 
     /// <summary>
@@ -42,6 +46,8 @@
 
         public float ToFloat(Dictionary<string, float> explicitGotoTargets, Dictionary<string, float> explicitVariableIDs, Dictionary<string, float> explicitStringIDs)
             => explicitVariableIDs[id];
+
+        public override string ToString() => $"[f] {id.Truncate(16, ^10),16}";
     }
 
     /// <summary>
@@ -54,10 +60,15 @@
 
         public float ToFloat(Dictionary<string, float> explicitGotoTargets, Dictionary<string, float> explicitVariableIDs, Dictionary<string, float> explicitStringIDs)
             => value;
+
+        public override string ToString() => $"[f] {value,16}";
     }
 
     /// <summary>
-    /// Represents a pointer in string memory.
+    /// Represents a pointer in string memory if not delimited by "".
+    /// <br/>
+    /// Represents a string literal (to be replaced with a pointer) if
+    /// delimited by "".
     /// </summary>
     internal class StringRef : IOPArgument {
 
@@ -66,10 +77,12 @@
 
         public float ToFloat(Dictionary<string, float> explicitGotoTargets, Dictionary<string, float> explicitVariableIDs, Dictionary<string, float> explicitStringIDs)
             => explicitStringIDs[id];
+
+        public override string ToString() => $"[s] {id.Truncate(16, ^10),16}";
     }
 
     /// <summary>
-    /// Represents a reference to a float in float memory.
+    /// Represents an instruction index.
     /// </summary>
     internal class InstructionRef : IOPArgument {
 
@@ -78,6 +91,8 @@
 
         public float ToFloat(Dictionary<string, float> explicitGotoTargets, Dictionary<string, float> explicitVariableIDs, Dictionary<string, float> explicitStringIDs)
             => explicitGotoTargets[Label];
+
+        public override string ToString() => $"[i] {Label.Truncate(16, ^10),16}";
     }
 
     // I'm not calling it a "factory". That is just too proper.

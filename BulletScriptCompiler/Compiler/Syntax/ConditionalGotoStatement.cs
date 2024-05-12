@@ -34,11 +34,14 @@
             falseBranch: null
         ) { }
 
+        public IdentifierName IdentifierCondition => (IdentifierName)Condition;
+        public GotoLabelStatement Target => ((GotoStatement)TrueBranch.Statements[0]).Target;
+
         public override string ToString()
             => $"[conditional goto]\ncondition:\n{Indent(Condition)}\ntarget:\n{Indent(TrueBranch.Statements[0])}";
 
         public override string ToCompactString()
-            => $"<conditional goto>       if {((IdentifierName)Condition).Name} goto {((GotoStatement)TrueBranch.Statements[0]).Target.Name}";
+            => $"<conditional goto>       if {IdentifierCondition.Name} goto {Target.Name}";
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path) {
             var diags = base.ValidateTree(path);

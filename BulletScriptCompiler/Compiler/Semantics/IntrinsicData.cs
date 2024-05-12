@@ -1,6 +1,9 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Syntax;
 using static Atrufulgium.BulletScript.Compiler.Syntax.Type;
 
+// Note: Whenever adding a method, you also need to add an opcode probably, and
+// also need to update Atrufulgium.BulletScript.Compiler.Syntax.EmittingPainAndSuffering.cs.
+
 namespace Atrufulgium.BulletScript.Compiler.Semantics {
     internal static class IntrinsicData {
 
@@ -79,8 +82,6 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             Syntax.Type Void = Syntax.Type.Void;
             Syntax.Type String = Syntax.Type.String;
 
-            AddIntrinsic("print", Void, (Float, "value"));
-            AddIntrinsic("print", Void, (String, "value"));
             AddIntrinsic("wait", Void, (Float, "seconds"));
             AddIntrinsic("message", Void, (Float, "value"));
             AddIntrinsic("spawn", Void);
@@ -100,9 +101,9 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             AddIntrinsic("angletoplayer", Float);
             AddIntrinsic("addspeed", Void, (Float, "amount"));
             AddIntrinsic("setspeed", Void, (Float, "value"));
-            AddIntrinsic("gimmick", Void);
-            AddIntrinsic("gimmick", Void, (Float, "param1"));
-            AddIntrinsic("gimmick", Void, (Float, "param1"), (Float, "param2"));
+            AddIntrinsic("gimmick", Void, (String, "gimmick"));
+            AddIntrinsic("gimmick", Void, (String, "gimmick"), (Float, "param"));
+            AddIntrinsic("gimmick", Void, (String, "gimmick"), (Float, "param1"), (Float, "param2"));
             AddIntrinsic("random", Float, (Float, "lower"), (Float, "upper"));
             AddIntrinsic("random", Vector2, (Vector2, "lower"), (Vector2, "upper"));
             AddIntrinsic("random", Vector3, (Vector3, "lower"), (Vector3, "upper"));

@@ -14,22 +14,24 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     /// </summary>
     internal class HLOP {
 
-        public float OpCode => opcode;
         readonly float opcode;
         readonly IOPArgument arg1;
         readonly IOPArgument arg2;
         readonly IOPArgument arg3;
 
-        private HLOP(float opcode) : this(opcode, None.Singleton) { }
-        private HLOP(float opcode, IOPArgument arg1)
-            : this(opcode, arg1, None.Singleton) { }
-        private HLOP(float opcode, IOPArgument arg1, IOPArgument arg2)
-            : this(opcode, arg1, arg2, None.Singleton) { }
-        private HLOP(float opcode, IOPArgument arg1, IOPArgument arg2, IOPArgument arg3) {
+        static readonly Dictionary<float, string> opNames = new();
+
+        private HLOP(float opcode, string name) : this(opcode, None.Singleton, name) { }
+        private HLOP(float opcode, IOPArgument arg1, string name)
+            : this(opcode, arg1, None.Singleton, name) { }
+        private HLOP(float opcode, IOPArgument arg1, IOPArgument arg2, string name)
+            : this(opcode, arg1, arg2, None.Singleton, name) { }
+        private HLOP(float opcode, IOPArgument arg1, IOPArgument arg2, IOPArgument arg3, string name) {
             this.opcode = opcode;
             this.arg1 = arg1;
             this.arg2 = arg2;
             this.arg3 = arg3;
+            opNames[opcode] = name;
         }
 
         /// <summary>
@@ -49,6 +51,8 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
             arg3.ToFloat(explicitGotoTargets, explicitVariableIDs, explicitStringIDs)
         ) : null;
 
+        public override string ToString() => $"[op] {opNames[opcode],15} | {arg1} | {arg2} | {arg3}";
+
         // This conversion is for convenience for emittable methods that return
         // a list of opcodes, to allow simply returning a single.
         public static implicit operator List<HLOP>(HLOP op)
@@ -58,129 +62,137 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
         // (see the specification for more info on what these opcodes actually do.)
 
         // not translated to low level opcodes
-        public static HLOP NOOP                                     => new(-2);
-        public static HLOP GotoLabel(string label)                  => new(-1, InstructionRef(label)); // bit hacky but other instructionrefs should match
+        public static HLOP NOOP()                                   => new(-2, "NOOP");
+        public static HLOP GotoLabel(string label)                  => new(-1, InstructionRef(label), "GotoLabel"); // bit hacky but other instructionrefs should match
         // general ops
-        public static HLOP EqualFloat(string id, float value)       => new( 0, FloatRef(id), FloatLit(value));
-        public static HLOP EqualFloat(string id1, string id2)       => new( 1, FloatRef(id1), FloatRef(id2));
-        public static HLOP EqualPointer(string id1, string id2)     => new( 2, FloatRef(id1), FloatRef(id2));
-        public static HLOP LessThan(float value, string id)         => new( 3, FloatLit(value), FloatRef(id));
-        public static HLOP LessThan(string id, float value)         => new( 4, FloatRef(id), FloatLit(value));
-        public static HLOP LessThan(string id1, string id2)         => new( 5, FloatRef(id1), FloatRef(id2));
-        public static HLOP LessThanEqual(float value, string id)    => new( 6, FloatLit(value), FloatRef(id));
-        public static HLOP LessThanEqual(string id, float value)    => new( 7, FloatRef(id), FloatLit(value));
-        public static HLOP LessThanEqual(string id1, string id2)    => new( 8, FloatRef(id1), FloatRef(id2));
-        public static HLOP Set(string id, float value)              => new( 9, FloatRef(id), FloatLit(value));
-        public static HLOP Set(string id1, string id2)              => new(10, FloatRef(id1), FloatRef(id2));
-        public static HLOP IndexedGet(string id, float value)       => new(11, FloatRef(id), FloatLit(value));
-        public static HLOP IndexedGet(string id1, string id2)       => new(12, FloatRef(id1), FloatRef(id2));
-        public static HLOP IndexedSet(string id, float v, float v2) => new(13, FloatRef(id), FloatLit(v), FloatLit(v2));
-        public static HLOP IndexedSet(string i, float v, string i2) => new(14, FloatRef(i), FloatLit(v), FloatRef(i2));
-        public static HLOP IndexedSet(string i, string i2, float v) => new(15, FloatRef(i), FloatRef(i2), FloatLit(v));
-        public static HLOP IndexedSet(string i, string j, string k) => new(16, FloatRef(i), FloatRef(j), FloatRef(k));
-        public static HLOP Jump(string label)                       => new(17, InstructionRef(label));
-        public static HLOP JumpConditional(string label, string id) => new(18, InstructionRef(label), FloatRef(id));
-        public static HLOP Pause(float value)                       => new(19, FloatLit(value));
-        public static HLOP Pause(string id)                         => new(20, FloatRef(id));
+        public static HLOP Equal(string r, float v, string i)       => new( 1, FloatRef(r), FloatLit(v), FloatRef(i), "Equal");
+        public static HLOP Equal(string r, string i, string j)      => new( 2, FloatRef(r), FloatRef(i), FloatRef(j), "Equal");
+        public static HLOP LT(string r, float v, string i)          => new( 3, FloatRef(r), FloatLit(v), FloatRef(i), "LessThan");
+        public static HLOP LT(string r, string i, float v)          => new( 4, FloatRef(r), FloatRef(i), FloatLit(v), "LessThan");
+        public static HLOP LT(string r, string i, string j)         => new( 5, FloatRef(r), FloatRef(i), FloatRef(j), "LessThan");
+        public static HLOP LTE(string r, float v, string i)         => new( 6, FloatRef(r), FloatLit(v), FloatRef(i), "LessThanEqual");
+        public static HLOP LTE(string r, string i, float v)         => new( 7, FloatRef(r), FloatRef(i), FloatLit(v), "LessThanEqual");
+        public static HLOP LTE(string r, string i, string j)        => new( 8, FloatRef(r), FloatRef(i), FloatRef(j), "LessThanEqual");
+        public static HLOP Set(string id, float value)              => new( 9, FloatRef(id), FloatLit(value), "Set");
+        public static HLOP Set(string id1, string id2)              => new(10, FloatRef(id1), FloatRef(id2), "Set");
+        public static HLOP SetString(string id1, string id2)        => new(11, StringRef(id1), StringRef(id2), "SetString");
+        public static HLOP IndexedGet(string id, float value)       => new(12, FloatRef(id), FloatLit(value), "IndexedGet");
+        public static HLOP IndexedGet(string id1, string id2)       => new(13, FloatRef(id1), FloatRef(id2), "IndexedGet");
+        public static HLOP IndexedSet(string id, float v, float v2) => new(14, FloatRef(id), FloatLit(v), FloatLit(v2), "IndexedSet");
+        public static HLOP IndexedSet(string i, float v, string i2) => new(15, FloatRef(i), FloatLit(v), FloatRef(i2), "IndexedSet");
+        public static HLOP IndexedSet(string i, string i2, float v) => new(16, FloatRef(i), FloatRef(i2), FloatLit(v), "IndexedSet");
+        public static HLOP IndexedSet(string i, string j, string k) => new(17, FloatRef(i), FloatRef(j), FloatRef(k), "IndexedSet");
+        public static HLOP Jump(string label)                       => new(18, InstructionRef(label), "Jump");
+        public static HLOP JumpConditional(string label, string id) => new(19, InstructionRef(label), FloatRef(id), "JumpConditional");
+        public static HLOP Pause(float value)                       => new(20, FloatLit(value), "Pause");
+        public static HLOP Pause(string id)                         => new(21, FloatRef(id), "Pause");
         // misc intrinsics
-        public static HLOP Message(string id)                       => new(21, FloatRef(id));
-        public static HLOP Spawn                                    => new(22);
-        public static HLOP LoadBackground(string id)                => new(23, StringRef(id));
-        public static HLOP AddScript(string id)                     => new(24, StringRef(id));
-        public static HLOP AddScript(string id, float value)        => new(25, StringRef(id), FloatLit(value));
-        public static HLOP AddScript(string id1, string id2)        => new(26, StringRef(id1), FloatRef(id2));
-        public static HLOP StartScript(string id)                   => new(27, StringRef(id));
-        public static HLOP StartScript(string id, float value)      => new(28, StringRef(id), FloatLit(value));
-        public static HLOP StartScript(string id1, string id2)      => new(29, StringRef(id1), FloatRef(id2));
-        public static HLOP StartScriptMany(string id)               => new(30, StringRef(id));
-        public static HLOP StartScriptMany(string id, float value)  => new(31, StringRef(id), FloatLit(value));
-        public static HLOP StartScriptMany(string id1, string id2)  => new(32, StringRef(id1), FloatRef(id2));
-        public static HLOP Depivot                                  => new(33);
-        public static HLOP AddRotation(float value)                 => new(34, FloatLit(value));
-        public static HLOP AddRotation(string id)                   => new(35, FloatRef(id));
-        public static HLOP SetRotation(float value)                 => new(36, FloatLit(value));
-        public static HLOP SetRotation(string id)                   => new(37, FloatRef(id));
-        public static HLOP AddSpeed(float value)                    => new(38, FloatLit(value));
-        public static HLOP AddSpeed(string id)                      => new(39, FloatRef(id));
-        public static HLOP SetSpeed(float value)                    => new(40, FloatLit(value));
-        public static HLOP SetSpeed(string id)                      => new(41, FloatRef(id));
-        public static HLOP FacePlayer                               => new(42);
-        public static HLOP AngleToPlayer(string id)                 => new(43, FloatRef(id));
-        public static HLOP Gimmick(string id)                       => new(44, StringRef(id));
-        public static HLOP Gimmick(string id, float value)          => new(45, StringRef(id), FloatLit(value));
-        public static HLOP Gimmick(string id, string id2)           => new(46, StringRef(id), FloatRef(id2));
-        public static HLOP Gimmick(string id, float v1, float v2)   => new(47, StringRef(id), FloatLit(v1), FloatLit(v2));
-        public static HLOP Gimmick(string id, float v1, string i2)  => new(48, StringRef(id), FloatLit(v1), FloatRef(i2));
-        public static HLOP Gimmick(string id, string i2, float v2)  => new(49, StringRef(id), FloatRef(i2), FloatLit(v2));
-        public static HLOP Gimmick(string id, string i2, string i3) => new(50, StringRef(id), FloatRef(i2), FloatRef(i3));
+        public static HLOP Message(string id)                       => new(32, FloatRef(id), "Message");
+        public static HLOP Message(float value)                     => new(33, FloatLit(value), "Message");
+        public static HLOP Spawn()                                  => new(34, "Spawn");
+        public static HLOP Destroy()                                => new(35, "Destroy");
+        public static HLOP LoadBackground(string id)                => new(36, StringRef(id), "LoadBackground");
+        public static HLOP AddScript()                              => new(37, "AddScript");
+        public static HLOP AddScript(string id)                     => new(38, StringRef(id), "AddScript");
+        public static HLOP AddScript(string id, float value)        => new(39, StringRef(id), FloatLit(value), "AddScript");
+        public static HLOP AddScript(string id1, string id2)        => new(40, StringRef(id1), FloatRef(id2), "AddScript");
+        public static HLOP StartScript(string id)                   => new(41, StringRef(id), "StartScript");
+        public static HLOP StartScript(string id, float value)      => new(42, StringRef(id), FloatLit(value), "StartScript");
+        public static HLOP StartScript(string id1, string id2)      => new(43, StringRef(id1), FloatRef(id2), "StartScript");
+        public static HLOP StartScriptMany(string id)               => new(44, StringRef(id), "StartScriptMany");
+        public static HLOP StartScriptMany(string id, float value)  => new(45, StringRef(id), FloatLit(value), "StartScriptMany");
+        public static HLOP StartScriptMany(string id1, string id2)  => new(46, StringRef(id1), FloatRef(id2), "StartScriptMany");
+        public static HLOP Depivot()                                => new(47, "Depivot");
+        public static HLOP AddRotation(float value)                 => new(48, FloatLit(value), "AddRotation");
+        public static HLOP AddRotation(string id)                   => new(49, FloatRef(id), "AddRotation");
+        public static HLOP SetRotation(float value)                 => new(50, FloatLit(value), "SetRotation");
+        public static HLOP SetRotation(string id)                   => new(51, FloatRef(id), "SetRotation");
+        public static HLOP AddSpeed(float value)                    => new(52, FloatLit(value), "AddSpeed");
+        public static HLOP AddSpeed(string id)                      => new(53, FloatRef(id), "AddSpeed");
+        public static HLOP SetSpeed(float value)                    => new(54, FloatLit(value), "SetSpeed");
+        public static HLOP SetSpeed(string id)                      => new(55, FloatRef(id), "SetSpeed");
+        public static HLOP FacePlayer()                             => new(56, "FacePlayer");
+        public static HLOP AngleToPlayer(string id)                 => new(57, FloatRef(id), "AngleToPlayer");
+        public static HLOP Gimmick(string id)                       => new(58, StringRef(id), "Gimmick");
+        public static HLOP Gimmick(string id, float value)          => new(59, StringRef(id), FloatLit(value), "Gimmick");
+        public static HLOP Gimmick(string id, string id2)           => new(60, StringRef(id), FloatRef(id2), "Gimmick");
+        public static HLOP Gimmick(string id, float v1, float v2)   => new(61, StringRef(id), FloatLit(v1), FloatLit(v2), "Gimmick");
+        public static HLOP Gimmick(string id, float v1, string i2)  => new(62, StringRef(id), FloatLit(v1), FloatRef(i2), "Gimmick");
+        public static HLOP Gimmick(string id, string i2, float v2)  => new(63, StringRef(id), FloatRef(i2), FloatLit(v2), "Gimmick");
+        public static HLOP Gimmick(string id, string i2, string i3) => new(64, StringRef(id), FloatRef(i2), FloatRef(i3), "Gimmick");
         // float math
-        public static HLOP Negate(string res, string a)             => new(51, FloatRef(res), FloatRef(a));
-        public static HLOP Add(string res, float  a, string b)      => new(52, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Add(string res, string a, string b)      => new(53, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Sub(string res, float  a, string b)      => new(54, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Sub(string res, string a, float  b)      => new(55, FloatRef(res), FloatRef(a), FloatLit(b));
-        public static HLOP Sub(string res, string a, string b)      => new(56, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Mul(string res, float  a, string b)      => new(57, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Mul(string res, string a, string b)      => new(58, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Div(string res, float  a, string b)      => new(59, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Div(string res, string a, float  b)      => new(60, FloatRef(res), FloatRef(a), FloatLit(b));
-        public static HLOP Div(string res, string a, string b)      => new(61, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Mod(string res, float  a, string b)      => new(62, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Mod(string res, string a, float  b)      => new(63, FloatRef(res), FloatRef(a), FloatLit(b));
-        public static HLOP Mod(string res, string a, string b)      => new(64, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Pow(string res, float  a, string b)      => new(65, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Pow(string res, string a, float  b)      => new(66, FloatRef(res), FloatRef(a), FloatLit(b));
-        public static HLOP Pow(string res, string a, string b)      => new(67, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Square(string res, string a)             => new(68, FloatRef(res), FloatRef(a));
-        public static HLOP Sin(string res, string a)                => new(69, FloatRef(res), FloatRef(a));
-        public static HLOP Cos(string res, string a)                => new(70, FloatRef(res), FloatRef(a));
-        public static HLOP Tan(string res, string a)                => new(71, FloatRef(res), FloatRef(a));
-        public static HLOP Asin(string res, string a)               => new(72, FloatRef(res), FloatRef(a));
-        public static HLOP Acos(string res, string a)               => new(73, FloatRef(res), FloatRef(a));
-        public static HLOP Atan(string res, string a)               => new(74, FloatRef(res), FloatRef(a));
-        public static HLOP Atan2(string res, float  a, string b)    => new(75, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Atan2(string res, string a, float  b)    => new(76, FloatRef(res), FloatRef(a), FloatLit(b));
-        public static HLOP Atan2(string res, string a, string b)    => new(77, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Ceil(string res, string a)               => new(78, FloatRef(res), FloatRef(a));
-        public static HLOP Floor(string res, string a)              => new(79, FloatRef(res), FloatRef(a));
-        public static HLOP Round(string res, string a)              => new(80, FloatRef(res), FloatRef(a));
-        public static HLOP Abs(string res, string a)                => new(81, FloatRef(res), FloatRef(a));
-        public static HLOP Rng(string res, float  a, float  b)      => new(82, FloatRef(res), FloatLit(a), FloatLit(b));
-        public static HLOP Rng(string res, float  a, string b)      => new(83, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Rng(string res, string a, float  b)      => new(84, FloatRef(res), FloatRef(a), FloatLit(b));
-        public static HLOP Rng(string res, string a, string b)      => new(85, FloatRef(res), FloatRef(a), FloatRef(b));
+        public static HLOP Not(string res, string a)                => new(80, FloatRef(res), FloatRef(a), "Not");
+        public static HLOP Add(string res, float  a, string b)      => new(81, FloatRef(res), FloatLit(a), FloatRef(b), "Add");
+        public static HLOP Add(string res, string a, string b)      => new(82, FloatRef(res), FloatRef(a), FloatRef(b), "Add");
+        public static HLOP Sub(string res, float  a, string b)      => new(83, FloatRef(res), FloatLit(a), FloatRef(b), "Sub");
+        public static HLOP Sub(string res, string a, float  b)      => new(84, FloatRef(res), FloatRef(a), FloatLit(b), "Sub");
+        public static HLOP Sub(string res, string a, string b)      => new(85, FloatRef(res), FloatRef(a), FloatRef(b), "Sub");
+        public static HLOP Mul(string res, float  a, string b)      => new(86, FloatRef(res), FloatLit(a), FloatRef(b), "Mul");
+        public static HLOP Mul(string res, string a, string b)      => new(87, FloatRef(res), FloatRef(a), FloatRef(b), "Mul");
+        public static HLOP Div(string res, float  a, string b)      => new(88, FloatRef(res), FloatLit(a), FloatRef(b), "Div");
+        public static HLOP Div(string res, string a, float  b)      => new(89, FloatRef(res), FloatRef(a), FloatLit(b), "Div");
+        public static HLOP Div(string res, string a, string b)      => new(90, FloatRef(res), FloatRef(a), FloatRef(b), "Div");
+        public static HLOP Mod(string res, float  a, string b)      => new(91, FloatRef(res), FloatLit(a), FloatRef(b), "Mod");
+        public static HLOP Mod(string res, string a, float  b)      => new(92, FloatRef(res), FloatRef(a), FloatLit(b), "Mod");
+        public static HLOP Mod(string res, string a, string b)      => new(93, FloatRef(res), FloatRef(a), FloatRef(b), "Mod");
+        public static HLOP Pow(string res, float  a, string b)      => new(94, FloatRef(res), FloatLit(a), FloatRef(b), "Pow");
+        public static HLOP Pow(string res, string a, float  b)      => new(95, FloatRef(res), FloatRef(a), FloatLit(b), "Pow");
+        public static HLOP Pow(string res, string a, string b)      => new(96, FloatRef(res), FloatRef(a), FloatRef(b), "Pow");
+        public static HLOP Square(string res, string a)             => new(97, FloatRef(res), FloatRef(a), "Square");
+        public static HLOP Sin(string res, string a)                => new(98, FloatRef(res), FloatRef(a), "Sin");
+        public static HLOP Cos(string res, string a)                => new(99, FloatRef(res), FloatRef(a), "Cos");
+        public static HLOP Tan(string res, string a)                => new(100, FloatRef(res), FloatRef(a), "Tan");
+        public static HLOP Asin(string res, string a)               => new(101, FloatRef(res), FloatRef(a), "Asin");
+        public static HLOP Acos(string res, string a)               => new(102, FloatRef(res), FloatRef(a), "Acos");
+        public static HLOP Atan(string res, string a)               => new(103, FloatRef(res), FloatRef(a), "Atan");
+        public static HLOP Atan2(string res, float  a, string b)    => new(104, FloatRef(res), FloatLit(a), FloatRef(b), "Atan2");
+        public static HLOP Atan2(string res, string a, float  b)    => new(105, FloatRef(res), FloatRef(a), FloatLit(b), "Atan2");
+        public static HLOP Atan2(string res, string a, string b)    => new(106, FloatRef(res), FloatRef(a), FloatRef(b), "Atan2");
+        public static HLOP Ceil(string res, string a)               => new(107, FloatRef(res), FloatRef(a), "Ceil");
+        public static HLOP Floor(string res, string a)              => new(108, FloatRef(res), FloatRef(a), "Floor");
+        public static HLOP Round(string res, string a)              => new(109, FloatRef(res), FloatRef(a), "Round");
+        public static HLOP Abs(string res, string a)                => new(110, FloatRef(res), FloatRef(a), "Abs");
+        public static HLOP Rng(string res, float  a, float  b)      => new(111, FloatRef(res), FloatLit(a), FloatLit(b), "Rng");
+        public static HLOP Rng(string res, float  a, string b)      => new(112, FloatRef(res), FloatLit(a), FloatRef(b), "Rng");
+        public static HLOP Rng(string res, string a, float  b)      => new(113, FloatRef(res), FloatRef(a), FloatLit(b), "Rng");
+        public static HLOP Rng(string res, string a, string b)      => new(114, FloatRef(res), FloatRef(a), FloatRef(b), "Rng");
+        public static HLOP Distance(string res, float  a, string b) => new(115, FloatRef(res), FloatLit(a), FloatRef(b), "Distance");
+        public static HLOP Distance(string res, string a, float  b) => new(116, FloatRef(res), FloatRef(a), FloatLit(b), "Distance");
+        public static HLOP Distance(string res, string a, string b) => new(117, FloatRef(res), FloatRef(a), FloatRef(b), "Distance");
         // vector math (excl matrix mul)
-        public static HLOP Equal4(string res, string a, string b)   => new(86, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP LT4(string res, string a, string b)      => new(87, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP LTE4(string res, string a, string b)     => new(88, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Negate4(string res, string a)            => new(89, FloatRef(res), FloatRef(a));
-        public static HLOP Add4(string res, string a, string b)     => new(91, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Sub4(string res, string a, string b)     => new(92, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Mul4(string res, string a, string b)     => new(93, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Div4(string res, string a, string b)     => new(94, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Mod4(string res, string a, string b)     => new(95, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Pow4(string res, string a, string b)     => new(96, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Square4(string res, string a)            => new(97, FloatRef(res), FloatRef(a));
-        public static HLOP Sin4(string res, string a)               => new(98, FloatRef(res), FloatRef(a));
-        public static HLOP Cos4(string res, string a)               => new(99, FloatRef(res), FloatRef(a));
-        public static HLOP Tan4(string res, string a)               => new(100, FloatRef(res), FloatRef(a));
-        public static HLOP Asin4(string res, string a)              => new(101, FloatRef(res), FloatRef(a));
-        public static HLOP Acos4(string res, string a)              => new(102, FloatRef(res), FloatRef(a));
-        public static HLOP Atan4(string res, string a)              => new(103, FloatRef(res), FloatRef(a));
-        public static HLOP Atan24(string res, string a, string b)   => new(104, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Ceil4(string res, string a)              => new(105, FloatRef(res), FloatRef(a));
-        public static HLOP Floor4(string res, string a)             => new(106, FloatRef(res), FloatRef(a));
-        public static HLOP Round4(string res, string a)             => new(107, FloatRef(res), FloatRef(a));
-        public static HLOP Abs4(string res, string a)               => new(108, FloatRef(res), FloatRef(a));
-        public static HLOP Rng4(string res, string a, string b)     => new(109, FloatRef(res), FloatRef(a), FloatRef(b));
-        public static HLOP Length4(string res, string a)            => new(110, FloatRef(res), FloatRef(a));
-        public static HLOP Distance4(string r, string a, string b)  => new(111, FloatRef(r  ), FloatRef(a), FloatRef(b));
-        public static HLOP Polar(string res, float  a, float  b)    => new(112, FloatRef(res), FloatLit(a), FloatLit(b));
-        public static HLOP Polar(string res, float  a, string b)    => new(112, FloatRef(res), FloatLit(a), FloatRef(b));
-        public static HLOP Polar(string res, string a, float  b)    => new(112, FloatRef(res), FloatRef(a), FloatLit(b));
-        public static HLOP Polar(string res, string a, string b)    => new(112, FloatRef(res), FloatRef(a), FloatRef(b));
+        public static HLOP Set4(string res, string a)               => new(128, FloatRef(res), FloatRef(a), "Set4");
+        public static HLOP Equal4(string res, string a, string b)   => new(129, FloatRef(res), FloatRef(a), FloatRef(b), "Equal4");
+        public static HLOP LT4(string res, string a, string b)      => new(130, FloatRef(res), FloatRef(a), FloatRef(b), "LessThan4");
+        public static HLOP LTE4(string res, string a, string b)     => new(131, FloatRef(res), FloatRef(a), FloatRef(b), "LessThanEqual4");
+        public static HLOP Negate4(string res, string a)            => new(132, FloatRef(res), FloatRef(a), "Negate4");
+        public static HLOP Not4(string res, string a)               => new(133, FloatRef(res), FloatRef(a), "Not4");
+        public static HLOP Add4(string res, string a, string b)     => new(134, FloatRef(res), FloatRef(a), FloatRef(b), "Add4");
+        public static HLOP Sub4(string res, string a, string b)     => new(135, FloatRef(res), FloatRef(a), FloatRef(b), "Sub4");
+        public static HLOP Mul4(string res, string a, string b)     => new(136, FloatRef(res), FloatRef(a), FloatRef(b), "Mul4");
+        public static HLOP Div4(string res, string a, string b)     => new(137, FloatRef(res), FloatRef(a), FloatRef(b), "Div4");
+        public static HLOP Mod4(string res, string a, string b)     => new(138, FloatRef(res), FloatRef(a), FloatRef(b), "Mod4");
+        public static HLOP Pow4(string res, string a, string b)     => new(139, FloatRef(res), FloatRef(a), FloatRef(b), "Pow4");
+        public static HLOP Square4(string res, string a)            => new(140, FloatRef(res), FloatRef(a), "Square4");
+        public static HLOP Sin4(string res, string a)               => new(141, FloatRef(res), FloatRef(a), "Sin4");
+        public static HLOP Cos4(string res, string a)               => new(142, FloatRef(res), FloatRef(a), "Cos4");
+        public static HLOP Tan4(string res, string a)               => new(143, FloatRef(res), FloatRef(a), "Tan4");
+        public static HLOP Asin4(string res, string a)              => new(144, FloatRef(res), FloatRef(a), "Asin4");
+        public static HLOP Acos4(string res, string a)              => new(145, FloatRef(res), FloatRef(a), "Acos4");
+        public static HLOP Atan4(string res, string a)              => new(146, FloatRef(res), FloatRef(a), "Atan4");
+        public static HLOP Atan24(string res, string a, string b)   => new(147, FloatRef(res), FloatRef(a), FloatRef(b), "Atan24");
+        public static HLOP Ceil4(string res, string a)              => new(148, FloatRef(res), FloatRef(a), "Ceil4");
+        public static HLOP Floor4(string res, string a)             => new(159, FloatRef(res), FloatRef(a), "Floor4");
+        public static HLOP Round4(string res, string a)             => new(160, FloatRef(res), FloatRef(a), "Round4");
+        public static HLOP Abs4(string res, string a)               => new(161, FloatRef(res), FloatRef(a), "Abs4");
+        public static HLOP Rng4(string res, string a, string b)     => new(162, FloatRef(res), FloatRef(a), FloatRef(b), "Rng4");
+        public static HLOP Length4(string res, string a)            => new(163, FloatRef(res), FloatRef(a), "Length4");
+        public static HLOP Distance4(string r, string a, string b)  => new(164, FloatRef(r  ), FloatRef(a), FloatRef(b), "Distance4");
+        public static HLOP Polar(string res, float  a, float  b)    => new(165, FloatRef(res), FloatLit(a), FloatLit(b), "Polar");
+        public static HLOP Polar(string res, float  a, string b)    => new(166, FloatRef(res), FloatLit(a), FloatRef(b), "Polar");
+        public static HLOP Polar(string res, string a, float  b)    => new(167, FloatRef(res), FloatRef(a), FloatLit(b), "Polar");
+        public static HLOP Polar(string res, string a, string b)    => new(168, FloatRef(res), FloatRef(a), FloatRef(b), "Polar");
         // matrix mul
         public static HLOP MatrixMul(int u, int v, int w, string res, string a, string b)
-            => new(192 + u + 4* v + 16* w, FloatRef(res), FloatRef(a), FloatRef(b));
+            => new(192 + u + 4* v + 16* w, FloatRef(res), FloatRef(a), FloatRef(b), $"Matrix{u}{v}{w}");
     }
 }

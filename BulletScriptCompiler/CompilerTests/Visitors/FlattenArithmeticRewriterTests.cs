@@ -66,6 +66,18 @@ matrix m = [1 a; a+a 0-1];
 ", compactTree: true, new FlattenArithmeticRewriter());
 
         [TestMethod]
+        public void TestMatrix2() => TestHelpers.AssertGeneratesTree(@"
+matrix m = [1 1];
+m = m + [2 2];
+", @"
+[root]
+    [variable declaration]   matrix m = [ 1 1]
+    <variable declaration>   matrix1x2 arithmetic#result#matrix1x2#0
+    [expression]             arithmetic#result#matrix1x2#0 = [ 2 2]
+    [expression]             m = (m + arithmetic#result#matrix1x2#0)
+", compactTree: true, new FlattenArithmeticRewriter());
+
+        [TestMethod]
         public void TestIndex1() => TestHelpers.AssertGeneratesTree(@"
 matrix m = [1 2; 3 4];
 float a = m[1; 0+1];
@@ -136,6 +148,25 @@ function void main(float value) {
             <variable declaration>   float arithmetic#result#float#1
             [expression]             arithmetic#result#float#1 = B(arithmetic#result#float#0)
             [variable declaration]   float j = C(arithmetic#result#float#1)
+", compactTree: true, new FlattenArithmeticRewriter());
+
+        // I actually forgot to test this thing leaves the simplest stuff untouched.
+        [TestMethod]
+        public void TestSimplerBinop1() => TestHelpers.AssertGeneratesTree(@"
+float a = 1 + 2;
+", @"
+[root]
+    [variable declaration]   float a = (1 + 2)
+", compactTree: true, new FlattenArithmeticRewriter());
+
+        [TestMethod]
+        public void TestSimplerBinop2() => TestHelpers.AssertGeneratesTree(@"
+float a;
+a = 1 + 2;
+", @"
+[root]
+    <variable declaration>   float a
+    [expression]             a = (1 + 2)
 ", compactTree: true, new FlattenArithmeticRewriter());
     }
 }

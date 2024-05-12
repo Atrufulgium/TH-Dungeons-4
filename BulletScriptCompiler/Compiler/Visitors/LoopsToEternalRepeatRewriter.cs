@@ -69,7 +69,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// <remarks>
     /// Assumptions:
     /// <list type="bullet">
-    /// <item><b>ASSUMPTIONS BEFORE:</b> The only nodes are those you get from parsing code. </item>
+    /// <item><b>ASSUMPTIONS BEFORE:</b> There are no goto control flow structures. </item>
     /// <item><b>ASSUMPTIONS AFTER:</b> The only loop mechanism remaining is <c>repeat { .. }</c></item>
     /// </list>
     /// </remarks>
