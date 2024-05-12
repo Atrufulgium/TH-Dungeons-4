@@ -3,7 +3,7 @@
     /// A non-user node representing an intrinsic call that writes into an
     /// identifier.
     /// </summary>
-    internal class IntrinsicInvocationAssignmentStatement : Statement, IEmittable {
+    internal partial class IntrinsicInvocationAssignmentStatement : Statement, IEmittable {
 
         public IdentifierName Identifier { get; private set; }
         public InvocationExpression Invocation { get; private set; }

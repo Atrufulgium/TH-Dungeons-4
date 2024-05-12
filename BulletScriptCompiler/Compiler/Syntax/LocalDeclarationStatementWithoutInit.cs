@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using Atrufulgium.BulletScript.Compiler.HighLevelOpCodes;
+using Atrufulgium.BulletScript.Compiler.Semantics;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// A non-user node representing the declaration of a variable that does
     /// not have initialization.
@@ -19,5 +22,7 @@
 
         new public LocalDeclarationStatementWithoutInit WithDeclaration(VariableDeclaration declaration)
             => new(declaration.Identifier, declaration.Type);
+
+        List<HLOP> IEmittable.Emit(SemanticModel _) => new(capacity: 0);
     }
 }

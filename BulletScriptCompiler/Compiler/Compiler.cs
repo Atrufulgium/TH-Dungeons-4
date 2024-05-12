@@ -66,5 +66,10 @@ namespace Atrufulgium.BulletScript.Compiler {
             // are part of a simple assignment whose RHS contains no nested
             // expressions, other than literals or identifiers being contained.
             new AcknowledgeSimpleAssignmentsRewriter(),
+            // Before:
+            // Tree in statement form.
+            // Everything is emittable.
+            new EmitWalker()
+        };
     }
 }

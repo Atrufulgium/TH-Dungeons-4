@@ -12,7 +12,7 @@
     /// Here a and b may be identifiers or literals.  For binops, not both may
     /// be literals, and for indexing, `a` may also not be a literal.
     /// </summary>
-    internal class SimpleAssignmentStatement : Statement, IEmittable {
+    internal partial class SimpleAssignmentStatement : Statement, IEmittable {
         public IdentifierName LHS { get; private set; }
         public Expression RHS { get; private set; }
 

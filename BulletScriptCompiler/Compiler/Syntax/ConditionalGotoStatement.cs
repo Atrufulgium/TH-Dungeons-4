@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using Atrufulgium.BulletScript.Compiler.HighLevelOpCodes;
+using Atrufulgium.BulletScript.Compiler.Semantics;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// A non-user node representing
     /// <code>
@@ -58,5 +61,7 @@
             => new((IdentifierName)Condition, target, Location);
         public ConditionalGotoStatement WithTarget(GotoStatement target)
             => new((IdentifierName)Condition, target.Target, Location);
+
+        List<HLOP> IEmittable.Emit(SemanticModel _) => HLOP.JumpConditional(Target.Name, IdentifierCondition.Name);
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using Atrufulgium.BulletScript.Compiler.HighLevelOpCodes;
+using Atrufulgium.BulletScript.Compiler.Semantics;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// A non-user node representing a target for goto's.
     /// </summary>
@@ -18,5 +21,7 @@
 
         public override IEnumerable<Diagnostic> ValidateTree(IEnumerable<Node> path)
             => new List<Diagnostic>();
+
+        List<HLOP> IEmittable.Emit(SemanticModel _) => HLOP.GotoLabel(Name);
     }
 }

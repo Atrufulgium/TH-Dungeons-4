@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using Atrufulgium.BulletScript.Compiler.HighLevelOpCodes;
+using Atrufulgium.BulletScript.Compiler.Semantics;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// A non-user node representing a goto.
     /// </summary>
@@ -21,5 +24,7 @@
 
         public GotoStatement WithTarget(GotoLabelStatement target)
             => new(target, Location);
+
+        List<HLOP> IEmittable.Emit(SemanticModel _) => HLOP.Jump(Target.Name);
     }
 }

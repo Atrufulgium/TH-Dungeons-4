@@ -2,7 +2,7 @@
     /// <summary>
     /// A non-user node representing an intrinsic call that does not return.
     /// </summary>
-    internal class IntrinsicInvocationStatement : Statement, IEmittable {
+    internal partial class IntrinsicInvocationStatement : Statement, IEmittable {
 
         public InvocationExpression Invocation { get; private set; }
 
