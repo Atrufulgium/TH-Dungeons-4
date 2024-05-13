@@ -212,5 +212,21 @@ declarations:
                         value:
                             230
 ", new ExtractReturnRewriter());
+
+        // I did an oopsie and this introduced `Identifier;` statements, which
+        // are not allowed.
+        [TestMethod]
+        public void TestVoidedNonvoid() => TestHelpers.AssertGeneratesTree(@"
+function float A() { return 3; }
+function void B() { A(); }
+", @"
+[root]
+    <variable declaration>   float A()#return
+    [method declaration]     void A()
+            [expression]             A()#return = 3
+            [return]                 [none]
+    [method declaration]     void B()
+            [expression]             A()
+", compactTree: true, new ExtractReturnRewriter());
     }
 }

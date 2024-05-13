@@ -69,7 +69,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
             var methodSymbol = Model.GetSymbolInfo(node);
 
-            // Don't give updates for intrinsics
+            // Intrinsics are implicit and not updated
             foreach (var arg in node.Arguments) {
                 // if null, just throw...
                 // it should be impossible to be null
@@ -86,9 +86,17 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
             node = (MethodDeclaration)base.VisitMethodDeclaration(node)!;
 
-            // Conveniently updates everything but `main` and `on_message`.
+            // Conveniently updates everything but `main` and `on_message` to the correct 0-length array.
             if (!methodSymbol.IsSpecialMethod)
                 node = node.WithArguments(Array.Empty<LocalDeclarationStatement>());
+            else if (node.Arguments.Count == 1) // ignore in favour of "ignored"
+                node = node.WithArguments(
+                    new[] {
+                        new LocalDeclarationStatement(
+                            new(new("##ignored##"), Syntax.Type.Float)
+                        )
+                    }
+                );
 
             return new MultipleDeclarations(
                 new MultipleDeclarations(addedDeclarations),
@@ -172,8 +180,21 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             return base.VisitRoot(node);
         }
 
-        static IdentifierName GetUpdatedVarName(VariableSymbol symbol)
-            => new(symbol.FullyQualifiedName.Replace('.', '#'));
+        static IdentifierName GetUpdatedVarName(VariableSymbol symbol) {
+            // Regular variable names can be updated to whatever. It'll be
+            // replaced with numbers anyway.
+            // Method arguments of VM methods need to be predictably
+            // recognisable however. As the user can name the variable whatever
+            // they want, we need to be a bit cleverer.
+            // CURRENTLY all VM methods use at most 1 argument, so this blanket
+            // replacement works fine.
+            if (symbol.ContainingSymbol is MethodSymbol m
+                && m.IsSpecialMethod
+                && m.Parameters.Contains(symbol)) {
+                return new($"##{m.FullyQualifiedName}##");
+            }
+            return new(symbol.FullyQualifiedName.Replace('.', '#'));
+        }
 
         private class MethodNameUpdateWalker : AbstractTreeWalker {
 

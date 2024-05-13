@@ -46,6 +46,9 @@ namespace Atrufulgium.BulletScript.Compiler {
             // After these three:
             // The only remaining methods are invocations, and the tree is in
             // statement form.
+            // The goto labels of VM methods, if any, are surrounded by ##s.
+            // The variable names of VM method arguments, if any, are of the
+            // form `##fullyqualifiedmethodname(types)##`.
             new ExtractMethodArgsRewriter(),
             new ExtractReturnRewriter(),
             new RemoveMethodsRewriter(),
@@ -69,6 +72,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             new AcknowledgeSimpleAssignmentsRewriter(),
             // Before:
             // Tree is in emittable form.
+            // Labels that may not be removed are ##'d.
             new RemoveGotoUnreachableRewriter(),
             // Before:
             // Tree is in emittable form.

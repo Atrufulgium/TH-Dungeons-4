@@ -241,141 +241,19 @@ function void main(float value) { }
 function void on_message(float value) { }
 ", @"
 [root]
-declarations:
-    [variable declaration]
-    identifier:
-        [identifier name]
-        name:
-            A(float)#a
-    type:
-        float
-    initializer:
-        [none]
-    [method declaration]
-    identifier:
-        [identifier name]
-        name:
-            A-float
-    type:
-        void
-    arguments:
-        [none]
-    block:
-        [block]
-        statements:
-            [expression statement]
-            statement:
-                [assignment]
-                lhs:
-                    [identifier name]
-                    name:
-                        main(float)#value
-                op:
-                    =
-                rhs:
-                    [identifier name]
-                    name:
-                        A(float)#a
-            [expression statement]
-            statement:
-                [invocation]
-                target:
-                    [identifier name]
-                    name:
-                        main
-                args:
-                    [literal float]
-                    value:
-                        0
-            [expression statement]
-            statement:
-                [assignment]
-                lhs:
-                    [identifier name]
-                    name:
-                        on_message(float)#value
-                op:
-                    =
-                rhs:
-                    [identifier name]
-                    name:
-                        A(float)#a
-            [expression statement]
-            statement:
-                [invocation]
-                target:
-                    [identifier name]
-                    name:
-                        on_message
-                args:
-                    [literal float]
-                    value:
-                        0
-    [variable declaration]
-    identifier:
-        [identifier name]
-        name:
-            main(float)#value
-    type:
-        float
-    initializer:
-        [none]
-    [method declaration]
-    identifier:
-        [identifier name]
-        name:
-            main
-    type:
-        void
-    arguments:
-        [local declaration]
-        declaration:
-            [variable declaration]
-            identifier:
-                [identifier name]
-                name:
-                    main(float)#value
-            type:
-                float
-            initializer:
-                [none]
-    block:
-        [block]
-        statements:
+    <variable declaration>   float A(float)#a
+    [method declaration]     void A-float()
+            [expression]             ##main(float)## = A(float)#a
+            [expression]             main(0)
+            [expression]             ##on_message(float)## = A(float)#a
+            [expression]             on_message(0)
+    <variable declaration>   float ##main(float)##
+    [method declaration]     void main(float ##ignored##)
             [none]
-    [variable declaration]
-    identifier:
-        [identifier name]
-        name:
-            on_message(float)#value
-    type:
-        float
-    initializer:
-        [none]
-    [method declaration]
-    identifier:
-        [identifier name]
-        name:
-            on_message
-    type:
-        void
-    arguments:
-        [local declaration]
-        declaration:
-            [variable declaration]
-            identifier:
-                [identifier name]
-                name:
-                    on_message(float)#value
-            type:
-                float
-            initializer:
-                [none]
-    block:
-        [block]
-        statements:
+    <variable declaration>   float ##on_message(float)##
+    [method declaration]     void on_message(float ##ignored##)
             [none]
-", new ExtractMethodArgsRewriter());
+", compactTree: true, new ExtractMethodArgsRewriter());
 
         [TestMethod]
         public void TestOverload() => TestHelpers.AssertGeneratesTree(@"

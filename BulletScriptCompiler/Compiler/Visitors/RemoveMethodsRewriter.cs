@@ -63,8 +63,10 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// Assumptions:
     /// <list type="bullet">
     /// <item><b>ASSUMPTIONS BEFORE:</b> Methods do not significantly use arguments, and return void. </item>
-    /// <item><b>ASSUMPTIONS AFTER:</b> There are no methods. </item>
+    /// <item><b>ASSUMPTIONS AFTER:</b> There are no methods. Labels for VM methods are surrounded by ##. </item>
     /// </list>
+    /// Furthermore, compiler special methods get their goto label surrounded
+    /// by pairs of `##`.
     /// </remarks>
     internal class RemoveMethodsRewriter : AbstractTreeRewriter {
 
@@ -103,8 +105,12 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             foreach (var s in callCount.Keys) {
                 callsProcessed[s] = 0;
                 GotoLabelStatement[] sEntryLabels = new GotoLabelStatement[callCount[s]];
+                
+                // The number in the i'th label and `i+1` here match.
+                // This in order to allow the VM to temporarily zero-set
+                // certain variables sometimes.
                 for (int i = 0; i < callCount[s]; i++) {
-                    sEntryLabels[i] = new($"{s.FullyQualifiedName}#return-to-entry#{i}");
+                    sEntryLabels[i] = new($"{s.FullyQualifiedName}#return-to-entry#{i+1}");
                 }
                 entryLabels[s] = sEntryLabels;
                 methodEntryVariableName[s] = new($"{s.FullyQualifiedName}#entry");
@@ -206,7 +212,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 )
             );
             for (int i = 0; i < retEntryLabels.Length; i++) {
-                // The number in the label and `i` here match.
+                // The number in the i'th label and `i+1` here match.
                 writeTarget.Add(
                     new ExpressionStatement(
                         new AssignmentExpression(
@@ -215,7 +221,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                             new BinaryExpression(
                                 methodEntryVarName,
                                 BinaryOp.Eq,
-                                new LiteralExpression(i)
+                                new LiteralExpression(i+1)
                             )
                         )
                     )
@@ -227,6 +233,13 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                     )
                 );
             }
+
+            // VM-called methods may also just, well, exist without the
+            // relevant variable being set, and then the above branches are not
+            // reliable.
+            if (methodSymbol.IsSpecialMethod)
+                writeTarget.Add(new GotoStatement(endLabel));
+
             return null;
         }
 
@@ -250,12 +263,13 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             int i = callsProcessed[methodSymbol];
             callsProcessed[methodSymbol] += 1;
 
+            // The number in the i'th label and `i+1` here match.
             return new MultipleStatements(
                 new ExpressionStatement(
                     new AssignmentExpression(
                         methodEntryVariableName[methodSymbol],
                         AssignmentOp.Set,
-                        new LiteralExpression(i)
+                        new LiteralExpression(i+1)
                     )
                 ),
                 new GotoStatement(methodLabels[methodSymbol]),
@@ -299,7 +313,13 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 var symbol = Model.GetSymbolInfo(node);
                 if (!callCount.ContainsKey(symbol))
                     callCount[symbol] = 0;
-                labels[symbol] = new(symbol.FullyQualifiedName);
+                // Regular methods can have whatever symbol they want.
+                // VM communicating methods get their label surrounded by `##`s.
+                if (symbol.IsSpecialMethod)
+                    labels[symbol] = new($"##{symbol.FullyQualifiedName}##");
+                else
+                    labels[symbol] = new(symbol.FullyQualifiedName);
+
                 if (symbol.FullyQualifiedName is "main(float)")
                     HasMain = true;
                 base.VisitMethodDeclaration(node);

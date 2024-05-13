@@ -100,7 +100,14 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         protected override Node? VisitStatement(Statement node) {
             prependedStatements.Clear();
+
             node = (Statement)base.VisitStatement(node)!;
+
+            // *Usually* we want to extract the returned value with the name.
+            // However, if we're directly an invocation without assignment,
+            // we end up with `Identifier;`. This is nonsense.
+            if (node is ExpressionStatement e && e.Statement is IdentifierName)
+                return new MultipleStatements(prependedStatements);
 
             if (prependedStatements.Count == 0)
                 return node;
@@ -127,6 +134,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             prependedStatements.Add(
                 new ExpressionStatement(node)
             );
+
             return ReturnName(methodSymbol);
         }
 

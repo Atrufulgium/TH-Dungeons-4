@@ -21,27 +21,27 @@ function void C() { a = 5; }
     <goto>                   goto the end
     <goto label>             A():
     [expression]             a = 3
-    [expression]             C()#entry = 0
-    <goto>                   goto C()
-    <goto label>             C()#return-to-entry#0:
-    <variable declaration>   float global#returntest
-    [expression]             global#returntest = (A()#entry == 0)
-    <conditional goto>       if global#returntest goto A()#return-to-entry#0
-    <goto label>             B():
-    [expression]             A()#entry = 0
-    <goto>                   goto A()
-    <goto label>             A()#return-to-entry#0:
     [expression]             C()#entry = 1
     <goto>                   goto C()
     <goto label>             C()#return-to-entry#1:
+    <variable declaration>   float global#returntest
+    [expression]             global#returntest = (A()#entry == 1)
+    <conditional goto>       if global#returntest goto A()#return-to-entry#1
+    <goto label>             B():
+    [expression]             A()#entry = 1
+    <goto>                   goto A()
+    <goto label>             A()#return-to-entry#1:
+    [expression]             C()#entry = 2
+    <goto>                   goto C()
+    <goto label>             C()#return-to-entry#2:
     <goto>                   goto the end
     <goto label>             C():
     [expression]             a = 5
     <variable declaration>   float global#returntest
-    [expression]             global#returntest = (C()#entry == 0)
-    <conditional goto>       if global#returntest goto C()#return-to-entry#0
     [expression]             global#returntest = (C()#entry == 1)
     <conditional goto>       if global#returntest goto C()#return-to-entry#1
+    [expression]             global#returntest = (C()#entry == 2)
+    <conditional goto>       if global#returntest goto C()#return-to-entry#2
     <goto label>             the end:
 ", compactTree: true, new RemoveMethodsRewriter());
 
@@ -57,31 +57,31 @@ function void C() { a = 5; }
     <variable declaration>   float A()#entry
     <variable declaration>   float main(float)#entry
     <variable declaration>   float C()#entry
-    <goto label>             main(float):
-    [expression]             A()#entry = 0
+    <goto label>             ##main(float)##:
+    [expression]             A()#entry = 1
     <goto>                   goto A()
-    <goto label>             A()#return-to-entry#0:
-    [expression]             C()#entry = 1
+    <goto label>             A()#return-to-entry#1:
+    [expression]             C()#entry = 2
     <goto>                   goto C()
-    <goto label>             C()#return-to-entry#1:
+    <goto label>             C()#return-to-entry#2:
     <goto>                   goto the end
     <goto label>             A():
     [expression]             a = 3
     <goto>                   goto A()#return
-    [expression]             C()#entry = 0
+    [expression]             C()#entry = 1
     <goto>                   goto C()
-    <goto label>             C()#return-to-entry#0:
+    <goto label>             C()#return-to-entry#1:
     <goto label>             A()#return:
     <variable declaration>   float global#returntest
-    [expression]             global#returntest = (A()#entry == 0)
-    <conditional goto>       if global#returntest goto A()#return-to-entry#0
+    [expression]             global#returntest = (A()#entry == 1)
+    <conditional goto>       if global#returntest goto A()#return-to-entry#1
     <goto label>             C():
     [expression]             a = 5
     <variable declaration>   float global#returntest
-    [expression]             global#returntest = (C()#entry == 0)
-    <conditional goto>       if global#returntest goto C()#return-to-entry#0
     [expression]             global#returntest = (C()#entry == 1)
     <conditional goto>       if global#returntest goto C()#return-to-entry#1
+    [expression]             global#returntest = (C()#entry == 2)
+    <conditional goto>       if global#returntest goto C()#return-to-entry#2
     <goto label>             the end:
 ", compactTree: true, new RemoveMethodsRewriter());
     }

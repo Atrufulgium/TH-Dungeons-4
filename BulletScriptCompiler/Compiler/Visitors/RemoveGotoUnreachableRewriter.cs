@@ -42,7 +42,6 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// </remarks>
     // This does not perform more complex analysis that could remove chunks
     // of code if you look at the structure of label--goto more in-depth.
-    // TODO: This also removes unused special method labels. That is bad.
     internal class RemoveGotoUnreachableRewriter : AbstractTreeRewriter {
 
         protected override Node? VisitRoot(Root node) {
@@ -60,8 +59,12 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                     if (s is not IEmittable)
                         throw new VisitorAssumptionFailedException("Assumed tree contained only emittable nodes.");
 
-                    if (s is GotoLabelStatement label)
+                    if (s is GotoLabelStatement label) {
                         gotoLabels.Add(label);
+                        // Don't remove labels the VM relies on
+                        if (label.Name.StartsWith("##"))
+                            wentToTargets.Add(label);
+                    }
                     if (s is GotoStatement got)
                         wentToTargets.Add(got.Target);
                     if (s is ConditionalGotoStatement cond)
