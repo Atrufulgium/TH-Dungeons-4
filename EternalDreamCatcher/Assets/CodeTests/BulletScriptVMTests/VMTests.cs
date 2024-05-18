@@ -18,6 +18,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM.Tests {
                 expectedCommands,
                 string.Join('\n', vm.ConsumeCommands())
             );
+            vm.Dispose();
         }
 
         unsafe float Int(int value) => *(float*)&value;
@@ -27,7 +28,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM.Tests {
         public void Test10Messages() => Test(new float4[] {
 // mem[0] = 10f
 new(Int(10), Int(0), 10f, NA),
-// message(mem[0])
+// SendMessage(mem[0])
 // label: MESSAGE
 new(Int(32), Int(0), NA, NA),
 // mem[0]--

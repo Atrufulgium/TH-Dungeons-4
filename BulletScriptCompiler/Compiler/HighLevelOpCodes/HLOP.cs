@@ -182,16 +182,16 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
         public static HLOP Atan4(string res, string a)              => new(146, FloatRef(res), FloatRef(a), "Atan4");
         public static HLOP Atan24(string res, string a, string b)   => new(147, FloatRef(res), FloatRef(a), FloatRef(b), "Atan24");
         public static HLOP Ceil4(string res, string a)              => new(148, FloatRef(res), FloatRef(a), "Ceil4");
-        public static HLOP Floor4(string res, string a)             => new(159, FloatRef(res), FloatRef(a), "Floor4");
-        public static HLOP Round4(string res, string a)             => new(160, FloatRef(res), FloatRef(a), "Round4");
-        public static HLOP Abs4(string res, string a)               => new(161, FloatRef(res), FloatRef(a), "Abs4");
-        public static HLOP Rng4(string res, string a, string b)     => new(162, FloatRef(res), FloatRef(a), FloatRef(b), "Rng4");
-        public static HLOP Length4(string res, string a)            => new(163, FloatRef(res), FloatRef(a), "Length4");
-        public static HLOP Distance4(string r, string a, string b)  => new(164, FloatRef(r  ), FloatRef(a), FloatRef(b), "Distance4");
-        public static HLOP Polar(string res, float  a, float  b)    => new(165, FloatRef(res), FloatLit(a), FloatLit(b), "Polar");
-        public static HLOP Polar(string res, float  a, string b)    => new(166, FloatRef(res), FloatLit(a), FloatRef(b), "Polar");
-        public static HLOP Polar(string res, string a, float  b)    => new(167, FloatRef(res), FloatRef(a), FloatLit(b), "Polar");
-        public static HLOP Polar(string res, string a, string b)    => new(168, FloatRef(res), FloatRef(a), FloatRef(b), "Polar");
+        public static HLOP Floor4(string res, string a)             => new(149, FloatRef(res), FloatRef(a), "Floor4");
+        public static HLOP Round4(string res, string a)             => new(150, FloatRef(res), FloatRef(a), "Round4");
+        public static HLOP Abs4(string res, string a)               => new(151, FloatRef(res), FloatRef(a), "Abs4");
+        public static HLOP Rng4(string res, string a, string b)     => new(152, FloatRef(res), FloatRef(a), FloatRef(b), "Rng4");
+        public static HLOP Length4(string res, string a)            => new(153, FloatRef(res), FloatRef(a), "Length4");
+        public static HLOP Distance4(string r, string a, string b)  => new(154, FloatRef(r  ), FloatRef(a), FloatRef(b), "Distance4");
+        public static HLOP Polar(string res, float  a, float  b)    => new(155, FloatRef(res), FloatLit(a), FloatLit(b), "Polar");
+        public static HLOP Polar(string res, float  a, string b)    => new(156, FloatRef(res), FloatLit(a), FloatRef(b), "Polar");
+        public static HLOP Polar(string res, string a, float  b)    => new(157, FloatRef(res), FloatRef(a), FloatLit(b), "Polar");
+        public static HLOP Polar(string res, string a, string b)    => new(158, FloatRef(res), FloatRef(a), FloatRef(b), "Polar");
         // matrix mul
         public static HLOP MatrixMul(int u, int v, int w, string res, string a, string b)
             => new(192 + u + 4* v + 16* w, FloatRef(res), FloatRef(a), FloatRef(b), $"MatrixMul{u}{v}{w}");
