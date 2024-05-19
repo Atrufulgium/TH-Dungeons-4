@@ -21,11 +21,18 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
         public RawImage target;
         RenderTexture texture;
 
+        public Texture2D[] bulletTextures;
+
         int tempRTid;
 
         void Start() {
+            if (fieldContainer == null) throw new System.NullReferenceException();
+            if (bulletMaterial == null) throw new System.NullReferenceException();
+            if (bulletMesh == null) throw new System.NullReferenceException();
+            if (bulletTextures == null || bulletTextures.Length == 0) throw new System.NullReferenceException();
+
             field = fieldContainer.field;
-            fieldRenderer = new(bulletMaterial, bulletMesh);
+            fieldRenderer = new(bulletMaterial, bulletMesh, bulletTextures);
             camera = GetComponent<Camera>();
 
             tempRTid = Shader.PropertyToID("_tempFieldRendererRT");

@@ -1,9 +1,7 @@
-Shader "Unlit/BulletShader"
+Shader "Hidden/BulletShader"
 {
     Properties
-    {
-        _MainTex ("Texture", 2D) = "white" {}
-    }
+    { }
     SubShader
     {
         Tags { 

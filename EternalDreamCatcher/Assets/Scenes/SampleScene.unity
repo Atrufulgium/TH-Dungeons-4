@@ -224,6 +224,33 @@ MonoBehaviour:
   bulletMaterial: {fileID: 2100000, guid: d0a4738b8a069a1499c974fb3a43a034, type: 2}
   bulletMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   target: {fileID: 605528817}
+  bulletTextures:
+  - {fileID: 2800000, guid: e4fae37ac4c43c94eacf09051a669d7b, type: 3}
+  - {fileID: 2800000, guid: a285df2ca3324a14188d0e59037cfc1b, type: 3}
+  - {fileID: 2800000, guid: 4484e1c9315721a468938516694d5554, type: 3}
+  - {fileID: 2800000, guid: b4218855839d8f1468b197a71d6dde15, type: 3}
+  - {fileID: 2800000, guid: 71da187844a9eab48ab889a4dc5d27dc, type: 3}
+  - {fileID: 2800000, guid: 2df5f66a51aa8ea47879adfcb97de89f, type: 3}
+  - {fileID: 2800000, guid: d9cc918632708244699b7a580fc89547, type: 3}
+  - {fileID: 2800000, guid: 4b76833a1cef3df4ea72f9e0b61eea9a, type: 3}
+  - {fileID: 2800000, guid: cb15c555a57fed14f957b19db0b139af, type: 3}
+  - {fileID: 2800000, guid: 324bc8bdfc4f1a14e97e63f5ec0a8f38, type: 3}
+  - {fileID: 2800000, guid: efc0bc4def534874eb3ff0c34fb69275, type: 3}
+  - {fileID: 2800000, guid: 4dc7263aa272c8d4c9eec9bf12409ce7, type: 3}
+  - {fileID: 2800000, guid: 8115a30b703b348428413ed03837ba1f, type: 3}
+  - {fileID: 2800000, guid: 3dc66e0346abd114e9db5cc1d8544f1f, type: 3}
+  - {fileID: 2800000, guid: 11b476402cb01404fb1ed40dcc9f0ae7, type: 3}
+  - {fileID: 2800000, guid: 15295454eca623f46884272f242c7cc5, type: 3}
+  - {fileID: 2800000, guid: 8a1a6db0f3e20df42b71b84143f07157, type: 3}
+  - {fileID: 2800000, guid: 7c4c3f417249d64469c396d86e59235d, type: 3}
+  - {fileID: 2800000, guid: b9be385f1703f3546bed220e8a7f9cd0, type: 3}
+  - {fileID: 2800000, guid: ebcb75d62ae691a44b05e4ac60dd0c9b, type: 3}
+  - {fileID: 2800000, guid: ef0ba190a232b9c489865901ae223f3f, type: 3}
+  - {fileID: 2800000, guid: baad0267d8714f4459e53362e736ce92, type: 3}
+  - {fileID: 2800000, guid: 18696315f8b91a84db912a1cc55b5157, type: 3}
+  - {fileID: 2800000, guid: 054f8e0e0b3346b47ab9206b197a50cc, type: 3}
+  - {fileID: 2800000, guid: eb68df29c5b665e47a936963f7485ea6, type: 3}
+  - {fileID: 2800000, guid: 51b979ed9b44faa4a8beb036b091b196, type: 3}
 --- !u!1 &572371175
 GameObject:
   m_ObjectHideFlags: 0

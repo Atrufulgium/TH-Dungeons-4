@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Mathematics;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
@@ -10,7 +11,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     // This is SoA-shaped instead of AoS-shaped for SIMD purposes.
     // Unfortunately, c# doesn't like that look.
     // The layout of the arrays is as follows:
-    // 0 [type1] [type2] .. [typeN] Active [junk] MAX_BULLETS
+    // 0 [long list of bullets] Active [junk] MAX_BULLETS
+    // At first I wanted to put each bullet type in their own bin, but ehh...
+    // That's obnoxious.
+    // Now FieldRenderer does the binning instead. It's fast.
     public class Field : IDisposable {
 
         // Must be a multiple of 4 and not exceed ushort.maxValue.
@@ -28,6 +32,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         // - Modify OverWrite(int, int)
         // - Modify Dispose()
 
+        #region basic properties
         /// <summary> For valid bullets, stores the x position. Undefined for invalid bullets. </summary>
         internal NativeArray<float> x = new(MAX_BULLETS, Allocator.Persistent);
         /// <summary> For valid bullets, stores the y position. Undefined for invalid bullets. </summary>
@@ -37,14 +42,30 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         // indices around, relying on order is not sufficient.
         internal NativeArray<float> z = new(MAX_BULLETS, Allocator.Persistent);
         float currentZ = 0;
+        #endregion
 
+        #region movement
         /// <summary> Stores the movement in the x component each gametick. </summary>
         internal NativeArray<float> dx = new(MAX_BULLETS, Allocator.Persistent);
         /// <summary> Stores the movement in the y component each gametick. </summary>
         internal NativeArray<float> dy = new(MAX_BULLETS, Allocator.Persistent);
+        #endregion
 
+        #region gameplay stuff
         /// <summary> Stores the hitbox size of each bullet. </summary>
         internal NativeArray<float> radius = new(MAX_BULLETS, Allocator.Persistent);
+        #endregion
+
+        #region rendering stuff
+        /// <summary> The index in <see cref="FieldRenderer.bulletTextures"/>. </summary>
+        internal NativeArray<int> textureID = new(MAX_BULLETS, Allocator.Persistent);
+        /// <summary> The layer determines draw order. </summary>
+        internal NativeArray<int> layer = new(MAX_BULLETS, Allocator.Persistent);
+        /// <summary> The usually-outer color of a bullet. </summary>
+        internal NativeArray<float4> outerColor = new(MAX_BULLETS, Allocator.Persistent);
+        /// <summary> The usually-inner color of a bullet. </summary>
+        internal NativeArray<float4> innerColor = new(MAX_BULLETS, Allocator.Persistent);
+        #endregion
 
         readonly internal HashSet<BulletReference> deletedReferences = new(4096);
         readonly internal HashSet<BulletReference> processedDeletedReferences = new(4096);
@@ -53,7 +74,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// Create a bullet, and return a reference to it. If the bullet cap is
         /// reached, returns <c>null</c> instead.
         /// </summary>
-        public BulletReference? CreateBullet(BulletCreationParams bullet) {
+        public BulletReference? CreateBullet(ref BulletCreationParams bullet) {
             if (active == MAX_BULLETS)
                 return null;
             x[active] = bullet.spawnPosition.x;
@@ -62,6 +83,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             dx[active] = bullet.movement.x;
             dy[active] = bullet.movement.y;
             radius[active] = bullet.hitboxSize;
+            textureID[active] = bullet.textureID;
+            layer[active] = bullet.layer;
+            outerColor[active] = bullet.outerColor;
+            innerColor[active] = bullet.innerColor;
 
             active++;
             currentZ += 0.000001f;
@@ -162,6 +187,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             Overwrite(i, j, z);
             Overwrite(i, j, dx);
             Overwrite(i, j, dy);
+            Overwrite(i, j, textureID);
+            Overwrite(i, j, layer);
+            Overwrite(i, j, outerColor);
+            Overwrite(i, j, innerColor);
         }
 
         private static void Overwrite<T>(int i, int j, NativeArray<T> arr) where T : struct {
@@ -174,6 +203,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             z.Dispose();
             dx.Dispose();
             dy.Dispose();
+            textureID.Dispose();
+            layer.Dispose();
+            outerColor.Dispose();
+            innerColor.Dispose();
         }
     }
 }

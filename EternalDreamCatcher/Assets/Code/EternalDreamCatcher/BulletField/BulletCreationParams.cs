@@ -8,15 +8,32 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     /// </summary>
     // It's really only supposed to be used in place of arguments and not
     // stored or whatever. Because of that, `ref`.
+    // (FFS give me `record struct`...)
     public readonly ref struct BulletCreationParams {
         public readonly float2 spawnPosition;
         public readonly float2 movement;
         public readonly float hitboxSize;
+        public readonly int textureID;
+        public readonly int layer;
+        public readonly float4 outerColor;
+        public readonly float4 innerColor;
 
-        public BulletCreationParams(float2 spawnPosition, float2 movement, float hitboxSize) {
+        public BulletCreationParams(
+            float2 spawnPosition,
+            float2 movement,
+            float hitboxSize,
+            int textureID,
+            int layer,
+            float4 outerColor,
+            float4 innerColor
+        ) {
             this.spawnPosition = spawnPosition;
             this.movement = movement;
             this.hitboxSize = hitboxSize;
+            this.textureID = textureID;
+            this.layer = layer;
+            this.outerColor = outerColor;
+            this.innerColor = innerColor;
         }
     }
 }

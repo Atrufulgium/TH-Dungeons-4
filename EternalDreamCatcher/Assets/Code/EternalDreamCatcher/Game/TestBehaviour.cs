@@ -18,9 +18,13 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
         void Start() {
             var rng = new Unity.Mathematics.Random(230);
             for (int i = 0; i < Field.MAX_BULLETS; i++) {
-                field.CreateBullet(
-                    new(rng.NextFloat2(), rng.NextFloat2Direction() * 0.00005f, 0.01f)
+                var bulletData = new BulletCreationParams(
+                    rng.NextFloat2(), rng.NextFloat2Direction() * 0.00005f,
+                    0.01f,
+                    rng.NextInt(0, 24), 0,
+                    (Vector4)Color.HSVToRGB(rng.NextFloat(), 1, 1), new(1,1,1,1)
                 );
+                field.CreateBullet(ref bulletData );
             }
         }
 
