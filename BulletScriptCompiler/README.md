@@ -9,6 +9,7 @@ This is the compiler subproject. The compiler is a standalone DLL that simply co
 Awkwardly placed todo-list:
 - This file. Maybe also for *once* include project setup/build instructions.
 - Indices are not yet implemented in the compiler.
+- Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily.
 - Square is not yet used in the compiler.
 - The entire delta of the stuff in the commit that added this line.
 - The `matrix` shorthand is broken.

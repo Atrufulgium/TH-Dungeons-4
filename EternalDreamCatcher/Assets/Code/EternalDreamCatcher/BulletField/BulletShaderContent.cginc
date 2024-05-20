@@ -1,4 +1,5 @@
 StructuredBuffer<float3> _BulletPosses;
+StructuredBuffer<float> _BulletRots;
 StructuredBuffer<float4> _BulletReds;
 StructuredBuffer<float4> _BulletGreens;
 uint _InstanceOffset;
@@ -37,8 +38,28 @@ v2f vert (appdata v, uint instanceID : SV_INSTANCEID) {
     instanceID += _InstanceOffset;
     v2f o;
     float4 pos = v.vertex;
+
+    // ORIGIN: quad center
     pos.xy *= 0.03;
+
+    // Rotate, which has some unfortunate branching due to the messaged values
+    // being handled here.
+    // TODO: Move this over to c#?
+    float rot = _BulletRots[instanceID];
+    if (rot == 230)
+        rot = _Time.y * 3.14; // Half a turn a second (_Time.y is seconds)
+    if (rot == 231)
+        rot = 0.2 * sin(_Time.y * 6.28); // Wiggle each second
+    float s,c;
+    sincos(rot, s, c);
+    // (Not the standard matrix because in our textures the bullets move "up"
+    //  instead of "to the right".)
+    float2x2 rot_mat = {c, -s, s, c};
+    pos.xy = mul(rot_mat, pos.xy);
+    
+    // ORIGIN: whereever
     pos.xyz += _BulletPosses[instanceID];
+    
     // We're rendering *directly* onto clip space.
     // Orthogonal projections are just that easy.
     // Note however that our target texture has an aspect ratio of 5:6.

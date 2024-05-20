@@ -42,6 +42,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         // indices around, relying on order is not sufficient.
         internal NativeArray<float> z = new(MAX_BULLETS, Allocator.Persistent);
         float currentZ = 0;
+
+        /// <summary> Miscellaneous collection of properties together in one flags enum. </summary>
+        internal NativeArray<MiscBulletProps> prop = new(MAX_BULLETS, Allocator.Persistent);
         #endregion
 
         #region movement
@@ -80,6 +83,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             x[active] = bullet.spawnPosition.x;
             y[active] = bullet.spawnPosition.y;
             z[active] = currentZ;
+            prop[active] = bullet.bulletProps;
             dx[active] = bullet.movement.x;
             dy[active] = bullet.movement.y;
             radius[active] = bullet.hitboxSize;
@@ -185,6 +189,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             Overwrite(i, j, x);
             Overwrite(i, j, y);
             Overwrite(i, j, z);
+            Overwrite(i, j, prop);
             Overwrite(i, j, dx);
             Overwrite(i, j, dy);
             Overwrite(i, j, textureID);
@@ -201,6 +206,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             x.Dispose();
             y.Dispose();
             z.Dispose();
+            prop.Dispose();
             dx.Dispose();
             dy.Dispose();
             textureID.Dispose();

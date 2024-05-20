@@ -12,6 +12,8 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
         public TestBehaviour fieldContainer;
         Field field;
         public Material bulletMaterial;
+        // Assign this the default quad.
+        // Note to self: it has vertices (Å}0.5f,Å}0.5f).
         public Mesh bulletMesh;
         FieldRenderer fieldRenderer;
         new Camera camera;

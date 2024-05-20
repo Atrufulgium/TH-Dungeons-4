@@ -1,6 +1,7 @@
 ﻿using Atrufulgium.EternalDreamCatcher.Base;
 using System;
 using Unity.Burst;
+using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -13,6 +14,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
         readonly ComputeBuffer posBuffer = new(Field.MAX_BULLETS, sizeof(float) * 3);
         readonly NativeArray<float3> posBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
+        readonly ComputeBuffer rotBuffer = new(Field.MAX_BULLETS, sizeof(float));
+        readonly NativeArray<float> rotBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
 
         readonly ComputeBuffer rBuffer = new(Field.MAX_BULLETS, sizeof(float) * 4);
         readonly NativeArray<float4> rBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
@@ -20,7 +23,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         readonly NativeArray<float4> gBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
 
         NativeReference<int> active = new(Allocator.Persistent);
-        // (32 bits layer, 32 bits texture ID)
+        // Layout of these long keys:
+        // 32 bits layer; 16 bits additive 0/1; 16 bits texture ID
         readonly NativeParallelHashMap<long, int> countPerLayer = new(64, Allocator.Persistent);
         readonly NativeParallelHashMap<long, int> startingIndices = new(64, Allocator.Persistent);
         readonly NativeParallelHashSet<long> sorteds = new(64, Allocator.Persistent);
@@ -30,6 +34,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         readonly Texture2D[] bulletTextures;
 
         readonly int possesID;
+        readonly int rotsID;
         readonly int arrayOffsetID;
         readonly int mainTexID;
         readonly int rBufferID;
@@ -41,6 +46,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             this.bulletTextures = bulletTextures;
 
             possesID = Shader.PropertyToID("_BulletPosses");
+            rotsID = Shader.PropertyToID("_BulletRots");
             arrayOffsetID = Shader.PropertyToID("_InstanceOffset");
             mainTexID = Shader.PropertyToID("_BulletTex");
             rBufferID = Shader.PropertyToID("_BulletReds");
@@ -65,6 +71,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             active.Value = field.Active;
             new PrepareRenderFieldJob() {
                 possesC = posBufferValues,
+                rotsC = rotBufferValues,
                 rsC = rBufferValues,
                 gsC = gBufferValues,
                 countPerLayer = countPerLayer,
@@ -79,6 +86,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 layerC = field.layer,
                 rC = field.innerColor,
                 gC = field.outerColor,
+                dxC = field.dx,
+                dyC = field.dy,
+                propC = field.prop,
             }.Run();
 
             // Now render.
@@ -87,14 +97,21 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             // texture data, giving `sorteds.Count` rendering passses.
             buffer.SetBufferData(posBuffer, posBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(possesID, posBuffer);
+            buffer.SetBufferData(rotBuffer, rotBufferValues, 0, 0, field.Active);
+            buffer.SetGlobalBuffer(rotsID, rotBuffer);
             buffer.SetBufferData(rBuffer, rBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(rBufferID, rBuffer);
             buffer.SetBufferData(gBuffer, gBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(gBufferID, gBuffer);
             foreach (var key in sorteds) {
-                buffer.SetGlobalTexture(mainTexID, bulletTextures[key & 0xffff_ffff]);
+                buffer.SetGlobalTexture(mainTexID, bulletTextures[key & 0xffff]);
                 buffer.SetGlobalInt(arrayOffsetID, startingIndices[key]);
-                buffer.DrawMeshInstancedProcedural(mesh, 0, material, -1, countPerLayer[key]);
+                // Pass 0 is regular rendering, pass 1 is additive rendering.
+                // TODO: Somewhy, the order "nonglowy/glowy" is arbitrary?
+                int pass = 0;
+                if ((key & 0x1_0000) != 0)
+                    pass = 1;
+                buffer.DrawMeshInstancedProcedural(mesh, 0, material, pass, countPerLayer[key]);
             }
         }
 
@@ -102,6 +119,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         private unsafe struct PrepareRenderFieldJob : IJob {
 
             public NativeArray<float3> possesC;
+            public NativeArray<float> rotsC;
             public NativeArray<float4> rsC;
             public NativeArray<float4> gsC;
             public NativeParallelHashMap<long, int> countPerLayer;
@@ -124,19 +142,29 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             public NativeArray<float4> rC;
             [ReadOnly]
             public NativeArray<float4> gC;
+            [ReadOnly]
+            public NativeArray<float> dxC;
+            [ReadOnly]
+            public NativeArray<float> dyC;
+            [ReadOnly]
+            public NativeArray<MiscBulletProps> propC;
 
             public void Execute() {
                 var posses = (float3*)possesC.GetUnsafePtr();
+                var rots = (float*)rotsC.GetUnsafePtr();
                 var rs = (float4*)rsC.GetUnsafePtr();
                 var gs = (float4*)gsC.GetUnsafePtr();
 
                 var x = (float*)xC.GetUnsafeReadOnlyPtr();
                 var y = (float*)yC.GetUnsafeReadOnlyPtr();
                 var z = (float*)zC.GetUnsafeReadOnlyPtr();
+                var dx = (float*)dxC.GetUnsafeReadOnlyPtr();
+                var dy = (float*)dyC.GetUnsafeReadOnlyPtr();
                 var tex = (int*)texC.GetUnsafeReadOnlyPtr();
                 var layer = (int*)layerC.GetUnsafeReadOnlyPtr();
                 var r = (float4*)rC.GetUnsafeReadOnlyPtr();
                 var g = (float4*)gC.GetUnsafeReadOnlyPtr();
+                var prop = (MiscBulletProps*)propC.GetUnsafeReadOnlyPtr();
 
                 // The idea: as we're copying over data _anyway_, might as well
                 // order it for very easy draw calls.
@@ -152,7 +180,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 // Get how much space to allocate for each
                 // (I could SIMD this one but ehhhh)
                 for (int i = 0; i < active.Value; i++) {
-                    var key = ((long)layer[i] << 32) + tex[i];
+                    var key = GetKey(i, tex, layer, prop);
                     countPerLayer.Increment(key);
                     sorteds.Add(key);
                 }
@@ -173,21 +201,46 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 countPerLayer.Clear();
 
                 for (int i = 0; i < active.Value; i++) {
-                    var key = ((long)layer[i] << 32) + tex[i];
+                    var key = GetKey(i, tex, layer, prop);
                     // (First increment, then -1 to guarantee existence.)
                     // (Yes, pure laziness.)
                     countPerLayer.Increment(key);
                     int bufferIndex = startingIndices[key] + countPerLayer[key] - 1;
+
+                    // Now we can just set all data.
                     posses[bufferIndex] = new(x[i], y[i], z[i]);
                     rs[bufferIndex] = r[i];
                     gs[bufferIndex] = g[i];
+
+                    var p = prop[i];
+                    // (i have trust issues with "hasflag")
+                    if (Hint.Unlikely((p & MiscBulletProps.RotationFixed) != 0)) {
+                        rots[bufferIndex] = 0;
+                    } else if (Hint.Unlikely((p & MiscBulletProps.RotationContinuous) != 0)) {
+                        rots[bufferIndex] = 230; // Message value.
+                    } else if (Hint.Unlikely((p & MiscBulletProps.RotationWiggle) != 0)) {
+                        rots[bufferIndex] = 231; // Message value.
+                    } else {
+                        // Mess with the angle so that "0" means "down".
+                        rots[bufferIndex] = math.atan2(dy[i], dx[i]) - math.PI/2;
+                    }
                 }
+            }
+
+            public long GetKey(int i, int* tex, int* layer, MiscBulletProps* prop) {
+                long ret = tex[i];
+                if ((prop[i] & MiscBulletProps.RendersAdditiviely) != 0)
+                    ret += (long)1 << 16;
+                ret += (long)layer[i] << 32;
+                return ret;
             }
         }
 
         public void Dispose() {
             posBuffer.Dispose();
             posBufferValues.Dispose();
+            rotBuffer.Dispose();
+            rotBufferValues.Dispose();
             rBuffer.Dispose();
             rBufferValues.Dispose();
             gBuffer.Dispose();
