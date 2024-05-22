@@ -1,5 +1,6 @@
 StructuredBuffer<float3> _BulletPosses;
 StructuredBuffer<float> _BulletRots;
+StructuredBuffer<float> _BulletScales;
 StructuredBuffer<float4> _BulletReds;
 StructuredBuffer<float4> _BulletGreens;
 uint _InstanceOffset;
@@ -17,7 +18,7 @@ struct v2f {
 };
 
 sampler2D _BulletTex;
-float4 _BulletTex_ST;
+float4 _BulletTex_TexelSize;
 
 // Mixes two colors based on the R and G channels of the input color.
 // More red in the original color  = more rCol.
@@ -40,7 +41,7 @@ v2f vert (appdata v, uint instanceID : SV_INSTANCEID) {
     float4 pos = v.vertex;
 
     // ORIGIN: quad center
-    pos.xy *= 0.03;
+    pos.xy *= 0.03 * _BulletScales[instanceID];
 
     // Rotate, which has some unfortunate branching due to the messaged values
     // being handled here.
@@ -77,8 +78,17 @@ v2f vert (appdata v, uint instanceID : SV_INSTANCEID) {
 }
 
 fixed4 frag (v2f i) : SV_Target {
-    float4 col = tex2D(_BulletTex, i.uv);
+    // Animate at 8fps
+    // Assuming each frame is a square texture, and they're in a row.
+    float frame_count = _BulletTex_TexelSize.z / _BulletTex_TexelSize.w;
+    float2 uv = i.uv;
+    uv.x += floor(_Time.y * 8);
+    uv.x = frac(uv.x / frame_count);
+
+    // Apply the mapping from R/G to actual colors.
+    float4 col = tex2D(_BulletTex, uv);
     col = ApplyColors(col, i.r, i.g);
+
     col.rgb *= col.a;
     return col;
 }

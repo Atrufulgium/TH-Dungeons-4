@@ -18,6 +18,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         public readonly float4 outerColor;
         public readonly float4 innerColor;
         public readonly MiscBulletProps bulletProps;
+        public readonly float renderScale;
 
         public BulletCreationParams(
             float2 spawnPosition,
@@ -27,7 +28,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             int layer,
             float4 outerColor,
             float4 innerColor,
-            MiscBulletProps bulletProps
+            MiscBulletProps bulletProps,
+            float renderScale
         ) {
             this.spawnPosition = spawnPosition;
             this.movement = movement;
@@ -37,6 +39,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             this.outerColor = outerColor;
             this.innerColor = innerColor;
             this.bulletProps = bulletProps;
+            this.renderScale = renderScale;
         }
     }
 }

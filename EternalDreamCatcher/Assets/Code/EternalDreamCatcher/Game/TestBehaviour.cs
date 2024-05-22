@@ -23,7 +23,8 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
                     0.01f,
                     rng.NextInt(0, 24), 0,
                     (Vector4)Color.HSVToRGB(rng.NextFloat(), 1, 1), new(1,1,1,1),
-                    (MiscBulletProps)rng.NextInt()
+                    (MiscBulletProps)rng.NextInt(),
+                    rng.NextFloat(0.5f, 1.5f) * rng.NextFloat(0.5f, 1.5f) * rng.NextFloat(0.5f, 1.5f)
                 );
                 field.CreateBullet(ref bulletData );
             }

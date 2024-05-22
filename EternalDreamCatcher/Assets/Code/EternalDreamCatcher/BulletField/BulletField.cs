@@ -68,6 +68,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         internal NativeArray<float4> outerColor = new(MAX_BULLETS, Allocator.Persistent);
         /// <summary> The usually-inner color of a bullet. </summary>
         internal NativeArray<float4> innerColor = new(MAX_BULLETS, Allocator.Persistent);
+        /// <summary> An arbitrary scale factor for bullet size. </summary>
+        internal NativeArray<float> renderScale = new(MAX_BULLETS, Allocator.Persistent);
         #endregion
 
         readonly internal HashSet<BulletReference> deletedReferences = new(4096);
@@ -91,6 +93,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             layer[active] = bullet.layer;
             outerColor[active] = bullet.outerColor;
             innerColor[active] = bullet.innerColor;
+            renderScale[active] = bullet.renderScale;
 
             active++;
             currentZ += 0.000001f;
@@ -196,6 +199,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             Overwrite(i, j, layer);
             Overwrite(i, j, outerColor);
             Overwrite(i, j, innerColor);
+            Overwrite(i, j, renderScale);
         }
 
         private static void Overwrite<T>(int i, int j, NativeArray<T> arr) where T : struct {
@@ -213,6 +217,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             layer.Dispose();
             outerColor.Dispose();
             innerColor.Dispose();
+            renderScale.Dispose();
         }
     }
 }

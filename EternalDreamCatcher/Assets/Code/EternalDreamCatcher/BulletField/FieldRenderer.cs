@@ -16,6 +16,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         readonly NativeArray<float3> posBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
         readonly ComputeBuffer rotBuffer = new(Field.MAX_BULLETS, sizeof(float));
         readonly NativeArray<float> rotBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
+        readonly ComputeBuffer scaleBuffer = new(Field.MAX_BULLETS, sizeof(float));
+        readonly NativeArray<float> scaleBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
 
         readonly ComputeBuffer rBuffer = new(Field.MAX_BULLETS, sizeof(float) * 4);
         readonly NativeArray<float4> rBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
@@ -27,7 +29,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         // 32 bits layer; 16 bits additive 0/1; 16 bits texture ID
         readonly NativeParallelHashMap<long, int> countPerLayer = new(64, Allocator.Persistent);
         readonly NativeParallelHashMap<long, int> startingIndices = new(64, Allocator.Persistent);
-        readonly NativeParallelHashSet<long> sorteds = new(64, Allocator.Persistent);
+        readonly NativeParallelHashSet<long> keysSet = new(64, Allocator.Persistent);
+        readonly NativeList<long> sortedKeys = new(64, Allocator.Persistent);
 
         readonly Material material;
         readonly Mesh mesh;
@@ -35,6 +38,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
         readonly int possesID;
         readonly int rotsID;
+        readonly int scalesID;
         readonly int arrayOffsetID;
         readonly int mainTexID;
         readonly int rBufferID;
@@ -47,6 +51,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
             possesID = Shader.PropertyToID("_BulletPosses");
             rotsID = Shader.PropertyToID("_BulletRots");
+            scalesID = Shader.PropertyToID("_BulletScales");
             arrayOffsetID = Shader.PropertyToID("_InstanceOffset");
             mainTexID = Shader.PropertyToID("_BulletTex");
             rBufferID = Shader.PropertyToID("_BulletReds");
@@ -72,11 +77,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             new PrepareRenderFieldJob() {
                 possesC = posBufferValues,
                 rotsC = rotBufferValues,
+                scalesC = scaleBufferValues,
                 rsC = rBufferValues,
                 gsC = gBufferValues,
                 countPerLayer = countPerLayer,
                 startingIndices = startingIndices,
-                sorteds = sorteds,
+                keysSet = keysSet,
+                sortedKeys = sortedKeys,
 
                 active = active,
                 xC = field.x,
@@ -89,6 +96,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 dxC = field.dx,
                 dyC = field.dy,
                 propC = field.prop,
+                renderScalesC = field.renderScale,
             }.Run();
 
             // Now render.
@@ -99,15 +107,16 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             buffer.SetGlobalBuffer(possesID, posBuffer);
             buffer.SetBufferData(rotBuffer, rotBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(rotsID, rotBuffer);
+            buffer.SetBufferData(scaleBuffer, scaleBufferValues, 0, 0, field.Active);
+            buffer.SetGlobalBuffer(scalesID, scaleBuffer);
             buffer.SetBufferData(rBuffer, rBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(rBufferID, rBuffer);
             buffer.SetBufferData(gBuffer, gBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(gBufferID, gBuffer);
-            foreach (var key in sorteds) {
+            foreach (var key in sortedKeys) {
                 buffer.SetGlobalTexture(mainTexID, bulletTextures[key & 0xffff]);
                 buffer.SetGlobalInt(arrayOffsetID, startingIndices[key]);
                 // Pass 0 is regular rendering, pass 1 is additive rendering.
-                // TODO: Somewhy, the order "nonglowy/glowy" is arbitrary?
                 int pass = 0;
                 if ((key & 0x1_0000) != 0)
                     pass = 1;
@@ -120,11 +129,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
             public NativeArray<float3> possesC;
             public NativeArray<float> rotsC;
+            public NativeArray<float> scalesC;
             public NativeArray<float4> rsC;
             public NativeArray<float4> gsC;
             public NativeParallelHashMap<long, int> countPerLayer;
             public NativeParallelHashMap<long, int> startingIndices;
-            public NativeParallelHashSet<long> sorteds;
+            public NativeParallelHashSet<long> keysSet;
+            public NativeList<long> sortedKeys;
 
             [ReadOnly]
             public NativeReference<int> active;
@@ -148,10 +159,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             public NativeArray<float> dyC;
             [ReadOnly]
             public NativeArray<MiscBulletProps> propC;
+            [ReadOnly]
+            public NativeArray<float> renderScalesC;
 
             public void Execute() {
                 var posses = (float3*)possesC.GetUnsafePtr();
                 var rots = (float*)rotsC.GetUnsafePtr();
+                var scales = (float*)scalesC.GetUnsafePtr();
                 var rs = (float4*)rsC.GetUnsafePtr();
                 var gs = (float4*)gsC.GetUnsafePtr();
 
@@ -165,6 +179,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 var r = (float4*)rC.GetUnsafeReadOnlyPtr();
                 var g = (float4*)gC.GetUnsafeReadOnlyPtr();
                 var prop = (MiscBulletProps*)propC.GetUnsafeReadOnlyPtr();
+                var renderScales = (float*)renderScalesC.GetUnsafeReadOnlyPtr();
 
                 // The idea: as we're copying over data _anyway_, might as well
                 // order it for very easy draw calls.
@@ -175,22 +190,27 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 // which we can take into account when copying.
                 // (This int-tuple is collapsed into a long.)
                 countPerLayer.Clear();
-                sorteds.Clear();
+                keysSet.Clear();
+                sortedKeys.Clear();
 
                 // Get how much space to allocate for each
                 // (I could SIMD this one but ehhhh)
                 for (int i = 0; i < active.Value; i++) {
                     var key = GetKey(i, tex, layer, prop);
                     countPerLayer.Increment(key);
-                    sorteds.Add(key);
+                    keysSet.Add(key);
                 }
+
+                foreach (var key in keysSet)
+                    sortedKeys.Add(key);
+                sortedKeys.Sort();
 
                 // Calculate starting indices
                 // (Note that default tuple ordering is lexicographic. This matches
                 //  our "higher layer = drawn on top".)
                 int cumulative = 0;
                 startingIndices.Clear();
-                foreach (var key in sorteds) {
+                foreach (var key in sortedKeys) {
                     startingIndices.Add(key, cumulative);
                     cumulative += countPerLayer[key];
                 }
@@ -209,6 +229,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
                     // Now we can just set all data.
                     posses[bufferIndex] = new(x[i], y[i], z[i]);
+                    scales[bufferIndex] = renderScales[i];
                     rs[bufferIndex] = r[i];
                     gs[bufferIndex] = g[i];
 
@@ -241,6 +262,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             posBufferValues.Dispose();
             rotBuffer.Dispose();
             rotBufferValues.Dispose();
+            scaleBuffer.Dispose();
+            scaleBufferValues.Dispose();
             rBuffer.Dispose();
             rBufferValues.Dispose();
             gBuffer.Dispose();
@@ -250,7 +273,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
             countPerLayer.Dispose();
             startingIndices.Dispose();
-            sorteds.Dispose();
+            keysSet.Dispose();
+            sortedKeys.Dispose();
         }
 
         /// <summary>
