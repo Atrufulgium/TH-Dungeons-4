@@ -80,6 +80,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                     //      iter and directly at the end of every OP go to the
                     //      next
                     //  Alas, I don't have the luxury...)
+                    // OTOH, when leaving it to Burst, they get reordered
+                    // in arbitrary order _anyway_.
                     switch (opsi[*op].x) {
                         // General ops
                         case   1: mem[ai] = b == mem[ci] ? 1 : 0; break;

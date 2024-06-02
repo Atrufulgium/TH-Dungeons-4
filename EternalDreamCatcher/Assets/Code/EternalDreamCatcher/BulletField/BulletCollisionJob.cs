@@ -34,6 +34,25 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         [WriteOnly]
         public NativeList<BulletReference> collided;
 
+        /// <summary>
+        /// This job checks for all bullets in the field whether they hit <paramref name="hitbox"/>.
+        /// Bullets that hit get put into <paramref name="collided"/>, a list
+        /// that is cleared at the start of the job.
+        /// </summary>
+        public BulletCollisionJob(in Field field, Circle hitbox, NativeList<BulletReference> collided) {
+            bulletXs = field.x;
+            bulletYs = field.y;
+            bulletRadii = field.radius;
+            activeBullets = field.active;
+
+            target = new(hitbox, Allocator.TempJob);
+            this.collided = collided;
+        }
+
+        public void Dispose() {
+            target.Dispose();
+        }
+
         [SkipLocalsInit]
         public unsafe void Execute() {
             float4* xs = (float4*)bulletXs.GetUnsafeReadOnlyPtr();
@@ -65,20 +84,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// Bullets that hit get put into <paramref name="collided"/>, a list
         /// that is cleared at the start of the job.
         /// </summary>
-        public static void Run(Field field, Circle hitbox, NativeList<BulletReference> collided) {
+        public static void Run(in Field field, Circle hitbox, NativeList<BulletReference> collided) {
             collided.Clear();
-            var job = new BulletCollisionJob() {
-                bulletXs = field.x,
-                bulletYs = field.y,
-                bulletRadii = field.radius,
-                activeBullets = new(field.Active, Allocator.TempJob),
-
-                target = new(hitbox, Allocator.TempJob),
-                collided = collided
-            };
+            var job = new BulletCollisionJob(in field, hitbox, collided);
             job.Run();
-            job.activeBullets.Dispose();
-            job.target.Dispose();
+            job.Dispose();
         }
     }
 }

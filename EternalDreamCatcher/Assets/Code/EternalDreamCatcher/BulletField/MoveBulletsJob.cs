@@ -1,4 +1,5 @@
-﻿using Unity.Burst;
+﻿using System;
+using Unity.Burst;
 using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -21,6 +22,14 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         public NativeArray<float> bulletMovementYs;
         [ReadOnly]
         public NativeReference<int> activeBullets;
+
+        public MoveBulletsJob(in Field field) {
+            bulletXs = field.x;
+            bulletYs = field.y;
+            bulletMovementXs = field.dx;
+            bulletMovementYs = field.dy;
+            activeBullets = field.active;
+        }
 
         [SkipLocalsInit]
         public unsafe void Execute() {
@@ -45,16 +54,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// the <b>same thread</b>, typically the main thread, which you might
         /// not want.
         /// </summary>
-        public static void Run(Field field) {
-            var job = new MoveBulletsJob() {
-                bulletXs = field.x,
-                bulletYs = field.y,
-                bulletMovementXs = field.dx,
-                bulletMovementYs = field.dy,
-                activeBullets = new(field.Active, Allocator.TempJob)
-            };
+        public static void Run(in Field field) {
+            var job = new MoveBulletsJob(field);
             job.Run();
-            job.activeBullets.Dispose();
         }
     }
 }

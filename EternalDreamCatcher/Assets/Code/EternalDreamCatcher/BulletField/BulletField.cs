@@ -30,7 +30,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// <summary>
         /// How many bullets are valid.
         /// </summary>
-        NativeReference<int> active;
+        internal NativeReference<int> active;
 
         // WHENEVER ADDING AN ARRAY:
         // - Obviously do something with BulletCreationparams.
