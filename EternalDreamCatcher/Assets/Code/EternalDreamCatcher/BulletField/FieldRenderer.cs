@@ -33,7 +33,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         readonly NativeList<long> sortedKeys = new(64, Allocator.Persistent);
 
         readonly Material material;
-        readonly Mesh mesh;
+        readonly Mesh rectMesh;
         readonly Texture2D[] bulletTextures;
 
         readonly int possesID;
@@ -44,9 +44,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         readonly int rBufferID;
         readonly int gBufferID;
 
-        public FieldRenderer(Material material, Mesh mesh, Texture2D[] bulletTextures) {
+        public FieldRenderer(Material material, Mesh rectMesh, Texture2D[] bulletTextures) {
             this.material = material;
-            this.mesh = mesh;
+            this.rectMesh = rectMesh;
             this.bulletTextures = bulletTextures;
 
             possesID = Shader.PropertyToID("_BulletPosses");
@@ -85,18 +85,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 keysSet = keysSet,
                 sortedKeys = sortedKeys,
 
-                active = active,
-                xC = field.x,
-                yC = field.y,
-                zC = field.z,
-                texC = field.textureID,
-                layerC = field.layer,
-                rC = field.innerColor,
-                gC = field.outerColor,
-                dxC = field.dx,
-                dyC = field.dy,
-                propC = field.prop,
-                renderScalesC = field.renderScale,
+                bulletField = field
             }.Run();
 
             // Now render.
@@ -120,7 +109,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 int pass = 0;
                 if ((key & 0x1_0000) != 0)
                     pass = 1;
-                buffer.DrawMeshInstancedProcedural(mesh, 0, material, pass, countPerLayer[key]);
+                buffer.DrawMeshInstancedProcedural(rectMesh, 0, material, pass, countPerLayer[key]);
             }
         }
 
@@ -137,30 +126,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             public NativeParallelHashSet<long> keysSet;
             public NativeList<long> sortedKeys;
 
-            [ReadOnly]
-            public NativeReference<int> active;
-            [ReadOnly]
-            public NativeArray<float> xC;
-            [ReadOnly]
-            public NativeArray<float> yC;
-            [ReadOnly]
-            public NativeArray<float> zC;
-            [ReadOnly]
-            public NativeArray<int> texC;
-            [ReadOnly]
-            public NativeArray<int> layerC;
-            [ReadOnly]
-            public NativeArray<float4> rC;
-            [ReadOnly]
-            public NativeArray<float4> gC;
-            [ReadOnly]
-            public NativeArray<float> dxC;
-            [ReadOnly]
-            public NativeArray<float> dyC;
-            [ReadOnly]
-            public NativeArray<MiscBulletProps> propC;
-            [ReadOnly]
-            public NativeArray<float> renderScalesC;
+            public Field bulletField;
 
             public void Execute() {
                 var posses = (float3*)possesC.GetUnsafePtr();
@@ -169,17 +135,17 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 var rs = (float4*)rsC.GetUnsafePtr();
                 var gs = (float4*)gsC.GetUnsafePtr();
 
-                var x = (float*)xC.GetUnsafeReadOnlyPtr();
-                var y = (float*)yC.GetUnsafeReadOnlyPtr();
-                var z = (float*)zC.GetUnsafeReadOnlyPtr();
-                var dx = (float*)dxC.GetUnsafeReadOnlyPtr();
-                var dy = (float*)dyC.GetUnsafeReadOnlyPtr();
-                var tex = (int*)texC.GetUnsafeReadOnlyPtr();
-                var layer = (int*)layerC.GetUnsafeReadOnlyPtr();
-                var r = (float4*)rC.GetUnsafeReadOnlyPtr();
-                var g = (float4*)gC.GetUnsafeReadOnlyPtr();
-                var prop = (MiscBulletProps*)propC.GetUnsafeReadOnlyPtr();
-                var renderScales = (float*)renderScalesC.GetUnsafeReadOnlyPtr();
+                var x = (float*)bulletField.x.GetUnsafeReadOnlyPtr();
+                var y = (float*)bulletField.y.GetUnsafeReadOnlyPtr();
+                var z = (float*)bulletField.z.GetUnsafeReadOnlyPtr();
+                var dx = (float*)bulletField.dx.GetUnsafeReadOnlyPtr();
+                var dy = (float*)bulletField.dy.GetUnsafeReadOnlyPtr();
+                var tex = (int*)bulletField.textureID.GetUnsafeReadOnlyPtr();
+                var layer = (int*)bulletField.layer.GetUnsafeReadOnlyPtr();
+                var r = (float4*)bulletField.innerColor.GetUnsafeReadOnlyPtr();
+                var g = (float4*)bulletField.outerColor.GetUnsafeReadOnlyPtr();
+                var prop = (MiscBulletProps*)bulletField.prop.GetUnsafeReadOnlyPtr();
+                var renderScales = (float*)bulletField.renderScale.GetUnsafeReadOnlyPtr();
 
                 // The idea: as we're copying over data _anyway_, might as well
                 // order it for very easy draw calls.
@@ -195,7 +161,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
                 // Get how much space to allocate for each
                 // (I could SIMD this one but ehhhh)
-                for (int i = 0; i < active.Value; i++) {
+                for (int i = 0; i < bulletField.Active; i++) {
                     var key = GetKey(i, tex, layer, prop);
                     countPerLayer.Increment(key);
                     keysSet.Add(key);
@@ -206,8 +172,6 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 sortedKeys.Sort();
 
                 // Calculate starting indices
-                // (Note that default tuple ordering is lexicographic. This matches
-                //  our "higher layer = drawn on top".)
                 int cumulative = 0;
                 startingIndices.Clear();
                 foreach (var key in sortedKeys) {
@@ -220,7 +184,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 // the current startingIndex".
                 countPerLayer.Clear();
 
-                for (int i = 0; i < active.Value; i++) {
+                for (int i = 0; i < bulletField.Active; i++) {
                     var key = GetKey(i, tex, layer, prop);
                     // (First increment, then -1 to guarantee existence.)
                     // (Yes, pure laziness.)
