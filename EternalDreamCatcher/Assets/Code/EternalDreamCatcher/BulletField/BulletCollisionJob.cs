@@ -39,13 +39,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// Bullets that hit get put into <paramref name="collided"/>, a list
         /// that is cleared at the start of the job.
         /// </summary>
-        public BulletCollisionJob(in Field field, Circle hitbox, NativeList<BulletReference> collided) {
+        public BulletCollisionJob(in Field field, in NativeReference<Circle> hitbox, NativeList<BulletReference> collided) {
             bulletXs = field.x;
             bulletYs = field.y;
             bulletRadii = field.radius;
             activeBullets = field.active;
 
-            target = new(hitbox, Allocator.TempJob);
+            target = hitbox;
             this.collided = collided;
         }
 
@@ -59,9 +59,15 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             float4* ys = (float4*)bulletYs.GetUnsafeReadOnlyPtr();
             float4* rs = (float4*)bulletRadii.GetUnsafeReadOnlyPtr();
 
+            // Note that we need to exclude all bullets in the final SIMD bin
+            // that don't actually exist.
             int max = activeBullets.Value / 4;
-            if (activeBullets.Value % 4 != 0)
+            var mod = activeBullets.Value % 4;
+            bool4 finalIterMask = new(true, true, true, true);
+            if (mod != 0) {
+                finalIterMask = new(mod >= 1, mod >= 2, mod >= 3, false);
                 max++;
+            }
 
             float2 pos = target.Value.Center;
 
@@ -70,6 +76,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 float4 dy = pos.y - ys[i];
                 float4 r = rs[i] + target.Value.Radius;
                 bool4 res = (dx * dx + dy * dy < r * r);
+
+                if (Hint.Unlikely(i == max - 1))
+                    res &= finalIterMask;
                 if (Hint.Unlikely(math.any(res))) {
                     if (res.x) collided.Add((BulletReference)(i * 4 + 0));
                     if (res.y) collided.Add((BulletReference)(i * 4 + 1));
@@ -86,9 +95,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// </summary>
         public static void Run(in Field field, Circle hitbox, NativeList<BulletReference> collided) {
             collided.Clear();
-            var job = new BulletCollisionJob(in field, hitbox, collided);
+            var circle = new NativeReference<Circle>(hitbox, Allocator.TempJob);
+            var job = new BulletCollisionJob(in field, circle, collided);
             job.Run();
             job.Dispose();
+            circle.Dispose();
         }
     }
 }

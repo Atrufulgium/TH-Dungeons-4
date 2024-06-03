@@ -3,10 +3,12 @@ using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletField {
+
     /// <summary>
     /// A <see cref="Field"/> consists of just the bullet data.
     /// <br/>
@@ -16,27 +18,56 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     /// </summary>
     // (I like how the job system makes interface boxing *explicit* and has you
     //  manually require the interface to be unmanaged as a generic.)
-    public class DanmakuScene<TGameInput> : IDisposable where TGameInput : unmanaged, IGameInput {
+    // Unfortunately need to split the class into a non-generic and generic
+    // part because of the TGameInput bit.
+    public abstract class DanmakuScene : IDisposable {
 
         public const int MAX_BULLETS = Field.MAX_BULLETS;
+        protected readonly Field bulletField = new(true);
+        protected readonly FieldRenderer bulletFieldRenderer;
 
-        readonly Field bulletField = new(true);
-        readonly FieldRenderer bulletFieldRenderer;
-        NativeReference<TGameInput> input;
+        protected Mesh quadMesh;
+        protected Material entityMaterial;
+        protected Texture2D[] entityTextures;
 
-        NativeReference<int> gameTick;
+        protected NativeReference<Player> player;
+        protected NativeReference<int> gameTick;
+
+        protected NativeReference<Circle> playerHitbox;
+        protected NativeReference<Circle> playerGrazebox;
+        protected NativeList<BulletReference> playerHitboxResult;
+        protected NativeList<BulletReference> playerGrazeboxResult;
+
+        readonly int entityTexID;
+        readonly int entityPosScaleID;
 
         public DanmakuScene(
-            Material material,
-            Mesh rectMesh,
+            Mesh quadMesh,
+            Material bulletMaterial,
             Texture2D[] bulletTextures,
-            TGameInput input
+            Material entityMaterial,
+            Texture2D[] entityTextures,
+            NativeReference<Player> player
         ) {
-            bulletFieldRenderer = new(material, rectMesh, bulletTextures);
-            this.input = new(input, Allocator.Persistent);
+            bulletFieldRenderer = new(bulletMaterial, quadMesh, bulletTextures);
+            this.quadMesh = quadMesh;
+            this.entityMaterial = entityMaterial;
+            this.entityTextures = entityTextures;
 
+            this.player = player;
             gameTick = new(0, Allocator.Persistent);
+
+            playerHitbox = new(Allocator.Persistent);
+            playerGrazebox = new(Allocator.Persistent);
+            playerHitboxResult = new(32, Allocator.Persistent);
+            playerGrazeboxResult = new(512, Allocator.Persistent);
+
+            entityTexID = Shader.PropertyToID("_EntityTex");
+            entityPosScaleID = Shader.PropertyToID("_EntityPosScale");
         }
+
+        /// <inheritdoc cref="ScheduleTick(int, JobHandle)"/>
+        public abstract JobHandle ScheduleTick(JobHandle dep = default);
 
         /// <summary>
         /// Proceeds the simulation of this DanmakuScene. Returns a
@@ -59,19 +90,6 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             return handle;
         }
 
-        /// <inheritdoc cref="ScheduleTick(int, JobHandle)"/>
-        public JobHandle ScheduleTick(JobHandle dep = default) {
-            ref JobHandle handle = ref dep;
-
-            // (TODO: Actually multithread shit when getting to the VMs and
-            //  player movement and collision and stuff.)
-            handle = new MoveBulletsJob(in bulletField).Schedule(handle);
-
-            handle = new IncrementTickJob(gameTick, input).Schedule(handle);
-
-            return handle;
-        }
-
         /// <inheritdoc cref="Field.CreateBullet(ref BulletCreationParams)"/>
         public BulletReference? CreateBullet(ref BulletCreationParams bullet)
             => bulletField.CreateBullet(ref bullet);
@@ -80,15 +98,78 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// Adds commands to a buffer to fully render this scene onto the
         /// current active render target.
         /// </summary>
-        public void Render(CommandBuffer buffer) {
+        public unsafe void Render(CommandBuffer buffer) {
+            var p = player.GetUnsafeTypedPtr();
+            // For the time being put player rendering here.
+            // Once I get a more general "renderable entities" system, move it.
+            // Bullets are more important than any entity, so put them below.
+            buffer.SetGlobalTexture(entityTexID, entityTextures[0]);
+            buffer.SetGlobalVector(entityPosScaleID, new float4(p->position, 0, 1));
+            buffer.DrawMesh(
+                quadMesh, matrix: default, entityMaterial, 0, 0
+            );
+
             bulletFieldRenderer.RenderField(bulletField, buffer);
         }
 
         public void Dispose() {
             bulletField.Dispose();
             bulletFieldRenderer.Dispose();
-            input.Dispose();
             gameTick.Dispose();
+            playerHitbox.Dispose();
+            playerGrazebox.Dispose();
+            playerHitboxResult.Dispose();
+            playerGrazeboxResult.Dispose();
+        }
+    }
+
+    public class DanmakuScene<TGameInput> : DanmakuScene where TGameInput : unmanaged, IGameInput {
+        NativeReference<TGameInput> input;
+
+        public DanmakuScene(
+            Mesh rectMesh,
+            Material bulletMaterial,
+            Texture2D[] bulletTextures,
+            Material entityMaterial,
+            Texture2D[] entityTextures,
+            NativeReference<TGameInput> input,
+            NativeReference<Player> player
+        ) : base(rectMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures, player) {
+            this.input = input;
+        }
+
+        public override JobHandle ScheduleTick(JobHandle dep = default) {
+            // NOTE: CombineDependencies may cause jobs to run already, as in
+            // JobHandle.ScheduleBatchedJobs().
+            // Look into the performance implications of this.
+            ref JobHandle handle = ref dep;
+
+            // Update positions and VMs
+            var moveHandle1 = new MoveBulletsJob(in bulletField).Schedule(handle);
+            var moveHandle2 = new MovePlayerJob<TGameInput>(
+                in player, in input,
+                in playerHitbox, in playerGrazebox
+            ).Schedule(handle);
+            handle = JobHandle.CombineDependencies(moveHandle1, moveHandle2);
+
+            // Handle VM messages and `affectedBullet` sets
+
+            // Check player collisions (note that bullets may be deleted already)
+            var collideHandle1 = new BulletCollisionJob(in bulletField, in playerHitbox, playerHitboxResult).Schedule(handle);
+            var collideHandle2 = new BulletCollisionJob(in bulletField, in playerGrazebox, playerGrazeboxResult).Schedule(handle);
+            handle = JobHandle.CombineDependencies(collideHandle1, collideHandle2);
+
+            // Post-process deletions
+            handle = new PostProcessPlayerCollisionJob(
+                player, in bulletField,
+                playerHitboxResult, playerGrazeboxResult
+            ).Schedule(handle);
+            handle = new PostProcessDeletionsJob(in bulletField).Schedule(handle);
+
+            // Prepare the next frame
+            handle = new IncrementTickJob(gameTick, input).Schedule(handle);
+
+            return handle;
         }
 
         /// <summary>
@@ -106,11 +187,20 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 this.input = input;
             }
 
-            public void Execute() {
+            public unsafe void Execute() {
                 gameTick.Value++;
-                var input = this.input.Value;
-                input.GameTick = gameTick.Value;
+                input.GetUnsafeTypedPtr()->GameTick = gameTick.Value;
             }
+        }
+
+        /// <summary>
+        /// Calls <see cref="Field.FinalizeDeletion"/>.
+        /// </summary>
+        [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
+        private struct PostProcessDeletionsJob : IJob {
+            public Field field;
+            public PostProcessDeletionsJob(in Field field) => this.field = field;
+            public void Execute() => field.FinalizeDeletion();
         }
     }
 }

@@ -1,3 +1,4 @@
+// Much of this is duplicated into EntityShaderContent.cginc.
 StructuredBuffer<float3> _BulletPosses;
 StructuredBuffer<float> _BulletRots;
 StructuredBuffer<float> _BulletScales;

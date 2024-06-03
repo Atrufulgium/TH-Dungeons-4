@@ -1,7 +1,9 @@
+using Atrufulgium.EternalDreamCatcher.Base;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Mathematics;
+using UnityEngine.Assertions;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
@@ -137,9 +139,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         }
 
         /// <summary>
-        /// If it exists, deletes the bullet at index <paramref name="i"/>.
+        /// If it exists, deletes bullet <paramref name="reference"/>.
         /// <br/>
-        /// Otherwise, throws <see cref="ArgumentOutOfRangeException"/>.
+        /// If it does not exist, throws <see cref="ArgumentOutOfRangeException"/>.
         /// <br/>
         /// <b>Warning:</b> Between the first call to this, and the call to
         /// <see cref="FinalizeDeletion"/>, the active bullets do *not* take up
@@ -193,32 +195,32 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 // (For easier understanding, ignore this while loop on first
                 //  reading -- this is the "some care" part mentioned above.)
                 while (active.Value > 0) {
-                    if (deletedReferences.Contains(reference)) {
-                        // No need to overwrite as it's at the "end" already.
-                        // Only consume the "active" and add as processed.
-                        active.Value--;
-                        processedDeletedReferences.Add(reference);
-                        reference = active.Value - 1;
-                    } else {
+                    // Whether we want to move the active bullet, or it's
+                    // deleted.
+                    if (!deletedReferences.Contains(reference))
                         break;
-                    }
+                    // We need to move stuff down, so if we want to overwrite a
+                    // bullet higher than active, this loop shouldn't do
+                    // anything anymore -- it will only get worse after this.
+                    if (reference <= overwritten)
+                        break;
+                    // No need to overwrite as it's at the "end" already.
+                    // Only consume the "active" and add as processed.
+                    active.Value--;
+                    processedDeletedReferences.Add(reference);
+                    reference--;
                 }
                 
-                Overwrite(reference, overwritten);
+                if(reference > overwritten) {
+                    Overwrite(reference, overwritten);
+                }
                 active.Value--;
                 processedDeletedReferences.Add(b);
             }
+            if (!BurstUtils.IsBurstCompiled) {
+                Assert.AreEqual(deletedReferences.Count(), processedDeletedReferences.Count());
+            }
             deletedReferences.Clear();
-        }
-
-        /// <summary>
-        /// Overwrites the meaning of index <paramref name="overwritten"/> with
-        /// <paramref name="reference"/> in the arrays.
-        /// </summary>
-        private void Overwrite(BulletReference reference, BulletReference overwritten) {
-            int i = (int)reference;
-            int j = (int)overwritten;
-            Overwrite(i, j);
         }
 
         private void Overwrite(int i, int j) {

@@ -1,6 +1,7 @@
 #nullable disable // Monobehaviour start instead of constructor
 using Atrufulgium.EternalDreamCatcher.Base;
 using Atrufulgium.EternalDreamCatcher.BulletField;
+using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -9,16 +10,18 @@ using UnityEngine.UI;
 namespace Atrufulgium.EternalDreamCatcher.Game {
 
     [RequireComponent(typeof(Camera))]
-    public class DanmakuFieldBehaviour : MonoBehaviour {
+    public class DanmakuSceneBehaviour : MonoBehaviour {
 
-        DanmakuScene<KeyboardInput> danmakuScene;
+        NativeReference<KeyboardInput> gameInput;
+        DanmakuScene danmakuScene;
         [Min(1)]
         public int TicksPerTick = 1;
 
         public Material bulletMaterial;
+        public Material entityMaterial;
         // Assign this the default quad.
         // Note to self: it has vertices (Å}0.5f,Å}0.5f).
-        public Mesh bulletMesh;
+        public Mesh quadMesh;
         new Camera camera;
 
         CommandBuffer buffer;
@@ -27,19 +30,34 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
         RenderTexture texture;
 
         public Texture2D[] bulletTextures;
+        public Texture2D[] entityTextures;
 
         int tempRTid;
 
+        NativeReference<Player> player;
+
         void Start() {
             if (bulletMaterial == null) throw new System.NullReferenceException();
-            if (bulletMesh == null) throw new System.NullReferenceException();
+            if (quadMesh == null) throw new System.NullReferenceException();
             if (bulletTextures == null || bulletTextures.Length == 0) throw new System.NullReferenceException();
 
-            danmakuScene = new(bulletMaterial, bulletMesh, bulletTextures, new());
+            player = new(new() {
+                position = new(0.5f, 1.1f),
+                remainingLives = 3,
+                RemainingBombs = 2,
+                focusedSpeed = 0.05f / 60,
+                unfocusedSpeed = 0.15f / 60,
+                hitboxRadius = 0.005f,
+                grazeboxRadius = 0.025f
+            }, Allocator.Persistent);
+
+            gameInput = new(new(), Allocator.Persistent);
+
+            danmakuScene = new DanmakuScene<KeyboardInput>(quadMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures, gameInput, player);
             var rng = new Unity.Mathematics.Random(230);
             for (int i = 0; i < Field.MAX_BULLETS; i++) {
                 var bulletData = new BulletCreationParams(
-                    rng.NextFloat2(), rng.NextFloat2Direction() * 0.0005f,
+                    rng.NextFloat2() * new Unity.Mathematics.float2(0.01f, 0.01f), rng.NextFloat2Direction() * 0.0005f,
                     0.01f,
                     rng.NextInt(0, 24), 0,
                     (Vector4)Color.HSVToRGB(rng.NextFloat(), 1, 1), new(1, 1, 1, 1),
@@ -59,9 +77,11 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
         }
 
         JobHandle currentUpdate;
-        private void Update() {
+        private unsafe void Update() {
             // (This does nothing with `default`, and does not throw.)
             currentUpdate.Complete();
+
+            gameInput.GetUnsafeTypedPtr()->HandleInputMainThread();
 
             currentUpdate = danmakuScene.ScheduleTick(TicksPerTick);
             // Note: Do not be tempted by JobHandle.ScheduleBatchedJobs().
@@ -83,6 +103,7 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
         }
 
         private void OnDestroy() {
+            gameInput.Dispose();
             danmakuScene.Dispose();
             buffer.Dispose();
         }

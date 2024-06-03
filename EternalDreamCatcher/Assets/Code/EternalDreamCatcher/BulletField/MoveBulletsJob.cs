@@ -39,6 +39,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             float4* dx = (float4*)bulletMovementXs.GetUnsafeReadOnlyPtr();
             float4* dy = (float4*)bulletMovementYs.GetUnsafeReadOnlyPtr();
 
+            // Yes, with this we also move bullets that are not actually active.
+            // But that's fine.
             int max = activeBullets.Value / 4;
             if (activeBullets.Value % 4 != 0)
                 max++;

@@ -38,4 +38,15 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
         /// </summary>
         public bool IsFocusing { get; }
     }
+
+    /// <summary>
+    /// Unity has annoying restrictions like "on the main thread" and stuff.
+    /// <br/>
+    /// If an input uses Unity methods, use this to prepare the members of
+    /// <see cref="IGameInput"/>.
+    /// </summary>
+    public interface IUnityGameInput : IGameInput {
+        /// <inheritdoc cref="IUnityGameInput"/>
+        public void HandleInputMainThread();
+    }
 }

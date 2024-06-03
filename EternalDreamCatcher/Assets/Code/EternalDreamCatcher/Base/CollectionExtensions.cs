@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Atrufulgium.EternalDreamCatcher.Base {
     internal static class CollectionExtensions {
@@ -15,5 +16,14 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
             }
             dict[key] = val + 1;
         }
+
+        public unsafe static T* GetUnsafeTypedPtr<T>(this NativeReference<T> reference) where T : unmanaged
+            => (T*)reference.GetUnsafePtr();
+
+        public static unsafe T* GetUnsafeTypedPtr<T>(this NativeArray<T> nativeArray) where T : unmanaged
+            => (T*)nativeArray.GetUnsafePtr();
+
+        public static unsafe T* GetUnsafeTypedReadOnlyPtr<T>(this NativeArray<T> nativeArray) where T : unmanaged
+            => (T*)nativeArray.GetUnsafeReadOnlyPtr();
     }
 }
