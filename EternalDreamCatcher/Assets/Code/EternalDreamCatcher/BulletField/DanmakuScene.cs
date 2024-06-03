@@ -83,6 +83,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         public JobHandle ScheduleTick(int ticks, JobHandle dep = default) {
             if (ticks <= 0)
                 throw new ArgumentOutOfRangeException(nameof(ticks), "Can only tick a positive number of times.");
+#if UNITY_EDITOR
+            // See the "TODO: NOTE: OBNOXIOUS:" comment below.
+            if (ticks == 1)
+                Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobDebuggerEnabled = true;
+            else
+                Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobDebuggerEnabled = false;
+#endif
 
             ref JobHandle handle = ref dep;
             for (int i = 0; i < ticks; i++)
@@ -160,6 +167,15 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             handle = JobHandle.CombineDependencies(collideHandle1, collideHandle2);
 
             // Post-process deletions
+            // TODO: NOTE: OBNOXIOUS: for both of these jobs, the jobs debugger
+            // suddenly takes up an exponential amount of time verifying the
+            // dependency graph. Scheduling 1 iteration, fine, 30 takes up the
+            // entire frame, 60 crashes Unity.
+            // The workaround: in the editor, toggle Jobs > JobsDebugger.
+            // The ScheduleTick(int, JobHandle) overload automatically enables
+            // it when doing one tick and disables it when doing multiple ticks.
+            // This disables the race condition check however.
+            // Disabled and I can run 500 iterations a frame no problem.
             handle = new PostProcessPlayerCollisionJob(
                 player, in bulletField,
                 playerHitboxResult, playerGrazeboxResult
