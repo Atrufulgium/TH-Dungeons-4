@@ -28,6 +28,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
             f.FinalizeDeletion();
 
             Assert.AreEqual(4, f.Active);
+            f.Dispose();
         }
     }
 }

@@ -19,7 +19,7 @@ v2f vert (appdata v) {
     v2f o;
     float4 pos = v.vertex;
 
-    pos.xy *= 0.15 * _EntityPosScale.w;
+    pos.xy *= 0.12 * _EntityPosScale.w;
     pos.xyz += _EntityPosScale.xyz;
 
     // uhhh idk whether this is because of my specific setup or a general

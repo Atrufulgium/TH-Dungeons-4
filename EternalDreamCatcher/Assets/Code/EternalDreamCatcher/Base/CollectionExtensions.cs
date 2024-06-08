@@ -25,5 +25,22 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
 
         public static unsafe T* GetUnsafeTypedReadOnlyPtr<T>(this NativeArray<T> nativeArray) where T : unmanaged
             => (T*)nativeArray.GetUnsafeReadOnlyPtr();
+
+        // Just here for consistency, imma not remember that this one specifically has a public field
+        public static unsafe T* GetUnsafeTypedPtr<T>(this UnsafeList<T> unsafeList) where T : unmanaged
+            => unsafeList.Ptr;
+
+        /// <summary>
+        /// Makes a copy of the contents of a list into a new list. This copies
+        /// over all values.
+        /// <br/>
+        /// (But due to the existence of <see cref="NativeReference{T}"/>, the
+        ///  referenced variables may end up being the same.)
+        /// </summary>
+        public static unsafe UnsafeList<T> Clone<T>(ref this UnsafeList<T> list, Allocator allocator) where T : unmanaged {
+            UnsafeList<T> ret = new(list.Length, allocator);
+            UnsafeUtility.MemCpy(ret.Ptr, list.Ptr, list.Length);
+            return ret;
+        }
     }
 }

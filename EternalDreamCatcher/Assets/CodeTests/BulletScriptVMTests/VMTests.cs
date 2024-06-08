@@ -11,8 +11,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM.Tests {
         /// Tests whether a small vm with 32 floats of memory, some list of
         /// instructions, and no strings, generates the expected commands.
         /// </summary>
-        void Test(float4[] instructions, string expectedCommands) {
-            var vm = new VM(instructions, 32, 32, Array.Empty<string>());
+        unsafe void Test(float4[] instructions, string expectedCommands) {
+            uint* uintRef = stackalloc uint[1];
+            Unity.Mathematics.Random* rngRef = stackalloc Unity.Mathematics.Random[1];
+            var vm = new VM(instructions, 32, 32, Array.Empty<string>(), default, uintRef, rngRef);
             vm.RunMain();
             AssertTrimmedStringsEqual(
                 expectedCommands,

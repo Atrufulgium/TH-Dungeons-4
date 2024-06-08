@@ -76,9 +76,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             float2 delta = g->MoveDirection;
             delta = math.normalizesafe(delta);
             delta *= g->IsFocusing ? p->focusedSpeed : p->unfocusedSpeed;
-            p->position += delta;
-            hitbox.Value = new(p->position, p->hitboxRadius);
-            grazebox.Value = new(p->position, p->grazeboxRadius);
+            float2 newPos = p->position + delta;
+            newPos = math.clamp(newPos, new(0.02f, 0.05f), new(0.98f, 1.15f));
+            p->position = newPos;
+            hitbox.Value = new(newPos, p->hitboxRadius);
+            grazebox.Value = new(newPos, p->grazeboxRadius);
         }
     }
 

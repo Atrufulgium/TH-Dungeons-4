@@ -1,6 +1,6 @@
+using Atrufulgium.EternalDreamCatcher.Base;
 using System;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -8,7 +8,7 @@ using static Unity.Mathematics.math;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
 
-    public partial class VM {
+    public partial struct VM {
 
         /// <summary>
         /// Starts or resumes execution of the VM directly on the same thread.
@@ -16,26 +16,17 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         /// The output behaviour can be read and further processed with
         /// <see cref="ConsumeCommands"/>.
         /// </summary>
-        public void RunMain() {
-            var handle = RunmainAsync();
-            handle.Complete();
-        }
-
-        /// <summary>
-        /// Starts or resumes execution of the VM on a worker thread.
-        /// <br/>
-        /// The output behaviour can be read and further processed with
-        /// <see cref="ConsumeCommands"/>.
-        /// </summary>
-        public JobHandle RunmainAsync(JobHandle dependsOn = default) {
-            var job = new RunJob() {
-                floatMemory = floatMemory,
+        public unsafe void RunMain() {
+            RunJob job = new() {
                 instructions = instructions,
                 op = op,
+                floatMemory = floatMemory,
                 rng = rng,
                 commands = outputCommands
             };
-            return job.Schedule(dependsOn);
+            job.Execute();
+            // Outputcommands may resize, moving the underlying pointer around...
+            outputCommands = job.commands;
         }
 
         /// <summary>
@@ -43,25 +34,27 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         /// number of iterations.
         /// </summary>
         [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
-        private struct RunJob : IJob {
+        private unsafe struct RunJob : IJob {
 
-            [ReadOnly]
-            public NativeArray<float4> instructions;
-            public NativeArray<float> floatMemory;
-            public NativeReference<uint> op;
-            public Unity.Mathematics.Random rng;
+            public UnsafeList<float4> instructions;
 
-            [WriteOnly]
-            public NativeList<Command> commands;
+            [NativeDisableUnsafePtrRestriction]
+            public uint* op;
+            public UnsafeList<float> floatMemory;
+
+            [NativeDisableUnsafePtrRestriction]
+            public Unity.Mathematics.Random* rng;
+
+            public UnsafeList<Command> commands;
 
             const int MAX_ITERS = 100000;
 
             public unsafe void Execute() {
-                var ops = (float4*)instructions.GetUnsafeReadOnlyPtr();
-                var opsi = (int4*)instructions.GetUnsafeReadOnlyPtr();
-                var mem = (float*)floatMemory.GetUnsafePtr();
-                var mem4 = (float4*)floatMemory.GetUnsafePtr();
-                var op = (int*)this.op.GetUnsafePtr();
+                var ops = (float4*)instructions.GetUnsafeTypedPtr();
+                var opsi = (int4*)instructions.GetUnsafeTypedPtr();
+                var mem = (float*)floatMemory.GetUnsafeTypedPtr();
+                var mem4 = (float4*)floatMemory.GetUnsafeTypedPtr();
+                var op = (int*)this.op;
                 var maxOP = instructions.Length;
 
                 for (int i = 0; i < MAX_ITERS && *op < maxOP; i++, *op += 1) {
@@ -174,10 +167,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         case 108: mem[ai] = floor(mem[bi]); break;
                         case 109: mem[ai] = round(mem[bi]); break;
                         case 110: mem[ai] = abs(mem[bi]); break;
-                        case 111: mem[ai] = rng.NextFloat(b, c); break;
-                        case 112: mem[ai] = rng.NextFloat(b, mem[ci]); break;
-                        case 113: mem[ai] = rng.NextFloat(mem[bi], c); break;
-                        case 114: mem[ai] = rng.NextFloat(mem[bi], mem[ci]); break;
+                        case 111: mem[ai] = rng->NextFloat(b, c); break;
+                        case 112: mem[ai] = rng->NextFloat(b, mem[ci]); break;
+                        case 113: mem[ai] = rng->NextFloat(mem[bi], c); break;
+                        case 114: mem[ai] = rng->NextFloat(mem[bi], mem[ci]); break;
                         case 115: mem[ai] = distance(b, mem[ci]); break;
                         case 116: mem[ai] = distance(mem[bi], c); break;
                         case 117: mem[ai] = distance(mem[bi], mem[ci]); break;
@@ -207,7 +200,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         case 149: mem4[ai] = floor(mem4[bi]); break;
                         case 150: mem4[ai] = round(mem4[bi]); break;
                         case 151: mem4[ai] = abs(mem4[bi]); break;
-                        case 152: mem4[ai] = rng.NextFloat4(mem4[bi], mem4[ci]); break;
+                        case 152: mem4[ai] = rng->NextFloat4(mem4[bi], mem4[ci]); break;
                         case 153: mem[ai] = length(mem4[bi]); break;
                         case 154: mem[ai] = distance(mem4[bi], mem4[ci]); break;
                         case 155: mem4[ai] = polar(b, c); break;

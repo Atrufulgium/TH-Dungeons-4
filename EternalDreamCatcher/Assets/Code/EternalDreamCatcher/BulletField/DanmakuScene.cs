@@ -1,4 +1,5 @@
 ﻿using Atrufulgium.EternalDreamCatcher.Base;
+using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using System;
 using Unity.Burst;
 using Unity.Collections;
@@ -38,6 +39,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         protected NativeList<BulletReference> playerHitboxResult;
         protected NativeList<BulletReference> playerGrazeboxResult;
 
+        protected VMList templates;
+        protected NativeList<VM> activeVMs;
+
         readonly int entityTexID;
         readonly int entityPosScaleID;
 
@@ -61,6 +65,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             playerGrazebox = new(Allocator.Persistent);
             playerHitboxResult = new(32, Allocator.Persistent);
             playerGrazeboxResult = new(512, Allocator.Persistent);
+
+            templates = new(Array.Empty<string>(), Array.Empty<VM>());
+            activeVMs = new(Allocator.Persistent);
 
             entityTexID = Shader.PropertyToID("_EntityTex");
             entityPosScaleID = Shader.PropertyToID("_EntityPosScale");
@@ -127,6 +134,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             playerGrazebox.Dispose();
             playerHitboxResult.Dispose();
             playerGrazeboxResult.Dispose();
+            templates.Dispose();
+            activeVMs.Dispose();
         }
     }
 

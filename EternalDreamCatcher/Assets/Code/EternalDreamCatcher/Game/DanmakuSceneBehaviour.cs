@@ -45,8 +45,8 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
                 position = new(0.5f, 1.1f),
                 remainingLives = 3,
                 RemainingBombs = 2,
-                focusedSpeed = 0.05f / 60,
-                unfocusedSpeed = 0.15f / 60,
+                focusedSpeed = 0.06f / 60,
+                unfocusedSpeed = 0.16f / 60,
                 hitboxRadius = 0.005f,
                 grazeboxRadius = 0.025f
             }, Allocator.Persistent);
@@ -106,6 +106,7 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
             gameInput.Dispose();
             danmakuScene.Dispose();
             buffer.Dispose();
+            player.Dispose();
         }
 
         private void SetBuffer() {

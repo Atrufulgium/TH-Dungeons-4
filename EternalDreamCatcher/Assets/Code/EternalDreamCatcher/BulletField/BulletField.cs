@@ -250,6 +250,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             prop.Dispose();
             dx.Dispose();
             dy.Dispose();
+            radius.Dispose();
             textureID.Dispose();
             layer.Dispose();
             outerColor.Dispose();
