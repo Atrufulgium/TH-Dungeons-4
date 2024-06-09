@@ -30,6 +30,9 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
         public static unsafe T* GetUnsafeTypedPtr<T>(this UnsafeList<T> unsafeList) where T : unmanaged
             => unsafeList.Ptr;
 
+        public static unsafe T* GetUnsafeTypedPtr<T>(this UnsafeArray<T> unsafeArray) where T : unmanaged
+            => unsafeArray.Ptr;
+
         /// <summary>
         /// Makes a copy of the contents of a list into a new list. This copies
         /// over all values.
@@ -41,6 +44,11 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
             UnsafeList<T> ret = new(list.Length, allocator);
             UnsafeUtility.MemCpy(ret.Ptr, list.Ptr, list.Length);
             return ret;
+        }
+
+        /// <inheritdoc cref="Clone{T}(ref UnsafeList{T}, Allocator)"/>
+        public static unsafe UnsafeArray<T> Clone<T>(ref this UnsafeArray<T> array, Allocator allocator) where T : unmanaged {
+            return new(array, allocator);
         }
     }
 }

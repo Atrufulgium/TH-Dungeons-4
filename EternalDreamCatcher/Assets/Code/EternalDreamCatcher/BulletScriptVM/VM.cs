@@ -2,6 +2,7 @@ using Atrufulgium.EternalDreamCatcher.Base;
 using Atrufulgium.EternalDreamCatcher.BulletField;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -19,17 +20,17 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         /// <summary>
         /// The instruction list of the VM. See the documentation.
         /// </summary>
-        UnsafeList<float4> instructions;
+        UnsafeArray<float4> instructions;
         /// <summary>
         /// The memory of the VM. Roughly divided into "built-in" vars,
         /// "user-defined" vars, and "control-flow" vars.
         /// </summary>
-        UnsafeList<float> floatMemory;
+        UnsafeArray<float> floatMemory;
         /// <summary>
         /// The predefined strings of the VM. In code, these are referenced by
         /// only their index.
         /// </summary>
-        UnsafeList<FixedString128Bytes> stringMemory;
+        UnsafeArray<FixedString128Bytes> stringMemory;
         /// <summary>
         /// The current instruction.
         /// </summary>
@@ -75,17 +76,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         ) {
             if (floatMemSize < 32)
                 throw new ArgumentOutOfRangeException(nameof(floatMemSize), "By specification, any vm uses at least 32 variables.");
-            int i = 0;
             // TODO: OOB-validation.
-            this.instructions = new(instructions.Length, Allocator.Persistent);
-            for (i = 0; i < instructions.Length; i++)
-                this.instructions.Add(in instructions[i]);
+            this.instructions = new(instructions, Allocator.Persistent);
 
             floatMemory = new(floatMemSize, Allocator.Persistent);
-            // bwheck :wl
-            // i really don't have to implement a UnsafeArray myself right..?
-            for (i = 0; i < floatMemSize; i++)
-                floatMemory.Add(i);
             floatMemory[8] = 1; // By spec, `autoclear` starts as `true`.
             floatMemory[13] = 1; // By spec, `harmsplayers` starts as `true`.
             floatMemory[15] = 1; // By spec, `spawnspeed` starts as `1`.
@@ -93,12 +87,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
             op = opRef;
             controlFlowMemoryStart = (uint)floatMemControlflowBlockStart;
             
-            stringMemory = new(strings.Count, Allocator.Persistent);
-            i = 0;
-            foreach (var s in strings) {
-                stringMemory[i] = new(s);
-                i++;
-            }
+            stringMemory = new(strings.Select(s => new FixedString128Bytes(s)).ToArray(), Allocator.Persistent);
 
             rng = rngRef;
             outputCommands = new(128, Allocator.Persistent);

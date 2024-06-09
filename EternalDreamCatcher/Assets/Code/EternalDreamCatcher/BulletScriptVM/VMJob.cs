@@ -36,11 +36,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
         private unsafe struct RunJob : IJob {
 
-            public UnsafeList<float4> instructions;
+            public UnsafeArray<float4> instructions;
 
             [NativeDisableUnsafePtrRestriction]
             public uint* op;
-            public UnsafeList<float> floatMemory;
+            public UnsafeArray<float> floatMemory;
 
             [NativeDisableUnsafePtrRestriction]
             public Unity.Mathematics.Random* rng;
