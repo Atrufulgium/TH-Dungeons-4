@@ -155,20 +155,46 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         }
 
         public override JobHandle ScheduleTick(JobHandle dep = default) {
+            // WARNING: EVERY .Schedule() HERE MUST HAVE A HANDLE ARG
+            // YOU"RE DOING IT WRONG OTHERWISE
+            // You don't notice it until you run it at [ridiculus]x speed in
+            // the player, but then you just freeze and all threads are Burst
+            // and waiting. Notice that behaviour? This is the problem.
+            
             // NOTE: CombineDependencies may cause jobs to run already, as in
             // JobHandle.ScheduleBatchedJobs().
             // Look into the performance implications of this.
             ref JobHandle handle = ref dep;
 
-            // Update positions and VMs
+            // Run VMs
+            // We cannot assume how many VMs there actually are, so schedule a
+            // predictable, always-non-zero number of jobs.
+            // Note: Scheduling X jobs with X available worker threads that are
+            // all idle does not actually guarantee an even distribution of
+            // work, but in the player the workers are saturated anyway so who
+            // gives.
+            int concurrentVMs = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount;
+            concurrentVMs = math.max(1, concurrentVMs);
+            NativeArray<JobHandle> vmHandles = new(concurrentVMs, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            for (int i = 0; i < concurrentVMs; i++) {
+                vmHandles[i] = new VMJobMany() {
+                    vms = activeVMs,
+                    jobIndex = i,
+                    totalJobs = concurrentVMs
+                }.Schedule(handle);
+            }
+            handle = JobHandle.CombineDependencies(vmHandles);
+            vmHandles.Dispose();
+            // TODO: Message handling, detecting and disabling VMs with zero
+            // bullets. Unfortunately, both of these operations are sequental :(
+
+            // Update positions
             var moveHandle1 = new MoveBulletsJob(in bulletField).Schedule(handle);
             var moveHandle2 = new MovePlayerJob<TGameInput>(
                 in player, in input,
                 in playerHitbox, in playerGrazebox
             ).Schedule(handle);
             handle = JobHandle.CombineDependencies(moveHandle1, moveHandle2);
-
-            // Handle VM messages and `affectedBullet` sets
 
             // Check player collisions (note that bullets may be deleted already)
             var collideHandle1 = new BulletCollisionJob(in bulletField, in playerHitbox, playerHitboxResult).Schedule(handle);

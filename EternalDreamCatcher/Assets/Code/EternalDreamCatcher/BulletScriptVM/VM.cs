@@ -15,7 +15,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
     /// </summary>
     // Note: UnsafeX instead of NativeX because we're going to be working with
     // lists of VMs. This makes Unity unhappy and I don't get parallel safety
-    // checks anymore.
+    // checks nor dispose safety checks anymore.
     public unsafe partial struct VM : IDisposable {
         /// <summary>
         /// The instruction list of the VM. See the documentation.

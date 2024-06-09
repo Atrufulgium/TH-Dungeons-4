@@ -16,6 +16,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         // Just allocate a *massive* block with wraparound to use for this space.
         // Should be large enough that there's no way for a VM to live long
         // enough that its pointer gets snatched again.
+        // (Note that `Random` is also 4 bytes.)
         // TODO: use a better memory model lol, free lists exist.
         const int MASSIVE = 1024 * 1024;
         NativeArray<uint> uintBlock;
