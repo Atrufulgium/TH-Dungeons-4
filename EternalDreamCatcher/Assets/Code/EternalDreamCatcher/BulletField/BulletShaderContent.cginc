@@ -18,6 +18,7 @@ struct v2f {
     float4 g : TEXCOORD2;
 };
 
+float _BulletTime;
 sampler2D _BulletTex;
 float4 _BulletTex_TexelSize;
 
@@ -49,9 +50,9 @@ v2f vert (appdata v, uint instanceID : SV_INSTANCEID) {
     // TODO: Move this over to c#?
     float rot = _BulletRots[instanceID];
     if (rot == 230)
-        rot = _Time.y * 3.14; // Half a turn a second (_Time.y is seconds)
+        rot = _BulletTime * 3.14; // Half a turn a second (_BulletTime is in seconds)
     if (rot == 231)
-        rot = 0.2 * sin(_Time.y * 6.28); // Wiggle each second
+        rot = 0.2 * sin(_BulletTime * 6.28); // Wiggle each second
     float s,c;
     sincos(rot, s, c);
     // (Not the standard matrix because in our textures the bullets move "up"
@@ -83,7 +84,7 @@ fixed4 frag (v2f i) : SV_Target {
     // Assuming each frame is a square texture, and they're in a row.
     float frame_count = _BulletTex_TexelSize.z / _BulletTex_TexelSize.w;
     float2 uv = i.uv;
-    uv.x += floor(_Time.y * 8);
+    uv.x += floor(_BulletTime * 8);
     uv.x = frac(uv.x / frame_count);
 
     // Apply the mapping from R/G to actual colors.

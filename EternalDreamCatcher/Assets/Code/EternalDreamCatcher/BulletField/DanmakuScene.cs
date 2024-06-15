@@ -42,6 +42,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         protected VMList templates;
         protected NativeList<VM> activeVMs;
 
+        readonly int gameTickID;
         readonly int entityTexID;
         readonly int entityPosScaleID;
 
@@ -69,6 +70,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             templates = new(Array.Empty<string>(), Array.Empty<VM>());
             activeVMs = new(Allocator.Persistent);
 
+            gameTickID = Shader.PropertyToID("_BulletTime");
             entityTexID = Shader.PropertyToID("_EntityTex");
             entityPosScaleID = Shader.PropertyToID("_EntityPosScale");
         }
@@ -119,6 +121,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             // Bullets are more important than any entity, so put them below.
             buffer.SetGlobalTexture(entityTexID, entityTextures[0]);
             buffer.SetGlobalVector(entityPosScaleID, new float4(p->position, 0, 1));
+            buffer.SetGlobalFloat(gameTickID, gameTick.Value / 60f);
             buffer.DrawMesh(
                 quadMesh, matrix: default, entityMaterial, 0, 0
             );

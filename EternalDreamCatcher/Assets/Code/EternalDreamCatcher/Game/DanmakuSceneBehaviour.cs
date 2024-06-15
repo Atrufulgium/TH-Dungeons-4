@@ -41,12 +41,15 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
             if (quadMesh == null) throw new System.NullReferenceException();
             if (bulletTextures == null || bulletTextures.Length == 0) throw new System.NullReferenceException();
 
+            // TODO: Put this someplace better
+            Application.targetFrameRate = 60;
+
             player = new(new() {
                 position = new(0.5f, 1.1f),
                 remainingLives = 3,
                 RemainingBombs = 2,
-                focusedSpeed = 0.06f / 60,
-                unfocusedSpeed = 0.16f / 60,
+                focusedSpeed = 0.25f / 60,
+                unfocusedSpeed = 0.66f / 60,
                 hitboxRadius = 0.005f,
                 grazeboxRadius = 0.025f
             }, Allocator.Persistent);

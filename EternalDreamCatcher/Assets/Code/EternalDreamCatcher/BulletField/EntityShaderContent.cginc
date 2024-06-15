@@ -12,6 +12,7 @@ struct v2f {
     float2 uv : TEXCOORD0;
 };
 
+float _BulletTime;
 sampler2D _EntityTex;
 float4 _EntityTex_TexelSize;
 
@@ -46,7 +47,7 @@ fixed4 frag (v2f i) : SV_Target {
     // Assuming each frame is a square texture, and they're in a row.
     float frame_count = _EntityTex_TexelSize.z / _EntityTex_TexelSize.w;
     float2 uv = i.uv;
-    uv.x += floor(_Time.y * 8);
+    uv.x += floor(_BulletTime * 8);
     uv.x = frac(uv.x / frame_count);
 
     // Apply the mapping from R/G to actual colors.
