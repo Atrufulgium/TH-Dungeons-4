@@ -1,6 +1,7 @@
 ﻿using Atrufulgium.EternalDreamCatcher.Base;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
@@ -49,10 +50,16 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     /// Moves the player depending on the game input.
     /// Also writes the new hit- and grazeboxes.
     /// </summary>
-    public struct MovePlayerJob<TGameInput> : IJob where TGameInput : unmanaged, IGameInput {
+    [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
+    public unsafe struct MovePlayerJob<TGameInput> : IJob where TGameInput : unmanaged, IGameInput {
 
         public NativeReference<Player> player;
-        public NativeReference<TGameInput> gameInput;
+        // This is needed for a really ugly workaround.
+        // See
+        /// <seealso cref="DanmakuScene{TGameInput}.ScheduleMovePlayerJob(JobHandle)"/>
+        // for some more comments on this.
+        [NativeDisableUnsafePtrRestriction]
+        public TGameInput* gameInput;
         [WriteOnly]
         public NativeReference<Circle> hitbox;
         [WriteOnly]
@@ -60,7 +67,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
         public MovePlayerJob(
             in NativeReference<Player> player,
-            in NativeReference<TGameInput> gameInput,
+            TGameInput* gameInput,
             in NativeReference<Circle> hitbox,
             in NativeReference<Circle> grazebox
         ) {
@@ -72,7 +79,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
         public unsafe void Execute() {
             var p = player.GetUnsafeTypedPtr();
-            var g = gameInput.GetUnsafeTypedPtr();
+            ref var g = ref gameInput;
             float2 delta = g->MoveDirection;
             delta = math.normalizesafe(delta);
             delta *= g->IsFocusing ? p->focusedSpeed : p->unfocusedSpeed;

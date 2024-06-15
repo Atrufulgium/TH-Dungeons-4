@@ -21,6 +21,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     //  manually require the interface to be unmanaged as a generic.)
     // Unfortunately need to split the class into a non-generic and generic
     // part because of the TGameInput bit.
+    // TODO: As burst can't handle generics properly, just... don't?
     public abstract class DanmakuScene : IDisposable {
 
         public const int MAX_BULLETS = Field.MAX_BULLETS;
@@ -193,10 +194,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
 
             // Update positions
             var moveHandle1 = new MoveBulletsJob(in bulletField).Schedule(handle);
-            var moveHandle2 = new MovePlayerJob<TGameInput>(
-                in player, in input,
-                in playerHitbox, in playerGrazebox
-            ).Schedule(handle);
+            var moveHandle2 = ScheduleMovePlayerJob(handle);
             handle = JobHandle.CombineDependencies(moveHandle1, moveHandle2);
 
             // Check player collisions (note that bullets may be deleted already)
@@ -224,6 +222,28 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             handle = new IncrementTickJob(gameTick, input).Schedule(handle);
 
             return handle;
+        }
+
+        // Burst can _only_ compile generic jobs whose constructor is of the
+        // form `MyJob<ExplicitType>`. Unroll the generic into explicit types...
+        unsafe JobHandle ScheduleMovePlayerJob(JobHandle deps) {
+            // Also, I _would_ use those nice is/switch expressions, but...
+            // https://sharplab.io/#v2:D4AQzABAzgLgTgVwMYwgWQDwGkB8EDeAsAFARkTgQCWAdqlANwnkWRoAUmuEAtgJQFmLclAgBeXgDpGQsgF8SC4iUogATBADC2PEVLkueKk2X6ytVADF2AsUegB3KjCQALQWeGYLRjXYg0AKYO6Bg+7FRqfNIANLLCAPrieEEhhhHRUPFyJnJAA=
+            // They box. This is a hot loop. Ffs.
+            // Even uglier manual pointer shit it is.
+            TGameInput* t = input.GetUnsafeTypedPtr();
+            if (typeof(TGameInput) == typeof(KeyboardInput)) {
+                return new MovePlayerJob<KeyboardInput>(
+                    in player, (KeyboardInput*)t, in playerHitbox, in playerGrazebox
+                ).Schedule(deps);
+            }
+            // If other, fall back to non-bursted code. The only downside is
+            // the performance, which is more acceptable than crashing, lol.
+            // Easily recognisable by large blue blobs instead of thin green
+            // blobs in the profiler.
+            return new MovePlayerJob<TGameInput>(
+                in player, t, in playerHitbox, in playerGrazebox
+            ).Schedule(deps);
         }
 
         /// <summary>

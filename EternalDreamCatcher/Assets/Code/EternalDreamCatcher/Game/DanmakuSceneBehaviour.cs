@@ -113,10 +113,14 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
         }
 
         private void SetBuffer() {
-            if (buffer != null)
+            if (buffer == null) {
+                buffer = new() { name = "BulletFieldRendering" };
+            } else {
+                // Gets re-added anyways
                 camera.RemoveCommandBuffer(CameraEvent.AfterEverything, buffer);
+                buffer.Clear();
+            }
 
-            buffer = new() { name = "BulletFieldRendering" };
             var size = FieldRenderer.GetBulletFieldResolution();
             buffer.GetTemporaryRT(tempRTid, size.x, size.y);
             buffer.SetRenderTarget(new RenderTargetIdentifier(tempRTid));
