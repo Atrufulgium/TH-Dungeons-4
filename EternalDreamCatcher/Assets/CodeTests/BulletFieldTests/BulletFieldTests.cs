@@ -30,6 +30,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
             // choose is arbitrary. When updating code and this part fails, it
             // may still be correct and you just have to update the test.
             // The tuples also care about order while that's not neccessary.
+            UnityEngine.Debug.Log("First removal moves:");
+            foreach (var p in f.GetFinalizeDeletionShifts()) UnityEngine.Debug.Log(p);
             CollectionAssert.AreEqual(
                 Swaps((8, 5), (9, 4)),
                 f.GetFinalizeDeletionShifts()
@@ -44,10 +46,19 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
             f.FinalizeDeletion();
             Assert.AreEqual(4, f.Active);
 
+            UnityEngine.Debug.Log("\nSecond removal moves:");
+            foreach (var p in f.GetFinalizeDeletionShifts()) UnityEngine.Debug.Log(p);
             CollectionAssert.AreEqual(
-                Swaps((5,3)),
+                Swaps((5,2)),
                 f.GetFinalizeDeletionShifts()
             );
+
+            // Delete the rest [XXXX]
+            for (int i = 0; i < 4; i++)
+                f.DeleteBullet(bullets[i]);
+            f.FinalizeDeletion();
+            Assert.AreEqual(0, f.Active);
+            Assert.AreEqual(0, f.GetFinalizeDeletionShifts().Count());
         }
     }
 }

@@ -84,6 +84,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         // don't automatically implement IEquatable<BulletReference>, I need to
         // go to the underlying numeric, tsk.
         readonly internal NativeParallelHashSet<int> deletedReferences;
+        internal NativeReference<int> deletedCount; // NativeParallelHashSet.Count() is O(n).
         readonly internal NativeParallelHashSet<int> processedDeletedReferences;
         readonly internal Permutation<int> deletePermutation;
 
@@ -103,6 +104,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             innerColor = new(MAX_BULLETS, Allocator.Persistent);
             renderScale = new(MAX_BULLETS, Allocator.Persistent);
             deletedReferences = new(MAX_BULLETS, Allocator.Persistent);
+            deletedCount = new(0, Allocator.Persistent);
             processedDeletedReferences = new(MAX_BULLETS, Allocator.Persistent);
             deletePermutation = new(MAX_BULLETS, Allocator.Persistent);
         }
@@ -116,28 +118,28 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             if (!x.IsCreated)
                 throw new InvalidOperationException("This Field was created with `new Field()` or `default`. This is not supported; Fields must be created with `new Field(true)`.");
 #endif
-            int active = this.active.Value;
-            if (active == MAX_BULLETS)
+            int a = active.Value;
+            if (a == MAX_BULLETS)
                 return null;
-            x[active] = bullet.spawnPosition.x;
-            y[active] = bullet.spawnPosition.y;
-            z[active] = currentZ.Value;
-            prop[active] = bullet.bulletProps;
-            dx[active] = bullet.movement.x;
-            dy[active] = bullet.movement.y;
-            radius[active] = bullet.hitboxSize;
-            textureID[active] = bullet.textureID;
-            layer[active] = bullet.layer;
-            outerColor[active] = bullet.outerColor;
-            innerColor[active] = bullet.innerColor;
-            renderScale[active] = bullet.renderScale;
+            x[a] = bullet.spawnPosition.x;
+            y[a] = bullet.spawnPosition.y;
+            z[a] = currentZ.Value;
+            prop[a] = bullet.bulletProps;
+            dx[a] = bullet.movement.x;
+            dy[a] = bullet.movement.y;
+            radius[a] = bullet.hitboxSize;
+            textureID[a] = bullet.textureID;
+            layer[a] = bullet.layer;
+            outerColor[a] = bullet.outerColor;
+            innerColor[a] = bullet.innerColor;
+            renderScale[a] = bullet.renderScale;
 
-            this.active.Value++;
+            active.Value++;
             currentZ.Value += 0.000001f;
             if (currentZ.Value >= 0.9f)
                 currentZ.Value = 0;
 
-            return (BulletReference)active - 1;
+            return (BulletReference)a;
         }
 
         /// <summary>
@@ -149,13 +151,14 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// <see cref="FinalizeDeletion"/>, the active bullets do *not* take up
         /// a contiguous range of the array.
         /// </summary>
-        public void DeleteBullet(BulletReference reference) {
+        public unsafe void DeleteBullet(BulletReference reference) {
             int i = (int)reference;
             if (deletedReferences.Contains(i))
                 return;
             if (i >= active.Value || i < 0)
                 throw new ArgumentOutOfRangeException(nameof(i), $"Requested deletion of bullet {reference}. The valid range is currently `[0, {Active-1}]`, inclusive.");
             deletedReferences.Add(i);
+            deletedCount.Value++;
         }
 
         /// <summary>
@@ -187,40 +190,60 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             deletePermutation.ResetToIdentity();
             // Compactify by removing the gaps of `deletedReferences`.
             // Do this by repeatedly moving the last active bullet into the
-            // gap.
+            // gap, for each gap that remains in [0, new Active).
             // (This last active bullet may have also been deleted, so some
             //  care is needed.)
+            var newActive = Active - deletedCount.Value;
             processedDeletedReferences.Clear();
             foreach (var b in deletedReferences) {
                 if (processedDeletedReferences.Contains(b))
                     continue;
 
+                if (b >= newActive) {
+                    processedDeletedReferences.Add(b);
+                    active.Value--;
+                    continue;
+                }
+
                 var overwritten = b;
                 var reference = active.Value - 1;
 
                 // (For easier understanding, ignore this while loop on first
-                //  reading -- this is the "some care" part mentioned above.)
+                //  reading -- this is the "some care" part mentioned above.
+                //  This loop finds the actual *active* last active.)
                 while (active.Value > 0) {
-                    // Whether we want to move the active bullet, or it's
-                    // deleted.
+                    // Each iteration we either:
+                    // - Encounter a deleted bullet; or
+                    // - Encounter a non-deleted bullet.
+                    // The latter case is the one we want.
+                    // The former case requires us to recognise the deleted
+                    // bullet as such and reduce `active` and count it as
+                    // `processed`.
+                    // Aftwards, the new bullet we look at is `Active-1` again.
+
                     if (!deletedReferences.Contains(reference))
                         break;
-                    // We need to move stuff down, so if we want to overwrite a
-                    // bullet higher than active, this loop shouldn't do
-                    // anything anymore -- it will only get worse after this.
-                    if (reference <= overwritten)
-                        break;
-                    // No need to overwrite as it's at the "end" already.
-                    // Only consume the "active" and add as processed.
+                    
                     active.Value--;
                     processedDeletedReferences.Add(reference);
                     reference--;
                 }
                 
-                if(reference > overwritten) {
-                    Overwrite(reference, overwritten);
-                    deletePermutation.Swap(reference, overwritten);
+                // Edge case: deleting everything. Then we don't need to do any
+                // overwriting.
+                if (active.Value == 0) {
+                    processedDeletedReferences.Add(b);
+                    continue;
                 }
+
+                // Whenever we would move from [0, newActive) to [0, newActive)
+                // it indicates something has gone horribly wrong.
+                if (!BurstUtils.IsBurstCompiled) {
+                    Assert.IsTrue(reference >= newActive);
+                }
+
+                Overwrite(reference, overwritten);
+                deletePermutation.Swap(reference, overwritten);
                 active.Value--;
                 processedDeletedReferences.Add(b);
             }
@@ -228,6 +251,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 Assert.AreEqual(deletedReferences.Count(), processedDeletedReferences.Count());
             }
             deletedReferences.Clear();
+            deletedCount.Value = 0;
         }
 
         /// <summary>
@@ -287,6 +311,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             innerColor.Dispose();
             renderScale.Dispose();
             deletedReferences.Dispose();
+            deletedCount.Dispose();
             processedDeletedReferences.Dispose();
             deletePermutation.Dispose();
         }
