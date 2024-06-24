@@ -7,16 +7,16 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     /// The lifetime of a reference is as follows:
     /// <list type="bullet">
     /// <item>
-    /// First, you create a reference with <see cref="Field.CreateBullet(BulletCreationParams)"/>.
+    /// First, you create a reference with <see cref="Field.CreateBullet(ref BulletCreationParams)"/>.
     /// </item>
     /// <item>
     /// After some time, you are done with this bullet. You delete it with
     /// <see cref="Field.DeleteBullet(BulletReference)"/>.
     /// <br/>
-    /// After this, <b>the reference invalid but not yet collected</b>.
+    /// After this, <b>the reference invalid but not yet finalized</b>.
     /// </item>
     /// <item>
-    /// Until the reference is collected, you can test this reference's
+    /// Until the deletion is finalized, you can test this reference's
     /// invalidity with either <see cref="Field.FilterDeleted(IEnumerable{BulletReference})"/>
     /// or <see cref="Field.ReferenceIsDeleted(BulletReference)"/>.
     /// <br/>
@@ -27,16 +27,19 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     /// assumed (and not checked!) to be no longer referenced.
     /// This reference will then be reused for other bullets.
     /// <br/>
-    /// This deletion moves around bullets in the array. This movement can be
-    /// read from <see cref="Field.GetFinalizeDeletionShifts"/>.
+    /// This finalization moves around bullets in the array. This movement can
+    /// be read from <see cref="Field.GetFinalizeDeletionShifts"/> or
+    /// <see cref="Field.GetFinalizeDeletionShift(BulletReference)"/>.
     /// </item>
     /// </list>
     /// If you encounter unexplainable bullet bugs, first check that your
     /// handling of deleted bullets is correct.
+    /// <br/>
+    /// Do not use the underlying numeric type.
     /// </summary>
     // It's a bit hacky to use an empty enum for this, but I want some form of
-    // type-safety and this is the easiest way.
-    // Code (other than Field) should never do any casting, and just pass the
-    // reference around.
+    // type-safety but I'm lazy and `record struct` does not exist yet.
+    // Code (other than Field) should never do any casting or arithmetic, and
+    // just pass the reference around.
     public enum BulletReference : ushort { }
 }

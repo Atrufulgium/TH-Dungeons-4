@@ -10,6 +10,7 @@ Shader "Hidden/BulletShader"
 
         Cull Off
         ZWrite Off
+        ZTest Never
 
         Pass
         {

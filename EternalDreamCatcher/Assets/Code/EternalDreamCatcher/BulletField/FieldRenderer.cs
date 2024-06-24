@@ -12,12 +12,9 @@ using UnityEngine.Rendering;
 namespace Atrufulgium.EternalDreamCatcher.BulletField {
     public class FieldRenderer : IDisposable {
 
-        readonly ComputeBuffer posBuffer = new(Field.MAX_BULLETS, sizeof(float) * 3);
-        readonly NativeArray<float3> posBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
-        readonly ComputeBuffer rotBuffer = new(Field.MAX_BULLETS, sizeof(float));
-        readonly NativeArray<float> rotBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
-        readonly ComputeBuffer scaleBuffer = new(Field.MAX_BULLETS, sizeof(float));
-        readonly NativeArray<float> scaleBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
+        // x, y, scale, rot
+        readonly ComputeBuffer transformBuffer = new(Field.MAX_BULLETS, sizeof(float) * 4);
+        readonly NativeArray<float4> transformBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
 
         readonly ComputeBuffer rBuffer = new(Field.MAX_BULLETS, sizeof(float) * 4);
         readonly NativeArray<float4> rBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
@@ -36,7 +33,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         readonly Mesh rectMesh;
         readonly Texture2D[] bulletTextures;
 
-        readonly int possesID;
+        readonly int transformsID;
         readonly int rotsID;
         readonly int scalesID;
         readonly int arrayOffsetID;
@@ -49,9 +46,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             this.rectMesh = rectMesh;
             this.bulletTextures = bulletTextures;
 
-            possesID = Shader.PropertyToID("_BulletPosses");
-            rotsID = Shader.PropertyToID("_BulletRots");
-            scalesID = Shader.PropertyToID("_BulletScales");
+            transformsID = Shader.PropertyToID("_BulletTransforms");
             arrayOffsetID = Shader.PropertyToID("_InstanceOffset");
             mainTexID = Shader.PropertyToID("_BulletTex");
             rBufferID = Shader.PropertyToID("_BulletReds");
@@ -75,9 +70,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             // Copy the field data orderly into buffers.
             active.Value = field.Active;
             new PrepareRenderFieldJob() {
-                possesC = posBufferValues,
-                rotsC = rotBufferValues,
-                scalesC = scaleBufferValues,
+                transformsC = transformBufferValues,
                 rsC = rBufferValues,
                 gsC = gBufferValues,
                 countPerLayer = countPerLayer,
@@ -92,12 +85,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             // The buffers can just be set as they don't care about the order.
             // Our material however needs to take into account the layer and
             // texture data, giving `sorteds.Count` rendering passses.
-            buffer.SetBufferData(posBuffer, posBufferValues, 0, 0, field.Active);
-            buffer.SetGlobalBuffer(possesID, posBuffer);
-            buffer.SetBufferData(rotBuffer, rotBufferValues, 0, 0, field.Active);
-            buffer.SetGlobalBuffer(rotsID, rotBuffer);
-            buffer.SetBufferData(scaleBuffer, scaleBufferValues, 0, 0, field.Active);
-            buffer.SetGlobalBuffer(scalesID, scaleBuffer);
+            buffer.SetBufferData(transformBuffer, transformBufferValues, 0, 0, field.Active);
+            buffer.SetGlobalBuffer(transformsID, transformBuffer);
             buffer.SetBufferData(rBuffer, rBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(rBufferID, rBuffer);
             buffer.SetBufferData(gBuffer, gBufferValues, 0, 0, field.Active);
@@ -116,9 +105,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         [BurstCompile(CompileSynchronously = true, OptimizeFor = OptimizeFor.Performance)]
         private unsafe struct PrepareRenderFieldJob : IJob {
 
-            public NativeArray<float3> possesC;
-            public NativeArray<float> rotsC;
-            public NativeArray<float> scalesC;
+            public NativeArray<float4> transformsC;
             public NativeArray<float4> rsC;
             public NativeArray<float4> gsC;
             public NativeParallelHashMap<long, int> countPerLayer;
@@ -129,15 +116,12 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             public Field bulletField;
 
             public void Execute() {
-                var posses = (float3*)possesC.GetUnsafePtr();
-                var rots = (float*)rotsC.GetUnsafePtr();
-                var scales = (float*)scalesC.GetUnsafePtr();
+                var transforms = (float4*)transformsC.GetUnsafePtr();
                 var rs = (float4*)rsC.GetUnsafePtr();
                 var gs = (float4*)gsC.GetUnsafePtr();
 
                 var x = (float*)bulletField.x.GetUnsafeReadOnlyPtr();
                 var y = (float*)bulletField.y.GetUnsafeReadOnlyPtr();
-                var z = (float*)bulletField.z.GetUnsafeReadOnlyPtr();
                 var dx = (float*)bulletField.dx.GetUnsafeReadOnlyPtr();
                 var dy = (float*)bulletField.dy.GetUnsafeReadOnlyPtr();
                 var tex = (int*)bulletField.textureID.GetUnsafeReadOnlyPtr();
@@ -192,23 +176,25 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                     int bufferIndex = startingIndices[key] + countPerLayer[key] - 1;
 
                     // Now we can just set all data.
-                    posses[bufferIndex] = new(x[i], y[i], z[i]);
-                    scales[bufferIndex] = renderScales[i];
+                    float4 transform = default;
+                    transform.xy = new(x[i], y[i]);
+                    transform.z = renderScales[i];
                     rs[bufferIndex] = r[i];
                     gs[bufferIndex] = g[i];
 
                     var p = prop[i];
                     // (i have trust issues with "hasflag")
                     if (Hint.Unlikely((p & MiscBulletProps.RotationFixed) != 0)) {
-                        rots[bufferIndex] = 0;
+                        transform.w = 0;
                     } else if (Hint.Unlikely((p & MiscBulletProps.RotationContinuous) != 0)) {
-                        rots[bufferIndex] = 230; // Message value.
+                        transform.w = 230; // Message value.
                     } else if (Hint.Unlikely((p & MiscBulletProps.RotationWiggle) != 0)) {
-                        rots[bufferIndex] = 231; // Message value.
+                        transform.w = 231; // Message value.
                     } else {
                         // Mess with the angle so that "0" means "down".
-                        rots[bufferIndex] = math.atan2(dy[i], dx[i]) - math.PI/2;
+                        transform.w = math.atan2(dy[i], dx[i]) - math.PI/2;
                     }
+                    transforms[bufferIndex] = transform;
                 }
             }
 
@@ -222,12 +208,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         }
 
         public void Dispose() {
-            posBuffer.Dispose();
-            posBufferValues.Dispose();
-            rotBuffer.Dispose();
-            rotBufferValues.Dispose();
-            scaleBuffer.Dispose();
-            scaleBufferValues.Dispose();
+            transformBuffer.Dispose();
+            transformBufferValues.Dispose();
             rBuffer.Dispose();
             rBufferValues.Dispose();
             gBuffer.Dispose();

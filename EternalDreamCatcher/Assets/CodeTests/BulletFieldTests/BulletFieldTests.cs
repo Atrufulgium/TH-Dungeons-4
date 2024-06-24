@@ -6,7 +6,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
     public class FieldTests {
 
         // easier notation
-        IEnumerable<(BulletReference, BulletReference)> Swaps(params (ushort, ushort)[] values)
+        IEnumerable<(BulletReference, BulletReference)> Moves(params (ushort, ushort)[] values)
             => values.Select((tuple) => ((BulletReference)tuple.Item1, (BulletReference)tuple.Item2));
 
         [Test]
@@ -26,14 +26,12 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
             f.FinalizeDeletion();
             Assert.AreEqual(6, f.Active);
 
-            // NOTE: There are 2 ways to collapse this array, and the one we
-            // choose is arbitrary. When updating code and this part fails, it
-            // may still be correct and you just have to update the test.
-            // The tuples also care about order while that's not neccessary.
+            // NOTE: The array gets collapsed but order gets maintained, so
+            // there is only one correct order for these.
             UnityEngine.Debug.Log("First removal moves:");
             foreach (var p in f.GetFinalizeDeletionShifts()) UnityEngine.Debug.Log(p);
             CollectionAssert.AreEqual(
-                Swaps((8, 5), (9, 4)),
+                Moves((8, 4), (9, 5)),
                 f.GetFinalizeDeletionShifts()
             );
 
@@ -49,7 +47,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
             UnityEngine.Debug.Log("\nSecond removal moves:");
             foreach (var p in f.GetFinalizeDeletionShifts()) UnityEngine.Debug.Log(p);
             CollectionAssert.AreEqual(
-                Swaps((5,2)),
+                Moves((3,2), (5,3)),
                 f.GetFinalizeDeletionShifts()
             );
 

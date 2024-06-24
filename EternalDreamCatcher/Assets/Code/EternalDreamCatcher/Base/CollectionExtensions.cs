@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -49,6 +48,22 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
         /// <inheritdoc cref="Clone{T}(ref UnsafeList{T}, Allocator)"/>
         public static unsafe UnsafeArray<T> Clone<T>(ref this UnsafeArray<T> array, Allocator allocator) where T : unmanaged {
             return new(array, allocator);
+        }
+
+        /// <summary>
+        /// Resets all values in an array to `default`.
+        /// </summary>
+        public static unsafe void Clear<T>(ref this NativeArray<T> array) where T : unmanaged {
+            UnsafeUtility.MemClear(array.GetUnsafePtr(), array.Length * (long)UnsafeUtility.SizeOf<T>());
+        }
+
+        /// <summary>
+        /// Resets all values in an array to `default`.
+        /// </summary>
+        // Put this here instead of the UnsafeArray class as that isn't really
+        // my code and it'd be weird.
+        public static unsafe void Clear<T>(ref this UnsafeArray<T> array) where T : unmanaged {
+            UnsafeUtility.MemClear(array.Ptr, array.Length * (long)UnsafeUtility.SizeOf<T>());
         }
     }
 }

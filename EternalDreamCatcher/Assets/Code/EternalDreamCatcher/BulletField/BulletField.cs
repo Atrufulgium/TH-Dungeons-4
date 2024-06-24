@@ -1,6 +1,7 @@
 using Atrufulgium.EternalDreamCatcher.Base;
 using System;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine.Assertions;
@@ -45,11 +46,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         internal NativeArray<float> x;
         /// <summary> For valid bullets, stores the y position. Undefined for invalid bullets. </summary>
         internal NativeArray<float> y;
-        /// <summary> For valid bullets, stores the z position. Undefined for invalid bullets. </summary>
-        // Ideally this one isn't needed, but as we're going to be swapping
-        // indices around, relying on order is not sufficient.
-        internal NativeArray<float> z;
-        NativeReference<float> currentZ;
+        /// <summary> Whether this bullet is valid. </summary>
+        internal NativeBitArray valid;
 
         /// <summary> Miscellaneous collection of properties together in one flags enum. </summary>
         internal NativeArray<MiscBulletProps> prop;
@@ -80,20 +78,22 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         internal NativeArray<float> renderScale;
         #endregion
 
-        // These ints are really BulletReferences, but as for some reason they
-        // don't automatically implement IEquatable<BulletReference>, I need to
-        // go to the underlying numeric, tsk.
-        readonly internal NativeParallelHashSet<int> deletedReferences;
-        internal NativeReference<int> deletedCount; // NativeParallelHashSet.Count() is O(n).
-        readonly internal NativeParallelHashSet<int> processedDeletedReferences;
-        readonly internal Permutation<int> deletePermutation;
+        /// <summary>
+        /// What index this bullet shifted to due to <see cref="FinalizeDeletion"/>:
+        /// a value of `t` indicates that this index was moved to index `t-1`.
+        /// <br/>
+        /// A value of `0` signifies "this bullet was deleted or invalid." A
+        /// value of `-1` signifies the same, but is specifically the value of
+        /// `deleteShifts[old Active]`.
+        /// </summary>
+        private NativeArray<int> deleteShifts;
+        private NativeReference<int> deletedCount;
 
         public Field(bool validConstructor = true) {
             active = new(0, Allocator.Persistent);
             x = new(MAX_BULLETS, Allocator.Persistent);
             y = new(MAX_BULLETS, Allocator.Persistent);
-            z = new(MAX_BULLETS, Allocator.Persistent);
-            currentZ = new(0, Allocator.Persistent);
+            valid = new(MAX_BULLETS, Allocator.Persistent);
             prop = new(MAX_BULLETS, Allocator.Persistent);
             dx = new(MAX_BULLETS, Allocator.Persistent);
             dy = new(MAX_BULLETS, Allocator.Persistent);
@@ -103,10 +103,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             outerColor = new(MAX_BULLETS, Allocator.Persistent);
             innerColor = new(MAX_BULLETS, Allocator.Persistent);
             renderScale = new(MAX_BULLETS, Allocator.Persistent);
-            deletedReferences = new(MAX_BULLETS, Allocator.Persistent);
+            deleteShifts = new(MAX_BULLETS, Allocator.Persistent);
             deletedCount = new(0, Allocator.Persistent);
-            processedDeletedReferences = new(MAX_BULLETS, Allocator.Persistent);
-            deletePermutation = new(MAX_BULLETS, Allocator.Persistent);
         }
 
         /// <summary>
@@ -123,7 +121,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 return null;
             x[a] = bullet.spawnPosition.x;
             y[a] = bullet.spawnPosition.y;
-            z[a] = currentZ.Value;
+            valid.Set(a, true);
             prop[a] = bullet.bulletProps;
             dx[a] = bullet.movement.x;
             dy[a] = bullet.movement.y;
@@ -135,9 +133,6 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             renderScale[a] = bullet.renderScale;
 
             active.Value++;
-            currentZ.Value += 0.000001f;
-            if (currentZ.Value >= 0.9f)
-                currentZ.Value = 0;
 
             return (BulletReference)a;
         }
@@ -153,11 +148,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// </summary>
         public unsafe void DeleteBullet(BulletReference reference) {
             int i = (int)reference;
-            if (deletedReferences.Contains(i))
+            if (valid.GetBits(i) == 0)
                 return;
             if (i >= active.Value || i < 0)
                 throw new ArgumentOutOfRangeException(nameof(i), $"Requested deletion of bullet {reference}. The valid range is currently `[0, {Active-1}]`, inclusive.");
-            deletedReferences.Add(i);
+            valid.Set(i, false);
             deletedCount.Value++;
         }
 
@@ -168,7 +163,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// </summary>
         public IEnumerable<BulletReference> FilterDeleted(IEnumerable<BulletReference> bullets) {
             foreach (var b in bullets)
-                if (deletedReferences.Contains((int)b))
+                if (valid.GetBits((int)b) == 0)
                     yield return b;
         }
 
@@ -177,80 +172,45 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// <see cref="FinalizeDeletion"/> call, typically meaning "last frame".
         /// </summary>
         public bool ReferenceIsDeleted(BulletReference bullet)
-            => deletedReferences.Contains((int)bullet);
+            => valid.GetBits((int)bullet) == 0;
 
         /// <summary>
         /// Clears the deleted bullet range, and allows new bullets to be
         /// created in those indices.
         /// <br/>
-        /// This moves bullets around. This movement can be read of from
+        /// This moves bullets around. This movement can be read off from
         /// <see cref="GetFinalizeDeletionShifts"/>.
         /// </summary>
         public void FinalizeDeletion() {
-            deletePermutation.ResetToIdentity();
+            if (deletedCount.Value == 0)
+                return;
+
+            deleteShifts.Clear();
+
             // Compactify by removing the gaps of `deletedReferences`.
-            // Do this by repeatedly moving the last active bullet into the
-            // gap, for each gap that remains in [0, new Active).
-            // (This last active bullet may have also been deleted, so some
-            //  care is needed.)
+            // Unfortunately, we care about order, so we cannot do the O(1)
+            // thing and simply have to move everything over to fill up the
+            // gaps.
             var newActive = Active - deletedCount.Value;
-            processedDeletedReferences.Clear();
-            foreach (var b in deletedReferences) {
-                if (processedDeletedReferences.Contains(b))
-                    continue;
-
-                if (b >= newActive) {
-                    processedDeletedReferences.Add(b);
-                    active.Value--;
-                    continue;
+            int writeIndex = 0;
+            int readIndex = 0;
+            for (; writeIndex < newActive; writeIndex++, readIndex++) {
+                while (Hint.Unlikely(valid.GetBits(readIndex) == 0)) {
+                    if (!BurstUtils.IsBurstCompiled) {
+                        Assert.IsTrue(readIndex < Active);
+                    }
+                    readIndex++;
                 }
-
-                var overwritten = b;
-                var reference = active.Value - 1;
-
-                // (For easier understanding, ignore this while loop on first
-                //  reading -- this is the "some care" part mentioned above.
-                //  This loop finds the actual *active* last active.)
-                while (active.Value > 0) {
-                    // Each iteration we either:
-                    // - Encounter a deleted bullet; or
-                    // - Encounter a non-deleted bullet.
-                    // The latter case is the one we want.
-                    // The former case requires us to recognise the deleted
-                    // bullet as such and reduce `active` and count it as
-                    // `processed`.
-                    // Aftwards, the new bullet we look at is `Active-1` again.
-
-                    if (!deletedReferences.Contains(reference))
-                        break;
-                    
-                    active.Value--;
-                    processedDeletedReferences.Add(reference);
-                    reference--;
-                }
-                
-                // Edge case: deleting everything. Then we don't need to do any
-                // overwriting.
-                if (active.Value == 0) {
-                    processedDeletedReferences.Add(b);
-                    continue;
-                }
-
-                // Whenever we would move from [0, newActive) to [0, newActive)
-                // it indicates something has gone horribly wrong.
-                if (!BurstUtils.IsBurstCompiled) {
-                    Assert.IsTrue(reference >= newActive);
-                }
-
-                Overwrite(reference, overwritten);
-                deletePermutation.Swap(reference, overwritten);
-                active.Value--;
-                processedDeletedReferences.Add(b);
+                Overwrite(readIndex, writeIndex);
+                deleteShifts[readIndex] = writeIndex + 1;
             }
-            if (!BurstUtils.IsBurstCompiled) {
-                Assert.AreEqual(deletedReferences.Count(), processedDeletedReferences.Count());
-            }
-            deletedReferences.Clear();
+
+            // Don't forget to invalidate the rest of the range.
+            valid.SetBits(writeIndex, false, Active - newActive);
+            if (Active + 1 < MAX_BULLETS)
+                deleteShifts[Active + 1] = -1;
+
+            active.Value = newActive;
             deletedCount.Value = 0;
         }
 
@@ -271,16 +231,34 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// already.
         /// </summary>
         public IEnumerable<(BulletReference from, BulletReference to)> GetFinalizeDeletionShifts() {
-            foreach (var (from, to) in deletePermutation) {
-                if (to < active.Value)
-                    yield return ((BulletReference)from, (BulletReference)to);
+            for (int from = 0; from < MAX_BULLETS; from++) {
+                int to = deleteShifts[from] - 1;
+                if (Hint.Unlikely(to == -2))
+                    break;
+                if (Hint.Unlikely(to == -1))
+                    continue;
+                if (from == to)
+                    continue;
+                yield return ((BulletReference)from, (BulletReference)to);
             }
+        }
+
+        /// <summary>
+        /// <see cref="FinalizeDeletion"/> moves around the bullets in the
+        /// underlying array. This allows you to track bullets through those
+        /// updates.
+        /// </summary>
+        public BulletReference GetFinalizeDeletionShift(BulletReference from) {
+            int to = deleteShifts[(int)from] - 1;
+            if (to < 0)
+                throw new ArgumentException("This bullet was deleted or not valid to begin with.");
+            return (BulletReference)to;
         }
 
         private void Overwrite(int i, int j) {
             Overwrite(i, j, x);
             Overwrite(i, j, y);
-            Overwrite(i, j, z);
+            valid.Set(j, valid.GetBits(i) != 0);
             Overwrite(i, j, prop);
             Overwrite(i, j, dx);
             Overwrite(i, j, dy);
@@ -299,8 +277,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             active.Dispose();
             x.Dispose();
             y.Dispose();
-            z.Dispose();
-            currentZ.Dispose();
+            valid.Dispose();
             prop.Dispose();
             dx.Dispose();
             dy.Dispose();
@@ -310,10 +287,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             outerColor.Dispose();
             innerColor.Dispose();
             renderScale.Dispose();
-            deletedReferences.Dispose();
+            deleteShifts.Dispose();
             deletedCount.Dispose();
-            processedDeletedReferences.Dispose();
-            deletePermutation.Dispose();
         }
     }
 }
