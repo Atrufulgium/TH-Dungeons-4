@@ -14,13 +14,12 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM.Tests {
         unsafe void Test(float4[] instructions, string expectedCommands) {
             uint* uintRef = stackalloc uint[1];
             Unity.Mathematics.Random* rngRef = stackalloc Unity.Mathematics.Random[1];
-            var vm = new VM(instructions, 32, 32, Array.Empty<string>(), default, uintRef, rngRef);
+            using var vm = new VM(instructions, 32, 32, Array.Empty<string>(), default, uintRef, rngRef);
             vm.RunMain();
             AssertTrimmedStringsEqual(
                 expectedCommands,
                 string.Join('\n', vm.ConsumeCommands())
             );
-            vm.Dispose();
         }
 
         unsafe float Int(int value) => *(float*)&value;

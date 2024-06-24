@@ -225,7 +225,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         }
 
         // Burst can _only_ compile generic jobs whose constructor is of the
-        // form `MyJob<ExplicitType>`. Unroll the generic into explicit types...
+        // form `MyJob<ExplicitType>`. Constructors of the form `MyJob<T>` for
+        // some ambient T type doesn't work. So...
+        // Unroll the generic into explicit types. :(
         unsafe JobHandle ScheduleMovePlayerJob(JobHandle deps) {
             // Also, I _would_ use those nice is/switch expressions, but...
             // https://sharplab.io/#v2:D4AQzABAzgLgTgVwMYwgWQDwGkB8EDeAsAFARkTgQCWAdqlANwnkWRoAUmuEAtgJQFmLclAgBeXgDpGQsgF8SC4iUogATBADC2PEVLkueKk2X6ytVADF2AsUegB3KjCQALQWeGYLRjXYg0AKYO6Bg+7FRqfNIANLLCAPrieEEhhhHRUPFyJnJAA=
@@ -237,10 +239,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                     in player, (KeyboardInput*)t, in playerHitbox, in playerGrazebox
                 ).Schedule(deps);
             }
+
             // If other, fall back to non-bursted code. The only downside is
-            // the performance, which is more acceptable than crashing, lol.
+            // the performance, which is much more acceptable than crashing.
             // Easily recognisable by large blue blobs instead of thin green
-            // blobs in the profiler.
+            // blobs in Unity's profiler.
             return new MovePlayerJob<TGameInput>(
                 in player, t, in playerHitbox, in playerGrazebox
             ).Schedule(deps);

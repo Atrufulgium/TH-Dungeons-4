@@ -24,7 +24,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     // Now FieldRenderer does the binning instead. It's fast.
     public struct Field : IDisposable {
 
-        // Must be a multiple of 4 and not exceed ushort.maxValue.
+        // Must be a multiple of 4 and not exceed ushort.maxValue+1.
         public const int MAX_BULLETS = 4096;
 
         /// <inheritdoc cref="active"/>
@@ -85,6 +85,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         // go to the underlying numeric, tsk.
         readonly internal NativeParallelHashSet<int> deletedReferences;
         readonly internal NativeParallelHashSet<int> processedDeletedReferences;
+        readonly internal Permutation<int> deletePermutation;
 
         public Field(bool validConstructor = true) {
             active = new(0, Allocator.Persistent);
@@ -103,6 +104,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             renderScale = new(MAX_BULLETS, Allocator.Persistent);
             deletedReferences = new(MAX_BULLETS, Allocator.Persistent);
             processedDeletedReferences = new(MAX_BULLETS, Allocator.Persistent);
+            deletePermutation = new(MAX_BULLETS, Allocator.Persistent);
         }
 
         /// <summary>
@@ -177,8 +179,12 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// <summary>
         /// Clears the deleted bullet range, and allows new bullets to be
         /// created in those indices.
+        /// <br/>
+        /// This moves bullets around. This movement can be read of from
+        /// <see cref="GetFinalizeDeletionShifts"/>.
         /// </summary>
         public void FinalizeDeletion() {
+            deletePermutation.ResetToIdentity();
             // Compactify by removing the gaps of `deletedReferences`.
             // Do this by repeatedly moving the last active bullet into the
             // gap.
@@ -213,6 +219,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 
                 if(reference > overwritten) {
                     Overwrite(reference, overwritten);
+                    deletePermutation.Swap(reference, overwritten);
                 }
                 active.Value--;
                 processedDeletedReferences.Add(b);
@@ -221,6 +228,29 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
                 Assert.AreEqual(deletedReferences.Count(), processedDeletedReferences.Count());
             }
             deletedReferences.Clear();
+        }
+
+        /// <summary>
+        /// <see cref="FinalizeDeletion"/> moves around the bullets in the
+        /// underlying array. This allows you to track bullets through those
+        /// updates.
+        /// <br/>
+        /// For each tuple entry, `from` describes the reference before the
+        /// deletions, and `to` describes the updated positions. Each `to`
+        /// points to a valid, active bullet.
+        /// <br/>
+        /// All other (deleted) references should have been handled with one of
+        /// <list type="bullet">
+        /// <item><see cref="ReferenceIsDeleted(BulletReference)"/></item>
+        /// <item><see cref="FilterDeleted(IEnumerable{BulletReference})"/></item>
+        /// </list>
+        /// already.
+        /// </summary>
+        public IEnumerable<(BulletReference from, BulletReference to)> GetFinalizeDeletionShifts() {
+            foreach (var (from, to) in deletePermutation) {
+                if (to < active.Value)
+                    yield return ((BulletReference)from, (BulletReference)to);
+            }
         }
 
         private void Overwrite(int i, int j) {
@@ -258,6 +288,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             renderScale.Dispose();
             deletedReferences.Dispose();
             processedDeletedReferences.Dispose();
+            deletePermutation.Dispose();
         }
     }
 }

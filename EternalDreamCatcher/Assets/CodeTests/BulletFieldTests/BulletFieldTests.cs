@@ -1,35 +1,53 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
     public class FieldTests {
 
+        // easier notation
+        IEnumerable<(BulletReference, BulletReference)> Swaps(params (ushort, ushort)[] values)
+            => values.Select((tuple) => ((BulletReference)tuple.Item1, (BulletReference)tuple.Item2));
+
         [Test]
         public void TestDeletion() {
-            Field f = new(true);
+            using Field f = new(true);
+
             List<BulletReference> bullets = new();
             BulletCreationParams bulletParams = default;
                 
             for (int i = 0; i < 10; i++)
                 bullets.Add(f.CreateBullet(ref bulletParams)!.Value);
 
-            // This range forces the internal array to collapse.
+            // This range forces the internal array to collapse as we create
+            // a gap [....XXXX..].
             for (int i = 4; i < 8; i++)
                 f.DeleteBullet(bullets[i]);
             f.FinalizeDeletion();
+            Assert.AreEqual(6, f.Active);
+
+            // NOTE: There are 2 ways to collapse this array, and the one we
+            // choose is arbitrary. When updating code and this part fails, it
+            // may still be correct and you just have to update the test.
+            // The tuples also care about order while that's not neccessary.
+            CollectionAssert.AreEqual(
+                Swaps((8, 5), (9, 4)),
+                f.GetFinalizeDeletionShifts()
+            );
 
             // Now delete again, around what was previously deleted.
-            // (Note that we have ""updated"" our references in the
-            //  meantime: indices 8,9 are now represented by 5,4.)
             // This again forces array collapse.
-            // This was what caused a bug.
+            // This case caused a bug.
+            // The collapse creates gaps [..X.X.], which can happen in 2 ways.
             f.DeleteBullet(bullets[2]);
             f.DeleteBullet(bullets[4]);
             f.FinalizeDeletion();
-
             Assert.AreEqual(4, f.Active);
-            f.Dispose();
+
+            CollectionAssert.AreEqual(
+                Swaps((5,3)),
+                f.GetFinalizeDeletionShifts()
+            );
         }
     }
 }
-
