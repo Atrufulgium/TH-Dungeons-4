@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     /// <summary>
     /// Contains "small" 1- and 2-bit bullet properties that should not take up
     /// an entire byte or even int in the array.

@@ -6,7 +6,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
     /// <summary>
     /// A job that moves all active bullets.
@@ -23,7 +23,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         [ReadOnly]
         public NativeReference<int> activeBullets;
 
-        public MoveBulletsJob(in Field field) {
+        public MoveBulletsJob(in BulletField field) {
             bulletXs = field.x;
             bulletYs = field.y;
             bulletMovementXs = field.dx;
@@ -56,7 +56,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// the <b>same thread</b>, typically the main thread, which you might
         /// not want.
         /// </summary>
-        public static void Run(in Field field) {
+        public static void Run(in BulletField field) {
             var job = new MoveBulletsJob(field);
             job.Run();
         }

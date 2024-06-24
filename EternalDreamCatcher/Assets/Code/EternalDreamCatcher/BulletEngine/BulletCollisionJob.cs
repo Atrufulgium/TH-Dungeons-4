@@ -6,7 +6,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
     /// <summary>
     /// This jobs checks whether a bullet intersects a circle.
@@ -39,7 +39,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// Bullets that hit get put into <paramref name="collided"/>, a list
         /// that is cleared at the start of the job.
         /// </summary>
-        public BulletCollisionJob(in Field field, in NativeReference<Circle> hitbox, NativeList<BulletReference> collided) {
+        public BulletCollisionJob(in BulletField field, in NativeReference<Circle> hitbox, NativeList<BulletReference> collided) {
             bulletXs = field.x;
             bulletYs = field.y;
             bulletRadii = field.radius;
@@ -93,7 +93,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// Bullets that hit get put into <paramref name="collided"/>, a list
         /// that is cleared at the start of the job.
         /// </summary>
-        public static void Run(in Field field, Circle hitbox, NativeList<BulletReference> collided) {
+        public static void Run(in BulletField field, Circle hitbox, NativeList<BulletReference> collided) {
             collided.Clear();
             var circle = new NativeReference<Circle>(hitbox, Allocator.TempJob);
             var job = new BulletCollisionJob(in field, circle, collided);

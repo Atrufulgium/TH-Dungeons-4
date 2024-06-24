@@ -1,9 +1,9 @@
 ﻿using Unity.Mathematics;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
     /// <summary>
-    /// Contains all parameters for <see cref="Field.CreateBullet(BulletCreationParams)"/>
+    /// Contains all parameters for <see cref="BulletField.CreateBullet(BulletCreationParams)"/>
     /// in one convenient container.
     /// </summary>
     // It's really only supposed to be used in place of arguments and not

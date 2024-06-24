@@ -2,8 +2,8 @@
 using System.Linq;
 using NUnit.Framework;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
-    public class FieldTests {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine.Tests {
+    public class BulletFieldTests {
 
         // easier notation
         IEnumerable<(BulletReference, BulletReference)> Moves(params (ushort, ushort)[] values)
@@ -11,7 +11,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField.Tests {
 
         [Test]
         public void TestDeletion() {
-            using Field f = new(true);
+            using BulletField f = new(true);
 
             List<BulletReference> bullets = new();
             BulletCreationParams bulletParams = default;

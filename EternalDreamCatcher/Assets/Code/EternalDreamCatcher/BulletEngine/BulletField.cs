@@ -6,12 +6,12 @@ using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine.Assertions;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
     /// <summary>
     /// Stores unsafe access to all bullets.
     /// <br/>
-    /// You <b>must</b> use the <see cref="Field(bool)"/> constructor when
+    /// You <b>must</b> use the <see cref="BulletField(bool)"/> constructor when
     /// creating this struct.
     /// <br/>
     /// This type is blittable.
@@ -23,7 +23,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     // At first I wanted to put each bullet type in their own bin, but ehh...
     // That's obnoxious.
     // Now FieldRenderer does the binning instead. It's fast.
-    public struct Field : IDisposable {
+    public struct BulletField : IDisposable {
 
         // Must be a multiple of 4 and not exceed ushort.maxValue+1.
         public const int MAX_BULLETS = 4096;
@@ -66,7 +66,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         #endregion
 
         #region rendering stuff
-        /// <summary> The index in <see cref="FieldRenderer.bulletTextures"/>. </summary>
+        /// <summary> The index in <see cref="BulletFieldRenderer.bulletTextures"/>. </summary>
         internal NativeArray<int> textureID;
         /// <summary> The layer determines draw order. </summary>
         internal NativeArray<int> layer;
@@ -89,7 +89,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         private NativeArray<int> deleteShifts;
         private NativeReference<int> deletedCount;
 
-        public Field(bool validConstructor = true) {
+        public BulletField(bool validConstructor = true) {
             active = new(0, Allocator.Persistent);
             x = new(MAX_BULLETS, Allocator.Persistent);
             y = new(MAX_BULLETS, Allocator.Persistent);

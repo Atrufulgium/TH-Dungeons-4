@@ -9,17 +9,17 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField {
-    public class FieldRenderer : IDisposable {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
+    public class BulletFieldRenderer : IDisposable {
 
         // x, y, scale, rot
-        readonly ComputeBuffer transformBuffer = new(Field.MAX_BULLETS, sizeof(float) * 4);
-        readonly NativeArray<float4> transformBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
+        readonly ComputeBuffer transformBuffer = new(BulletField.MAX_BULLETS, sizeof(float) * 4);
+        readonly NativeArray<float4> transformBufferValues = new(BulletField.MAX_BULLETS, Allocator.Persistent);
 
-        readonly ComputeBuffer rBuffer = new(Field.MAX_BULLETS, sizeof(float) * 4);
-        readonly NativeArray<float4> rBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
-        readonly ComputeBuffer gBuffer = new(Field.MAX_BULLETS, sizeof(float) * 4);
-        readonly NativeArray<float4> gBufferValues = new(Field.MAX_BULLETS, Allocator.Persistent);
+        readonly ComputeBuffer rBuffer = new(BulletField.MAX_BULLETS, sizeof(float) * 4);
+        readonly NativeArray<float4> rBufferValues = new(BulletField.MAX_BULLETS, Allocator.Persistent);
+        readonly ComputeBuffer gBuffer = new(BulletField.MAX_BULLETS, sizeof(float) * 4);
+        readonly NativeArray<float4> gBufferValues = new(BulletField.MAX_BULLETS, Allocator.Persistent);
 
         NativeReference<int> active = new(Allocator.Persistent);
         // Layout of these long keys:
@@ -34,14 +34,12 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         readonly Texture2D[] bulletTextures;
 
         readonly int transformsID;
-        readonly int rotsID;
-        readonly int scalesID;
         readonly int arrayOffsetID;
         readonly int mainTexID;
         readonly int rBufferID;
         readonly int gBufferID;
 
-        public FieldRenderer(Material material, Mesh rectMesh, Texture2D[] bulletTextures) {
+        public BulletFieldRenderer(Material material, Mesh rectMesh, Texture2D[] bulletTextures) {
             this.material = material;
             this.rectMesh = rectMesh;
             this.bulletTextures = bulletTextures;
@@ -57,7 +55,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         /// Adds commands to a buffer to render a bullet field.
         /// This assumes the current render target is set correctly.
         /// </summary>
-        public unsafe void RenderField(Field field, CommandBuffer buffer) {
+        public unsafe void RenderField(BulletField field, CommandBuffer buffer) {
             // TODO: This only works if
             /// <see cref="SystemInfo.supportsInstancing"/>
             // and
@@ -113,7 +111,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             public NativeParallelHashSet<long> keysSet;
             public NativeList<long> sortedKeys;
 
-            public Field bulletField;
+            public BulletField bulletField;
 
             public void Execute() {
                 var transforms = (float4*)transformsC.GetUnsafePtr();

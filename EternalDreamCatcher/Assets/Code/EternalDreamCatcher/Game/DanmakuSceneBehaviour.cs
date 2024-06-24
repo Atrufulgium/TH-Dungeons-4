@@ -1,6 +1,6 @@
 #nullable disable // Monobehaviour start instead of constructor
 using Atrufulgium.EternalDreamCatcher.Base;
-using Atrufulgium.EternalDreamCatcher.BulletField;
+using Atrufulgium.EternalDreamCatcher.BulletEngine;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -58,7 +58,7 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
             danmakuScene = new DanmakuScene<KeyboardInput>(quadMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures, gameInput, player);
             var rng = new Unity.Mathematics.Random(230);
-            for (int i = 0; i < Field.MAX_BULLETS; i++) {
+            for (int i = 0; i < BulletField.MAX_BULLETS; i++) {
                 var bulletData = new BulletCreationParams(
                     rng.NextFloat2() * new Unity.Mathematics.float2(0.01f, 0.01f), rng.NextFloat2Direction() * 0.0005f,
                     0.01f,
@@ -74,7 +74,7 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
             tempRTid = Shader.PropertyToID("_tempFieldRendererRT");
 
-            var size = FieldRenderer.GetBulletFieldResolution();
+            var size = BulletFieldRenderer.GetBulletFieldResolution();
             texture = new(size.x, size.y, 0);
             target.texture = texture;
         }
@@ -121,7 +121,7 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
                 buffer.Clear();
             }
 
-            var size = FieldRenderer.GetBulletFieldResolution();
+            var size = BulletFieldRenderer.GetBulletFieldResolution();
             buffer.GetTemporaryRT(tempRTid, size.x, size.y);
             buffer.SetRenderTarget(new RenderTargetIdentifier(tempRTid));
             buffer.ClearRenderTarget(true, true, Color.black, 0);

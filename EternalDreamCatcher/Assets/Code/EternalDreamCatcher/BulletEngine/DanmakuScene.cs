@@ -8,10 +8,10 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
     /// <summary>
-    /// A <see cref="Field"/> consists of just the bullet data.
+    /// A <see cref="BulletField"/> consists of just the bullet data.
     /// <br/>
     /// A <see cref="DanmakuScene{TGameInput}"/> consists of everything in addition, the
     /// player, the enemy/ies, and basically everything else 2D that does
@@ -24,9 +24,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     // TODO: As burst can't handle generics properly, just... don't?
     public abstract class DanmakuScene : IDisposable {
 
-        public const int MAX_BULLETS = Field.MAX_BULLETS;
-        protected readonly Field bulletField = new(true);
-        protected readonly FieldRenderer bulletFieldRenderer;
+        public const int MAX_BULLETS = BulletField.MAX_BULLETS;
+        protected readonly BulletField bulletField = new(true);
+        protected readonly BulletFieldRenderer bulletFieldRenderer;
 
         protected Mesh quadMesh;
         protected Material entityMaterial;
@@ -107,7 +107,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
             return handle;
         }
 
-        /// <inheritdoc cref="Field.CreateBullet(ref BulletCreationParams)"/>
+        /// <inheritdoc cref="BulletField.CreateBullet(ref BulletCreationParams)"/>
         public BulletReference? CreateBullet(ref BulletCreationParams bullet)
             => bulletField.CreateBullet(ref bullet);
 
@@ -271,12 +271,12 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
         }
 
         /// <summary>
-        /// Calls <see cref="Field.FinalizeDeletion"/>.
+        /// Calls <see cref="BulletField.FinalizeDeletion"/>.
         /// </summary>
         [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
         private struct PostProcessDeletionsJob : IJob {
-            public Field field;
-            public PostProcessDeletionsJob(in Field field) => this.field = field;
+            public BulletField field;
+            public PostProcessDeletionsJob(in BulletField field) => this.field = field;
             public void Execute() => field.FinalizeDeletion();
         }
     }

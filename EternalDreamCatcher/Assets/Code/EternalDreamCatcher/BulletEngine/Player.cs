@@ -5,7 +5,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
-namespace Atrufulgium.EternalDreamCatcher.BulletField {
+namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     public struct Player {
         /// <summary>
         /// Where the player is on the field. This is not bounds-checked in
@@ -101,13 +101,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletField {
     public struct PostProcessPlayerCollisionJob : IJob {
 
         public NativeReference<Player> player;
-        public Field field;
+        public BulletField field;
         public NativeList<BulletReference> hitList;
         public NativeList<BulletReference> grazeList;
 
         public PostProcessPlayerCollisionJob(
             NativeReference<Player> player,
-            in Field field,
+            in BulletField field,
             NativeList<BulletReference> hitList,
             NativeList<BulletReference> grazeList
         ) {
