@@ -1,6 +1,7 @@
 using Atrufulgium.EternalDreamCatcher.Base;
 using System;
 using Unity.Burst;
+using Unity.Burst.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -19,7 +20,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         public unsafe void RunMain() {
             RunJob job = new() {
                 instructions = instructions,
-                op = op,
+                op = opAndCooldown,
                 floatMemory = floatMemory,
                 rng = rng,
                 commands = outputCommands
@@ -56,6 +57,16 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                 var mem4 = (float4*)floatMemory.GetUnsafeTypedPtr();
                 var op = (int*)this.op;
                 var maxOP = instructions.Length;
+
+                // The top half of the op is the number of ticks cooldown,
+                // If this is nonzero, execute nothing and just reduce it.
+                // Note: The tick "wait" was called counts as well, so if we
+                // end up <0xffff, we can continue execution.
+                if (Hint.Likely(*op >= (int)MAX_INSTRS)) {
+                    *op -= (int)MAX_INSTRS;
+                    if (*op >= (int)MAX_INSTRS)
+                        return;
+                }
 
                 for (int i = 0; i < MAX_ITERS && *op < maxOP; i++, *op += 1) {
                     ref float a = ref ops[*op].y; // first arg, as float
@@ -97,13 +108,16 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         case  18: throw new NotImplementedException();
                         case  19: *op = ai; break; // TODO: Don't forget to make the generated assembly set the label to 1 instruction before, due to the *op++.
                         case  20: if (mem[bi] != 0) *op = ai; break;
-                        case  21: Command(CommandEnum.ContinueAfterTime, b); goto pause;
-                        case  22: Command(CommandEnum.ContinueAfterTime, mem[bi]); goto pause;
+                        case  21: Command(CommandEnum.ContinueAfterTime, a); goto pause;
+                        case  22: Command(CommandEnum.ContinueAfterTime, mem[ai]); goto pause;
 
                         // Misc intrinsics
                         case  32: Command(CommandEnum.SendMessage, mem[ai]); break;
                         case  33: Command(CommandEnum.SendMessage, a); break;
-                        case  34: Command(CommandEnum.Spawn); break;
+                        case  34:
+                            Command(CommandEnum.SpawnPosRot, mem[4], mem[5], mem[1]);
+                            Command(CommandEnum.Spawn, mem[2] / 60f, mem[0]);
+                            break;
                         case  35: Command(CommandEnum.Destroy); break;
                         case  36: Command(CommandEnum.LoadBackground, mem[ai]); break;
                         case  37: Command(CommandEnum.AddScriptBarrier); break;
@@ -214,7 +228,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         default: throw new InvalidOperationException();
                     }
                 }
-                pause:;
+                pause:
+                *op += 1;
             }
         
             private void Command(

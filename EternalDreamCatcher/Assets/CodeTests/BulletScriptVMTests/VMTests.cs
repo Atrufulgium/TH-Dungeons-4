@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using Unity.Mathematics;
 
@@ -15,10 +16,17 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM.Tests {
             uint* uintRef = stackalloc uint[1];
             Unity.Mathematics.Random* rngRef = stackalloc Unity.Mathematics.Random[1];
             using var vm = new VM(instructions, 32, 32, Array.Empty<string>(), default, uintRef, rngRef);
+            
             vm.RunMain();
+
+            // UnsafeList implements IEnumerable with NotImplementException. Loveit.
+            List<Command> safeCommands = new();
+            for (int i = 0; i < vm.outputCommands.Length; i++)
+                safeCommands.Add(vm.outputCommands[i]);
+            
             AssertTrimmedStringsEqual(
                 expectedCommands,
-                string.Join('\n', vm.ConsumeCommands())
+                string.Join('\n', safeCommands)
             );
         }
 

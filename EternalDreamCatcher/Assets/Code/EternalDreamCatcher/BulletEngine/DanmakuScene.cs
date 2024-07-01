@@ -21,7 +21,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     //  manually require the interface to be unmanaged as a generic.)
     // Unfortunately need to split the class into a non-generic and generic
     // part because of the TGameInput bit.
-    // TODO: As burst can't handle generics properly, just... don't?
+    // Even if we later have to unroll this generic again in the overwritten
+    // `DanmakuScene<T>.ScheduleTick()`, I can't just use
+    // NativeReference<IGameInput> as that arg may be managed, blegh.
+    // We _need_ the generic constraint to satisfy NativeReference<>.
     public abstract class DanmakuScene : IDisposable {
 
         public const int MAX_BULLETS = BulletField.MAX_BULLETS;
@@ -41,7 +44,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         protected NativeList<BulletReference> playerGrazeboxResult;
 
         protected VMList templates;
-        protected NativeList<VM> activeVMs;
+        /*protected*/public NativeList<VM> activeVMs;
+
+        // The VMsCommandsJob needs this array.
+        protected NativeList<BulletReference> createdBullets;
 
         readonly int gameTickID;
         readonly int entityTexID;
@@ -70,6 +76,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
             templates = new(Array.Empty<string>(), Array.Empty<VM>());
             activeVMs = new(Allocator.Persistent);
+
+            createdBullets = new(Allocator.Persistent);
 
             gameTickID = Shader.PropertyToID("_BulletTime");
             entityTexID = Shader.PropertyToID("_EntityTex");
@@ -140,6 +148,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             playerGrazeboxResult.Dispose();
             templates.Dispose();
             activeVMs.Dispose();
+            createdBullets.Dispose();
         }
     }
 
@@ -189,8 +198,15 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             }
             handle = JobHandle.CombineDependencies(vmHandles);
             vmHandles.Dispose();
+
             // TODO: Message handling, detecting and disabling VMs with zero
             // bullets. Unfortunately, both of these operations are sequental :(
+            handle = new VMsCommandsJob() {
+                field = bulletField,
+                player = player,
+                vms = activeVMs,
+                createdBullets = createdBullets
+            }.Schedule(handle);
 
             // Update positions
             var moveHandle1 = new MoveBulletsJob(in bulletField).Schedule(handle);
@@ -226,7 +242,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
         // Burst can _only_ compile generic jobs whose constructor is of the
         // form `MyJob<ExplicitType>`. Constructors of the form `MyJob<T>` for
-        // some ambient T type doesn't work. So...
+        // some ambient generic T type won't work.  `TGameInput` is like that,
+        // so...
         // Unroll the generic into explicit types. :(
         unsafe JobHandle ScheduleMovePlayerJob(JobHandle deps) {
             // Also, I _would_ use those nice is/switch expressions, but...

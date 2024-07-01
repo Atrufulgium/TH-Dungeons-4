@@ -291,9 +291,9 @@ VM specification
 
 Memory layout
 -------------
-The VM consists of an instructions array `float4[]`, variable memory `float[]` and string memory `string[]`. There is also an instruction pointer `int`.
+The VM consists of an instructions array `float4[]`, variable memory `float[]` and string memory `string[]`. There is also an instruction pointer `int`. The instructions array may contain at most `0xffff` entries.
 
-Variables can either be seen as a `float`, or as a `float4`. In the latter case, it will be 4-aligned. The memory layout is quite specific.
+Variables can either be seen as a `float`, or as a `float4`. In the latter case, the variable shall be 4-aligned. The memory layout is quite specific.
 
 Index   | Init    | Description
 ------: | :----   | :----------

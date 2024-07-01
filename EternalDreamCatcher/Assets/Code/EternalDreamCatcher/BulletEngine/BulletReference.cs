@@ -39,7 +39,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     /// </summary>
     // It's a bit hacky to use an empty enum for this, but I want some form of
     // type-safety but I'm lazy and `record struct` does not exist yet.
-    // Code (other than Field) should never do any casting or arithmetic, and
-    // just pass the reference around.
+    // Code (other than Field) should never do any arithmetic, and just pass
+    // the reference around. Casting to int is unavoidable if you need to read
+    // or write field data.
     public enum BulletReference : ushort { }
 }

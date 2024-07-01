@@ -1,8 +1,12 @@
 #nullable disable // Monobehaviour start instead of constructor
 using Atrufulgium.EternalDreamCatcher.Base;
 using Atrufulgium.EternalDreamCatcher.BulletEngine;
+using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
+using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -36,6 +40,8 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
         NativeReference<Player> player;
 
+        List<IDisposable> testDisposables = new();
+
         void Start() {
             if (bulletMaterial == null) throw new System.NullReferenceException();
             if (quadMesh == null) throw new System.NullReferenceException();
@@ -57,18 +63,7 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
             gameInput = new(new(), Allocator.Persistent);
 
             danmakuScene = new DanmakuScene<KeyboardInput>(quadMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures, gameInput, player);
-            var rng = new Unity.Mathematics.Random(230);
-            for (int i = 0; i < BulletField.MAX_BULLETS; i++) {
-                var bulletData = new BulletCreationParams(
-                    rng.NextFloat2() * new Unity.Mathematics.float2(0.01f, 0.01f), rng.NextFloat2Direction() * 0.0005f,
-                    0.01f,
-                    rng.NextInt(0, 24), 0,
-                    (Vector4)Color.HSVToRGB(rng.NextFloat(), 1, 1), new(1, 1, 1, 1),
-                    (MiscBulletProps)rng.NextInt(),
-                    1//rng.NextFloat(0.5f, 1.5f) * rng.NextFloat(0.5f, 1.5f) * rng.NextFloat(0.5f, 1.5f)
-                );
-                danmakuScene.CreateBullet(ref bulletData);
-            }
+            danmakuScene.activeVMs.Add(CreateVM());
 
             camera = GetComponent<Camera>();
 
@@ -77,6 +72,69 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
             var size = BulletFieldRenderer.GetBulletFieldResolution();
             texture = new(size.x, size.y, 0);
             target.texture = texture;
+        }
+
+        unsafe VM CreateVM() {
+            static unsafe float Int(int value) => *(float*)&value;
+            const float NA = float.NaN;
+            NativeReference<Unity.Mathematics.Random> rngRef = new(new(230), Allocator.Persistent);
+            NativeReference<uint> uintRef = new(0, Allocator.Persistent);
+            VM vm = new(new float4[] {
+// High-level:
+//  float t;
+//  spawnspeed = 0.12f;
+//  soawboisutuib = [0.5; 0.5];
+//  repeat {
+//      t += 0.025f;
+//      spawnrotation += sin(t) + 0.25f;
+//      spawn();
+//      spawnrotation += 0.25f;
+//      spawn();
+//      spawnrotation += 0.25f;
+//      spawn();
+//      spawnrotation += 0.25f;
+//      spawn();
+//      wait(5);
+//  }
+// Low level:
+// mem[13] = 0 (implicit)
+// spawnspeed = 0.12
+new(Int(10), Int(2), 0.12f, NA),
+// spawnposition = [0.5; 0.5]
+new(Int(10), Int(4), 0.5f, NA),
+new(Int(10), Int(5), 0.5f, NA),
+// label: LOOP
+// mem[13] = 0.025 + mem[13]
+new(Int(81), Int(13), 0.025f, Int(13)),
+// mem[14] = sin(mem[13])
+new(Int(98), Int(14), Int(13), NA),
+// mem[14] = 0.25 + mem[14]
+new(Int(81), Int(14), 0.25f, Int(14)),
+// spawnrotation = spawnrotation + mem[14]
+new(Int(82), Int(1), Int(1), Int(14)),
+// spawn
+new(Int(34), NA, NA, NA),
+// spawnrotation = 0.25 + spawnrotation
+new(Int(81), Int(1), 0.25f, Int(1)),
+// spawn
+new(Int(34), NA, NA, NA),
+// spawnrotation = 0.25 + spawnrotation
+new(Int(81), Int(1), 0.25f, Int(1)),
+// spawn
+new(Int(34), NA, NA, NA),
+// spawnrotation = 0.25 + spawnrotation
+new(Int(81), Int(1), 0.25f, Int(1)),
+// spawn
+new(Int(34), NA, NA, NA),
+// wait 5
+new(Int(21), 5, NA, NA),
+// goto LOOP
+new(Int(19), Int(3-1), NA, NA)
+            }, 32, 32, Array.Empty<string>(), default, uintRef.GetUnsafeTypedPtr(), rngRef.GetUnsafeTypedPtr());
+            testDisposables.Add(rngRef);
+            testDisposables.Add(uintRef);
+            testDisposables.Add(vm);
+            return vm;
         }
 
         JobHandle currentUpdate;
@@ -107,6 +165,9 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
         private void OnDestroy() {
             gameInput.Dispose();
+            // TODO: Remove once not testing anymore
+            foreach (var d in testDisposables)
+                d.Dispose();
             danmakuScene.Dispose();
             buffer.Dispose();
             player.Dispose();

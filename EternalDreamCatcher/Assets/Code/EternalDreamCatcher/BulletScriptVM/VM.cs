@@ -16,7 +16,15 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
     // Note: UnsafeX instead of NativeX because we're going to be working with
     // lists of VMs. This makes Unity unhappy and I don't get parallel safety
     // checks nor dispose safety checks anymore.
+    // This struct is partial with `VMJob.cs` that accesses these members.
     public unsafe partial struct VM : IDisposable {
+
+        /// <summary>
+        /// The maximum instruction size. For more information, see
+        /// <see cref="opAndCooldown"/>.
+        /// </summary>
+        public const uint MAX_INSTRS = 0xffffu;
+
         /// <summary>
         /// The instruction list of the VM. See the documentation.
         /// </summary>
@@ -32,9 +40,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         /// </summary>
         UnsafeArray<FixedString128Bytes> stringMemory;
         /// <summary>
-        /// The current instruction.
+        /// The current instruction (bottom half), and cooldown (top half).
+        /// <br?>
+        /// This limites the instruction count and ticks cooldown to 65536.
         /// </summary>
-        uint* op;
+        uint* opAndCooldown;
         /// <summary>
         /// The index from which <see cref="floatMemory"/> contains all control
         /// flow variables.
@@ -48,13 +58,16 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         /// <summary>
         /// All bullets that react to the output of this VM.
         /// </summary>
-        UnsafeList<BulletReference> affectedBullets;
+        internal UnsafeList<BulletReference> affectedBullets;
 
         /// <summary>
         /// During execution, certain things cannot be done strictly in the VM
         /// itself. These become commands put into this list.
+        /// <br/>
+        /// When consuming these commands, be sure to also clear this lift
+        /// afterwards.
         /// </summary>
-        UnsafeList<Command> outputCommands;
+        internal UnsafeList<Command> outputCommands;
 
         /// <summary>
         /// Create a VM with specified instructions, memory layout, and strings
@@ -74,17 +87,17 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
             uint* opRef,
             Unity.Mathematics.Random* rngRef
         ) {
-            if (floatMemSize < 32)
-                throw new ArgumentOutOfRangeException(nameof(floatMemSize), "By specification, any vm uses at least 32 variables.");
+            if (floatMemSize < 12)
+                throw new ArgumentOutOfRangeException(nameof(floatMemSize), "By specification, any vm uses at least 12 variables.");
+            if (instructions.Length > MAX_INSTRS)
+                throw new ArgumentException("The VM only supports programs with up to 65536 instructions.", nameof(instructions));
             // TODO: OOB-validation.
             this.instructions = new(instructions, Allocator.Persistent);
 
             floatMemory = new(floatMemSize, Allocator.Persistent);
-            floatMemory[8] = 1; // By spec, `autoclear` starts as `true`.
-            floatMemory[13] = 1; // By spec, `harmsplayers` starts as `true`.
-            floatMemory[15] = 1; // By spec, `spawnspeed` starts as `1`.
-            floatMemory[16] = 1; // By spec, `spawnrelative` starts as `true`.
-            op = opRef;
+            floatMemory[2] = 1; // By spec, `soawbsoeed` starts as `1`.
+            floatMemory[3] = 1; // By spec, `soawbrekatuve` starts as `true`.
+            opAndCooldown = opRef;
             controlFlowMemoryStart = (uint)floatMemControlflowBlockStart;
             
             stringMemory = new(strings.Select(s => new FixedString128Bytes(s)).ToArray(), Allocator.Persistent);
@@ -117,8 +130,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
             instructions = vm.instructions.Clone(Allocator.Persistent);
             floatMemory = vm.floatMemory.Clone(Allocator.Persistent); // no
             stringMemory = vm.stringMemory.Clone(Allocator.Persistent);
-            op = opRef;
-            *op = *vm.op;
+            opAndCooldown = opRef;
+            *opAndCooldown = *vm.opAndCooldown;
             controlFlowMemoryStart = vm.controlFlowMemoryStart;
             rng = rngRef;
             uint seed = 0;
@@ -130,14 +143,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         }
 
         /// <summary>
-        /// Returns and clears all commands.
-        /// <br/>
-        /// Remark: Do <b>not</b> use <c>break;</c> with this.
+        /// Sets the cooldown of this VM to the given number of ticks.
         /// </summary>
-        internal IEnumerable<Command> ConsumeCommands() {
-            foreach (var i in outputCommands)
-                yield return i;
-            outputCommands.Clear();
+        internal void SetCooldown(ushort duration) {
+            *opAndCooldown = (*opAndCooldown & MAX_INSTRS) + duration * MAX_INSTRS;
         }
 
         public void Dispose() {

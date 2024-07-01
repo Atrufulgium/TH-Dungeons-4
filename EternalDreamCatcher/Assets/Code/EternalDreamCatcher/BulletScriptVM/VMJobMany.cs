@@ -1,4 +1,5 @@
-﻿using Unity.Burst;
+﻿using Atrufulgium.EternalDreamCatcher.Base;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -25,15 +26,20 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         public int jobIndex;
         public int totalJobs;
 
-        public void Execute() {
+        public unsafe void Execute() {
             // x: lower, inclusive; y: upper, exclusive
             int2 range = (int2)math.floor(vms.Length * new float2(jobIndex, jobIndex+1)/totalJobs);
             // While the above is guaranteed to go right for 0, I don't trust
             // floats enough to be sure that the last vm is not skipped.
             if (jobIndex == totalJobs - 1)
                 range.y = vms.Length;
+
+            // In general, the underlying pointer for lists may move around.
+            // Luckily, we do not resize this list during this, so that is not
+            // a problem.
+            var ptr = vms.GetUnsafeTypedPtr();
             for (int i = range.x; i < range.y; i++)
-                vms[i].RunMain();
+                (ptr + i)->RunMain();
         }
     }
 }

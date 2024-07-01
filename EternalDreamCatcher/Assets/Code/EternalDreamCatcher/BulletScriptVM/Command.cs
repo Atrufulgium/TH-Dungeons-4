@@ -45,9 +45,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
 
     internal enum CommandEnum {
         InvalidCommand = 0,
-        ContinueAfterTime,
+        ContinueAfterTime, // Note: Clamped to [1,65535]
         SendMessage,
-        Spawn, // TODO: Snapshot relevant variables somehow.
+        SpawnPosRot, // Sets the internally stored spawn position and rotation
+        Spawn, // Actually spawns the bullet; arg1 has spawn speed, and arg2 has bullet type.
         Destroy,
         LoadBackground,
         AddScriptBarrier,

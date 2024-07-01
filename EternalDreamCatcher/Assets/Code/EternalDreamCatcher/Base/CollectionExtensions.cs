@@ -25,6 +25,21 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
         public static unsafe T* GetUnsafeTypedReadOnlyPtr<T>(this NativeArray<T> nativeArray) where T : unmanaged
             => (T*)nativeArray.GetUnsafeReadOnlyPtr();
 
+        /// <summary>
+        /// Gets a typed pointer to the collection underlying a NativeList.
+        /// <br/>
+        /// <b><i>Warning:</i></b> Lists' underlying pointer may be moved
+        /// around after changing capacity. Persistent use of this pointer, or
+        /// use of this pointer in contexts where capacity changes, is dangerous
+        /// and likely to result in unintended behaviour.
+        /// </summary>
+        public static unsafe T* GetUnsafeTypedPtr<T>(this NativeList<T> nativeArray) where T : unmanaged
+            => (T*)nativeArray.GetUnsafePtr();
+
+        /// <inheritdoc cref="GetUnsafeTypedPtr{T}(NativeList{T})"/>
+        public static unsafe T* GetUnsafeTypedReadOnlyPtr<T>(this NativeList<T> nativeArray) where T : unmanaged
+            => (T*)nativeArray.GetUnsafeReadOnlyPtr();
+
         // Just here for consistency, imma not remember that this one specifically has a public field
         public static unsafe T* GetUnsafeTypedPtr<T>(this UnsafeList<T> unsafeList) where T : unmanaged
             => unsafeList.Ptr;
