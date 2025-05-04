@@ -11,6 +11,10 @@ using Atrufulgium.BulletScript.Compiler.Semantics;
 
 namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
+    /// Most <see cref="IEmittable"/> syntax nodes handle opcode emission
+    /// themselves. However, <i>some</i> are particularly disgusting, so I'm
+    /// making them partial and containing their emission here.
+
     internal static class EmitHelpers {
         public static InvalidOperationException IntrinsicsMustBeConstantFolded(Node node)
             => new($"Intrinsic methods `{node.ToCompactString()}` must be constant folded. For most, having all arguments floats is not allowed.");
@@ -465,8 +469,32 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         }
 
         static List<HLOP> EmitIndex(SemanticModel model, string lhs, IndexExpression rhs) {
-            // TODO: haven't guaranteed nice indices yet, want them in [row; col] form.
-            throw new NotImplementedException();
+            // Note:
+            /// <see cref="Visitors.PrepareVMIndexersRewriter"/>
+            // ensures that matrix indices take into account the structure of
+            // matrices in VM memory, so we do not need to do any handling any
+            // more.
+            // The VM has to ensure that the access does not go out of bounds
+
+            // TODO: Expressions of the form set[ind] = ... is not handled here.
+            var expr = rhs.Expression;
+            var ind = rhs.Index;
+            if (ind.Entries.Count != 1)
+                throw new InvalidOperationException("Expected one-dimensional index.");
+            var index = ind.Entries[0];
+
+            if (expr is not IdentifierName name)
+                throw new InvalidOperationException("Expected index to apply to an identifier.");
+
+            if (index is IdentifierName nameIndex)
+                return HLOP.IndexedGet(lhs, nameIndex.Name);
+            if (index is LiteralExpression literalIndex) {
+                if (literalIndex.FloatValue.HasValue)
+                    return HLOP.IndexedGet(lhs, literalIndex.FloatValue.Value);
+                throw new InvalidOperationException("Expected float index.");
+            }
+            throw new InvalidOperationException("Expected name or literal index, but it was something else. Did you forget a rewrite?");
+
         }
 
         static List<HLOP> EmitMatrix(SemanticModel model, string lhs, MatrixExpression rhs) {

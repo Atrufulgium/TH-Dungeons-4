@@ -31,6 +31,9 @@ namespace Atrufulgium.BulletScript.Compiler {
             // (No assumptions)
             new SimplifyNotRewriter(),
             // After:
+            // No two-index indexers remain, and matrix indexers are VM-friendly.
+            new PrepareVMIndexersRewriter(),
+            // After:
             // There is are no artihmetic nodes containing only literals.
             new ConstantFoldRewriter(),
             // After:
@@ -69,6 +72,8 @@ namespace Atrufulgium.BulletScript.Compiler {
             // AcknowledgeInvocationRewriter has run, and all expressions
             // are part of a simple assignment whose RHS contains no nested
             // expressions, other than literals or identifiers being contained.
+            // After:
+            // All expressions are emittable.
             new AcknowledgeSimpleAssignmentsRewriter(),
             // Before:
             // Tree is in emittable form.
@@ -76,6 +81,9 @@ namespace Atrufulgium.BulletScript.Compiler {
             new RemoveGotoUnreachableRewriter(),
             // Before:
             // Tree is in emittable form.
+            // After:
+            // All high level VM opcodes in
+            /// <see cref="EmitWalker.OPCodes"/>
             new EmitWalker()
         };
     }

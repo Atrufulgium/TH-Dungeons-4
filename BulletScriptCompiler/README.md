@@ -8,14 +8,17 @@ This is the compiler subproject. The compiler is a standalone DLL that simply co
 
 Awkwardly placed todo-list:
 - This file. Maybe also for *once* include project setup/build instructions.
-- Indices are not yet implemented in the compiler.
+- Writing to indices `a[i] = ...` is not implemented at any level yet.
 - Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily.
 - Square is not yet used in the compiler.
-- The entire delta of the stuff in the commit that added this line.
+- Angular stuff (e.g. `angle2rad` is not implemented yet).
+- All of those event functions `on_..<>`.
+- Everything BSS. This includes removing the variables `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers`, `use_pivot`.
 - The `matrix` shorthand is broken.
 - Multiplication `scalar * matrix` is not supported.
 - Moving things like `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers` to BSS seems more sensible than having it in code.
 - More event functions, such as `on_left_side()`, `on_border()`, etc, mixed with more intrinsics `bounce(matrix2x1 normal)`, `wraparound()`, etc.
+- Increments/decrements are currently only really allowed at statement-level.
 
 BulletScript (BS)
 =================
