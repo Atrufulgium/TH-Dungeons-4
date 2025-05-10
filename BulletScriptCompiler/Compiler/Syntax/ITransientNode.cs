@@ -1,11 +1,13 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using System;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// This interface represents syntax nodes that are <b>invalid</b> in the
     /// final resulting tree. However, they are "syntax sugar" when doing
     /// rewrites with <see cref="Visitors.AbstractTreeRewriter"/> and may only
     /// be returned and only in certain contexts.
     /// <br/>
-    /// Transient nodes may have <see cref="Node.ValidateTree(IEnumerable{Node})"/>
+    /// Transient nodes may have <see cref="Node.ValidateTree(System.Collections.Generic.IEnumerable{Node})"/>
     /// a simple <see cref="PersistentTransientException"/>.
     /// </summary>
     internal interface ITransientNode {  }

@@ -1,4 +1,6 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Helpers {
+﻿using System;
+
+namespace Atrufulgium.BulletScript.Compiler.Helpers {
     internal static class StringExtensions {
         /// <summary>
         /// Truncates strings. <paramref name="dotsPosition"/> indicates the

@@ -1,4 +1,5 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Parsing;
+using System.Collections.Generic;
 
 namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>

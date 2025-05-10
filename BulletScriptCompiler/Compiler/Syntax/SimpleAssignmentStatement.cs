@@ -1,4 +1,8 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// Non-user node representing simple assignments
     /// <code>

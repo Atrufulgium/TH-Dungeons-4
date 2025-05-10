@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using static Atrufulgium.BulletScript.Compiler.DiagnosticRules;
 
 namespace Atrufulgium.BulletScript.Compiler.Syntax {

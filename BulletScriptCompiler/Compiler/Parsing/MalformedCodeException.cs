@@ -1,4 +1,6 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Parsing {
+﻿using System;
+
+namespace Atrufulgium.BulletScript.Compiler.Parsing {
     // "Don't use exception-based control flow" they say.
     // Unfortunately I'm doing recursive descent :(
     /// <summary>

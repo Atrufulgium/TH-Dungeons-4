@@ -1,5 +1,7 @@
 ﻿using Atrufulgium.BulletScript.Compiler.HighLevelOpCodes;
 using Atrufulgium.BulletScript.Compiler.Semantics;
+using System;
+using System.Collections.Generic;
 
 // I may have had to rethink this, but I'm in too deep at this point.
 // There are four classes emitting a total of three opcodes.

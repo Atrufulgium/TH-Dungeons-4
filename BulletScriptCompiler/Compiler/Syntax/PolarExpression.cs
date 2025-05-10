@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// Represents a matrix written down as <c>[angle:radius]</c>.
     /// </summary>

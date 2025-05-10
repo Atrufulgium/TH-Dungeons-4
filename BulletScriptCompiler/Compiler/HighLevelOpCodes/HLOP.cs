@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using static Atrufulgium.BulletScript.Compiler.HighLevelOpCodes.ThisJustSavesFourKeystrokesEachTime;
 
 namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {

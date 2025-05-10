@@ -1,6 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Atrufulgium.BulletScript.Compiler.Helpers {
 
@@ -37,11 +40,11 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
         /// <param name="lower"> The lower bound of the list to consider. </param>
         public ListView(IReadOnlyList<T> list, int lower) : this(list, lower..) { }
 
-        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
+        /// <inheritdoc cref="ListView{T}.ListView(IReadOnlyList{T}, int)"/>
         /// <param name="upper"> The upper bound of this list to consider. </param>
         public ListView(IReadOnlyList<T> list, int lower, int upper) : this(list, lower..upper) { }
 
-        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
+        /// <inheritdoc cref="ListView{T}.ListView(IReadOnlyList{T}, int)"/>
         /// <param name="viewRange">
         /// The range of this view to consider. Just like the list, this is a
         /// live range. If you pas <c>^2</c>, it will always exclude
@@ -85,13 +88,13 @@ namespace Atrufulgium.BulletScript.Compiler.Helpers {
     }
 
     internal static class ListViewExtensions {
-        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int)"/>
+        /// <inheritdoc cref="ListView{T}.ListView(IReadOnlyList{T}, int)"/>
         public static ListView<T> GetView<T>(this IReadOnlyList<T> list, int lower)
             => new(list, lower);
-        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, int, int)"/>
+        /// <inheritdoc cref="ListView{T}.ListView(IReadOnlyList{T}, int, int)"/>
         public static ListView<T> GetView<T>(this IReadOnlyList<T> list, int lower, int upper)
             => new(list, lower, upper);
-        /// <inheritdoc cref="ListView{TIReadOnlyList, T}.ListView(TIReadOnlyList, Range)"/>
+        /// <inheritdoc cref="ListView{T}.ListView(IReadOnlyList{T}, Range)"/>
         public static ListView<T> GetView<T>(this IReadOnlyList<T> list, Range viewRange)
             => new(list, viewRange);
     }

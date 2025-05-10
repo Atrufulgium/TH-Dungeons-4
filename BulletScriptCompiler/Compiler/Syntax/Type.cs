@@ -1,4 +1,5 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Helpers;
+using System;
 using System.Text.RegularExpressions;
 
 namespace Atrufulgium.BulletScript.Compiler.Syntax {

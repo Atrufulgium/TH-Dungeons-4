@@ -1,4 +1,6 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Syntax;
+using System;
+using System.Collections.Generic;
 
 namespace Atrufulgium.BulletScript.Compiler.Semantics {
     internal partial class PartialSymbolTable {

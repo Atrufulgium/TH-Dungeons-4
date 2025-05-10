@@ -1,4 +1,6 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Helpers;
+using System;
+using System.Collections.Generic;
 
 namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     internal interface IOPArgument {

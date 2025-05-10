@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Helpers {
+﻿using System;
+using System.Collections.Generic;
+
+namespace Atrufulgium.BulletScript.Compiler.Helpers {
     internal static class CollectionExtensions {
         /// <summary>
         /// Returns the index of the first item in the list matching a given

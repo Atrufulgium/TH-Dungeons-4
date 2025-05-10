@@ -1,4 +1,5 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Syntax;
+using System.Linq;
 
 namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// <summary>

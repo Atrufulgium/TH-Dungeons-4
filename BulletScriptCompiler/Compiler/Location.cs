@@ -12,7 +12,7 @@
         /// </summary>
         public readonly int col;
 
-        public Location(int line, int col) {
+        internal Location(int line, int col) {
             this.line = line;
             this.col = col;
         }
@@ -23,6 +23,9 @@
         /// </summary>
         public static Location CompilerIntroduced => default;
 
+        /// <summary>
+        /// Human-readable representation.
+        /// </summary>
         public override string ToString() => line > 0 && col > 0 ? $"Line {line}, col {col}" : "(Not user code)";
     }
 }

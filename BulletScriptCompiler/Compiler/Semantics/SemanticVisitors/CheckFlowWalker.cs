@@ -1,5 +1,6 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Syntax;
 using Atrufulgium.BulletScript.Compiler.Visitors;
+using System.Collections.Generic;
 
 namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
     /// <summary>

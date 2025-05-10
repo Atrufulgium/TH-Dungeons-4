@@ -1,4 +1,6 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Syntax;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Atrufulgium.BulletScript.Compiler.Semantics {

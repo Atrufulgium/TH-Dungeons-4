@@ -1,7 +1,9 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Helpers;
 using Atrufulgium.BulletScript.Compiler.Semantics;
 using Atrufulgium.BulletScript.Compiler.Syntax;
+using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Atrufulgium.BulletScript.Compiler.Visitors {

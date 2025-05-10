@@ -1,6 +1,9 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Parsing;
 using Atrufulgium.BulletScript.Compiler.Semantics;
 using Atrufulgium.BulletScript.Compiler.Syntax;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Atrufulgium.BulletScript.Compiler {
     internal static class DiagnosticRules {

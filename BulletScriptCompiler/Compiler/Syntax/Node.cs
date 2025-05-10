@@ -1,4 +1,8 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// The base node all AST nodes derive from.
     /// </summary>

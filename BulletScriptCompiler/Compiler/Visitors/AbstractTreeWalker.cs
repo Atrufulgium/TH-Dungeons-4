@@ -1,5 +1,7 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Semantics;
 using Atrufulgium.BulletScript.Compiler.Syntax;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 

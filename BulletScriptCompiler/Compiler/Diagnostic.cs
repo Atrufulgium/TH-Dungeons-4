@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler {
+﻿using System.Linq;
+using System.Collections.Generic;
+
+namespace Atrufulgium.BulletScript.Compiler {
     /// <summary>
     /// Represents some information about the source file.
     /// </summary>
@@ -27,17 +30,24 @@
             Message = message;
         }
 
+        /// <summary>
+        /// Human-readable representation of the diagnostic.
+        /// </summary>
         public override string ToString()
             => $"[{ID}|{DiagnosticLevel} at {Location}] {Message}";
     }
 
+    /// <summary> How critical a diagnostic is. </summary>
     public enum DiagnosticLevel {
+        /// <summary> This diagnostic is informational and can be ignored. </summary>
         Info = 1,
+        /// <summary> This diagnostic is not critical, but it would be smart to act on it. </summary>
         Warning = 2,
+        /// <summary> This diagnostic is critical and prevents compilation. </summary>
         Error = 3
     }
 
-    public static class DiagnosticExtensions {
+    internal static class DiagnosticExtensions {
         /// <summary>
         /// Whether a collection of diagnostics contains a diagonstic of level
         /// <see cref="DiagnosticLevel.Warning"/>.

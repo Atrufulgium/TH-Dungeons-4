@@ -1,5 +1,7 @@
 ﻿using Atrufulgium.BulletScript.Compiler.HighLevelOpCodes;
 using Atrufulgium.BulletScript.Compiler.Visitors;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Atrufulgium.BulletScript.Compiler {
     /// <summary>

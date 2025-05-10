@@ -1,13 +1,16 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Helpers;
 using Atrufulgium.BulletScript.Compiler.Syntax;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using static Atrufulgium.BulletScript.Compiler.DiagnosticRules;
 
 namespace Atrufulgium.BulletScript.Compiler.Parsing {
     /// <summary>
     /// A class for converting a sequence of <see cref="Token"/>s into a
     /// proper AST, consisting of <see cref="Node"/>s.
-    /// This is done via <see cref="ToTree(List{Token})"/>.
+    /// This is done via <see cref="ToTree(IReadOnlyList{Token})"/>.
     /// </summary>
     internal class Parser {
 

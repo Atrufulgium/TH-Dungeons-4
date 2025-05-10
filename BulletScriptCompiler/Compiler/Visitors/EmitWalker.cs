@@ -1,7 +1,10 @@
 ﻿using Atrufulgium.BulletScript.Compiler.HighLevelOpCodes;
 using Atrufulgium.BulletScript.Compiler.Semantics;
 using Atrufulgium.BulletScript.Compiler.Syntax;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// <summary>

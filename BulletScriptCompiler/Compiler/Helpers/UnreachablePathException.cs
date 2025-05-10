@@ -1,4 +1,6 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Helpers {
+﻿using System;
+
+namespace Atrufulgium.BulletScript.Compiler.Helpers {
     /// <summary>
     /// An exception that indicates the current path is unreachable.
     /// Use when the c# compiler is too dumb to see that.

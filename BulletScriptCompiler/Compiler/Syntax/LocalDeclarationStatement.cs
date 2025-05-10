@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// Represents declaring a variable inside a method.
     /// </summary>

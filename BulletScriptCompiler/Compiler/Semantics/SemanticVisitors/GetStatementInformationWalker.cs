@@ -1,6 +1,9 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Helpers;
 using Atrufulgium.BulletScript.Compiler.Syntax;
 using Atrufulgium.BulletScript.Compiler.Visitors;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using static Atrufulgium.BulletScript.Compiler.DiagnosticRules;
 using BType = Atrufulgium.BulletScript.Compiler.Syntax.Type;
 
@@ -365,9 +368,9 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics.SemanticVisitors {
 
         /// <summary>
         /// This is <see cref="CombineBinopTypes(BType, BType, string)"/> where
-        /// the operator is one of `=`, `+` `-` `/` `%` `^` `&` `|`, `>=`, `>`,
-        /// `<=`, or `<`, which are both valid between numbers and same-sized
-        /// matrices as entrywise ops.
+        /// the operator is one of `=`, `+` `-` `/` `%` `^` `&amp;` `|`,
+        /// `&gt;=`, `&gt;`, `&lt;=`, or `&lt;`, which are both valid between
+        /// numbers and same-sized matrices as entrywise ops.
         /// <br/>
         /// Notably, `*` is excluded due to matrix multiplication semantics.
         /// <br/>

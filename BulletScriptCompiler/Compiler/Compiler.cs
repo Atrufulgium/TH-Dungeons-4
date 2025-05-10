@@ -2,7 +2,10 @@
 using Atrufulgium.BulletScript.Compiler.Semantics;
 using Atrufulgium.BulletScript.Compiler.Syntax;
 using Atrufulgium.BulletScript.Compiler.Visitors;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace Atrufulgium.BulletScript.Compiler {
     /// <summary>

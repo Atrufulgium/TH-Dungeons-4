@@ -1,4 +1,7 @@
 ﻿using Atrufulgium.BulletScript.Compiler.Syntax;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using static Atrufulgium.BulletScript.Compiler.Syntax.Type;
 
 // Note: Whenever adding a method, you also need to add an opcode probably, and

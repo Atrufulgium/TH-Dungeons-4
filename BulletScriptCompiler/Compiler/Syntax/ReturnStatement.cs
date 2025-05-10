@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// Represents a <c>return</c>-statement, optionally with a value.
     /// </summary>

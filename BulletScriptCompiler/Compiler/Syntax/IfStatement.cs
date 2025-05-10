@@ -1,4 +1,7 @@
-﻿namespace Atrufulgium.BulletScript.Compiler.Syntax {
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
     /// Represents an <c>if</c>-statement, optionally with an <c>else</c> clause.
     /// </summary>
