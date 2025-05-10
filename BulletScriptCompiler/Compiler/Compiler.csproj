@@ -1,10 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
+	<LangVersion>9.0</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Atrufulgium.BulletScript.Compiler</RootNamespace>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <AssemblyName>BulletScriptCompiler</AssemblyName>
+    <Title>BulletScriptCompiler</Title>
+    <Version>$(VersionPrefix)</Version>
+    <AssemblyVersion>0.1.0</AssemblyVersion>
+    <FileVersion>0.1.0</FileVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1573;1587;1701;1702</NoWarn>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>1573;1587;1701;1702</NoWarn>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <IsPublishable>False</IsPublishable>
   </PropertyGroup>
 
 </Project>

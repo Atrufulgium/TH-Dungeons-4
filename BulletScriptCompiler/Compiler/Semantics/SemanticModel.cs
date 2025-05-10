@@ -15,7 +15,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// Diagnostics that appeared when parsing the syntax tree into a
         /// symbol table.
         /// </summary>
-        public IReadOnlyCollection<Diagnostic> Diagnostics { get; private init; }
+        public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }
         readonly List<Diagnostic> diagnostics;
         readonly Dictionary<Expression, Syntax.Type> expressionTypes = new();
 

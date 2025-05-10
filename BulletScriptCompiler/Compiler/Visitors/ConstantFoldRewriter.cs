@@ -117,6 +117,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 return node;
             }
 
+            const float TAU = MathF.PI * 2f;
+
             return symbolInfo.FullyQualifiedName switch {
                 "sin(float)" => new LiteralExpression(MathF.Sin(args[0])),
                 "cos(float)" => new LiteralExpression(MathF.Cos(args[0])),
@@ -126,8 +128,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 "atan(float)" => new LiteralExpression(MathF.Atan(args[0])),
                 "atan2(float,float)" => new LiteralExpression(MathF.Atan2(args[0], args[1])),
                 // TODO: Check these two
-                "angle2rad(float)" => new LiteralExpression((1.75f - args[0]) * MathF.Tau % MathF.Tau),
-                "rad2angle(float)" => new LiteralExpression((1.75f - args[0] / MathF.Tau) % 1),
+                "angle2rad(float)" => new LiteralExpression((1.75f - args[0]) * TAU % TAU),
+                "rad2angle(float)" => new LiteralExpression((1.75f - args[0] / TAU) % 1),
 
                 "ceil(float)" => new LiteralExpression(MathF.Ceiling(args[0])),
                 "floor(float)" => new LiteralExpression(MathF.Floor(args[0])),

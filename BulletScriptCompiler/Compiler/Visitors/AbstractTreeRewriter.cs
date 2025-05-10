@@ -69,7 +69,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         public Node? VisitResult { get; private set; }
 
         private readonly List<Diagnostic> diagnostics = new();
-        public IReadOnlyCollection<Diagnostic> Diagnostics { get; init; }
+        public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }
 
         public void AddDiagnostic(Diagnostic diagnostic) => diagnostics.Add(diagnostic);
 

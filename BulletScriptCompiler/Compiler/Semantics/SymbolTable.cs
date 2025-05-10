@@ -207,7 +207,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             return string.Join('\n', lines.Select(p => p.line).Prepend(
                 $"\n{header[0].PadRight(fqnWidth)} | {header[1], -20} | {header[2], -20} | {header[3], -9} | {header[4],-4} | {header[5]}"
                 +
-                $"\n{new('-', fqnWidth)}-+-{new('-',20)}-+-{new('-',20)}-+-{new('-',9)}-+-{new('-',4)}-+----------"
+                $"\n{new string('-', fqnWidth)}-+-{new string('-',20)}-+-{new string('-',20)}-+-{new string('-',9)}-+-{new string('-',4)}-+----------"
             )) + "\n";
         }
 

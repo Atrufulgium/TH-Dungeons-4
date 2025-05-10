@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Atrufulgium.BulletScript.Compiler.Syntax {
     /// <summary>
@@ -20,8 +21,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             if (str == null || str == "")
                 return indentStr + "[none]";
 
-            return indentStr + str.ReplaceLineEndings()
-                .ReplaceLineEndings()
+            return indentStr + Regex.Replace(str, @"\r\n?|\n", Environment.NewLine)
                 .Replace(Environment.NewLine, Environment.NewLine + indentStr);
         }
         protected static string Indent(Node? node)
