@@ -41,6 +41,8 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                     sugarNode2fqn[varDecl.Identifier] = node2fqn[node];
                 } else if (node is MethodDeclaration methDecl) {
                     sugarNode2fqn[methDecl.Identifier] = node2fqn[node];
+                } else if (node is InvocationExpression call) {
+                    sugarNode2fqn[call.Target] = node2fqn[node];
                 }
             }
         }

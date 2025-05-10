@@ -844,7 +844,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
             // ParseFloat can't handle the f.
             // F.
             if (token.Value.EndsWith('f'))
-                token = new(token.Kind, token.Value[0..^2], token.Location);
+                token = new(token.Kind, token.Value[0..^1], token.Location);
 
             float res = 0;
             if (token.Kind != TokenKind.Number || !float.TryParse(token.Value, out res))

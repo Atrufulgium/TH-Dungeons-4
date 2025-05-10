@@ -1,17 +1,91 @@
-﻿using Atrufulgium.BulletScript.Compiler.Visitors;
-using System;
+﻿using Atrufulgium.BulletScript.Compiler.Parsing;
+using Atrufulgium.BulletScript.Compiler.Semantics;
+using Atrufulgium.BulletScript.Compiler.Syntax;
+using Atrufulgium.BulletScript.Compiler.Visitors;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Atrufulgium.BulletScript.Compiler {
     /// <summary>
-    /// To compile code, call <see cref="Compiler.Compile(string)"/>.
+    /// To compile code, call <see cref="Compile(string)"/>.
     /// See the extended documentation for the syntax.
     /// </summary>
-    public class Compiler {
+    public static class Compiler {
         /// <summary>
-        /// Compiles a piece of BulletScript.
+        /// Compiles a piece of standalone BulletScript code.
         /// </summary>
         public static CompilationResult Compile(string code) {
-            throw new NotImplementedException();
+            try {
+
+                // To AST
+                var (tokens, diags) = new Lexer().ToTokens(code);
+                if (CheckErrors(diags, diags, out CompilationResult? res)) return res;
+
+                var (root, diags2) = new Parser().ToTree(tokens);
+                diags.AddRange(diags2);
+                if (CheckErrors(diags2, diags, out res)) return res;
+                if (root == null)
+                    throw new NullReferenceException("Unexpected null tree, without any diagnostics.");
+
+                var diags3 = root.ValidateTree();
+                diags.AddRange(diags3);
+                if (CheckErrors(diags3, diags, out res)) return res;
+
+                // Initial semantics
+                var semanticModel = new SemanticModel(root);
+                var diags4 = semanticModel.Diagnostics;
+                diags.AddRange(diags4);
+                if (CheckErrors(diags4, diags, out res)) return res;
+
+                // Might wanna allow other orders in the future
+                var visitors = StandardCompilationOrder;
+
+                foreach (var visitor in visitors) {
+                    // Let the visitor do its thing
+                    visitor.Model = semanticModel;
+                    visitor.Visit(root);
+
+                    // Check if the visitor could've done its thing
+                    var diagsN1 = visitor.Diagnostics;
+                    diags.AddRange(diagsN1);
+                    if (CheckErrors(diagsN1, diags, out res)) return res;
+                    if (visitor.VisitResult == null)
+                        throw new NullReferenceException($"Unexpected null tree after visitor {visitor}, without any diagnostics.");
+                    if (visitor.VisitResult is not Root)
+                        throw new InvalidOperationException($"Unexpected tree non-Root tree root {visitor.VisitResult} after visitor {visitor}, without any diagnostics.");
+                    root = (Root)visitor.VisitResult;
+
+                    // Check if the visitor wasn't a moron
+                    var diagsN2 = root.ValidateTree();
+                    diags.AddRange(diagsN2);
+                    if (CheckErrors(diagsN2, diags, out res)) return res;
+
+                    semanticModel = new SemanticModel(root);
+                    var diagsN3 = semanticModel.Diagnostics;
+                    diags.AddRange(diagsN3);
+                    if (CheckErrors(diagsN3, diags, out res)) return res;
+                }
+
+                // Grab emission data and apply it
+                var emitWalker = visitors.OfType<EmitWalker>().First();
+                var bytecode = new BytecodeOutput(emitWalker);
+                return new CompilationResult(diags, bytecode);
+
+            } catch (Exception e) {
+                return new CompilationResult(new[] { DiagnosticRules.InternalUnknown(e) });
+            }
+        }
+
+        internal static bool CheckErrors(
+            IEnumerable<Diagnostic> checkDiagnostics,
+            IEnumerable<Diagnostic> allDiagnostics,
+            [NotNullWhen(true)] out CompilationResult? res
+        ) {
+            if (checkDiagnostics.Where(d => d.DiagnosticLevel == DiagnosticLevel.Error).Any()) {
+                res = new(allDiagnostics.ToList());
+                return true;
+            }
+            res = null;
+            return false;
         }
 
         internal static IVisitor[] StandardCompilationOrder => new IVisitor[] {

@@ -211,8 +211,8 @@ Name | Type | Default | Description
 ¹ Speed is measured in "units per second".  
 ² The screen has coordinates `[0; 0]` on the top-left, and `[6/5; 1]` on the bottom-right.
 
-BulletStyleSheets (BSS (BS for short))
-======================================
+BulletStyleSheets (BSS for short (BS for short))
+================================================
 Each enemy has a collection of css-like _bullet style sheets_. These determine the type and general behaviour of the bullet. Scripts can reference these stylesheets when creating bullets.
 
 Overlay rules work as in css. Later sheets overwrite previous sheets' content, except when marked with `!important`. Specificity rules apply. Unlike css, as "order" is ill-defined, when multiple selectors have the _same_ specificity, the result is arbitrary. Some simple examples.
@@ -324,21 +324,186 @@ The VM also stores the instruction pointer targets for all special methods.
 
 Execution
 ---------
-Standard bytecode fare (see the tables below). Note that as recursion is not supported and indexing is severely limited, we know ahead of time how large the VM's memory has to be, and we can perform checks to ensure nothing goes out of bounds. This also allows us to support switching between (waiting for) `main()` and running event functions such as `on_message()`; see the footnote below the variable memory layout table.
+Standard bytecode fare (see the tables below). Note that as recursion is not supported and indexing is severely limited, we know ahead of time how large the VM's memory has to be, and we can perform checks to ensure nothing goes out of bounds. This also allows us to support switching between (waiting for) `main()` and running event functions such as `on_message()` without actually having to support a threading model; see the footnote below the variable memory layout table.
 
 I don't know whether I'm going to be doing any netcode shenanigans, but the check whether all ops point to a valid location in memory is *required*.
 
 A single execution may run at most 1 million instructions. After that, it's forcefully cut off, and continued the next execution as if a `wait(0);` was temporarily inserted.
 
+The output of the execution is a list of commands the engine will have to consume.
+
 Opcode tables
 -------------
 
-General operations.
+The syntax in the below tables is consistent for easier browsing.
+- Literal values don't have an asterisk (`*`), while variables do.
+- The written location (if any) will be called `r`.
+- Other read locations will be called `i`, `j`.
+- Literal values will be called `v`, `w`.
+- String variables will be called `*s`, `*t`.  
+  Strings are nothing more than floats with an interpretation if you use the string table.
 
-Non-math intrinsics.
+For more details on the below opcodes, see the function documentation above.
 
-Floating point math.
+### General operations
+These operations are the most basic things you'd expect in a VM and defined as "everything that does not fit the below categories".
 
-Vector math, excluding matrix multiplication.
+| Name       | OpCode | Args | Description
+| :--------- | :----- | :--- | :----------
+| Equal      |  1 | `*r  v *i` | Set `*r` to 1 if `v == *i`, 0 otherwise.
+| Equal      |  2 | `*r *i *j` | Set `*r` to 1 if `*i == *j`, 0 otherwise.
+|            |  3 | | *(Removed)*
+| LT         |  4 | `*r  v *i` | Set `*r` to 1 if `v < *i`, 0 otherwise.
+| LT         |  5 | `*r *i  v` | Set `*r` to 1 if `*i < v`, 0 otherwise.
+| LT         |  6 | `*r *i *j` | Set `*r` to 1 if `*i < *j`, 0 otherwise.
+| LTE        |  7 | `*r  v *i` | Set `*r` to 1 if `v <= *i`, 0 otherwise.
+| LTE        |  8 | `*r *i  v` | Set `*r` to 1 if `*i <= v`, 0 otherwise.
+| LTE        |  9 | `*r *i *j` | Set `*r` to 1 if `*i <= *j`, 0 otherwise.
+| Set        | 10 | `*r  v` | Set `*r` to `v`.
+| Set        | 11 | `*r *i` | Set `*r` to `*i`.
+|            | 12 | | *(Removed)*
+| IndexedGet | 13 | `*r *i  v` | Set `*r` to `*(i+v)`. Offset `v` will be clamped to `[0,16)`.
+| IndexedGet | 14 | `*r *i *j` | Set `*r` to `*(i+*j)`. Offset `*j` will be clamped to `[0,16)`.
+| IndexedSet | 15 | `*r  v  w` | Set `*(r+v)` to `w`. Offset `v` will be clamped to `[0,16)`.
+| IndexedSet | 16 | `*r  v *i` | Set `*(r+v)` to `*i`. Offset `*i` will be clamped to `[0,16)`.
+| IndexedSet | 17 | `*r *i  v` | Set `*(r+*i)` to `v`. Offset `v` will be clamped to `[0,16)`.
+| IndexedSet | 18 | `*r *i *j` | Set `*(r+*i)` to `*j`. Offset `*j` will be clamped to `[0,16)`.
+| Jump       | 19 | ` v` | Set the IP to `v`.<br/>*Note*: The IP will also increase after this instruction.
+| JumpCond.  | 20 | ` v  *j` | Set the IP to `v` if `*j != 0`, do nothing otherwise.<br/>*Note*: The IP will also increase after this instruction.
+| Wait       | 21 | ` v` | Send a "stop execution for `v` game ticks"-message.<br/>*Note*: Only allowed in `main()`.
+| Wait       | 22 | `*i` | Send a "stop execution for `*i` game ticks"-message.<br/>*Note*: Only allowed in `main()`.
 
-Matrix multiplication.
+### Messaging intrinsics
+The goal of the VM is to create an output stream with filled-in commands for the engine to work with.
+
+These operations generate those commands.
+
+| Name            | OpCode | Args | Description
+| :-------------- | :----- | :--- | :----------
+| Print           | 32 | `*i` | Output a "print `*i`"-message.
+| Print           | 33 | ` v` | Output a "print `v`"-message.
+| Spawn           | 34 | | Output a "spawn bullets"-message with the current settings.
+| Destroy         | 35 | | Output a "destroy self"-message.
+| LoadBackground  | 36 | `*s` | Output a "load background `*s`"-message.
+| AddScript       | 37 | | Output an "add script barrier"-message.
+| AddScript       | 38 | `*s` | Output an "add script `*s`"-message.
+| Addscript       | 39 | `*s  v` | Output an "add script `*s` with starting value `v`"-message.
+| AddScript       | 40 | `*s *i` | Output an "add script `*s` with starting value `*i`"-message.
+| StartScript     | 41 | `*s` | Output a "start script `*s`"-message.
+| Startscript     | 42 | `*s  v` | Output a "start script `*s` with starting value `v`"-message.
+| StartScript     | 43 | `*s *i` | Output a "start script `*s` with starting value `*i`"-message.
+| StartScriptMany | 44 | `*s` | Output a "start script `*s` for each child"-message.
+| StartscriptMany | 45 | `*s  v` | Output a "start script `*s` for each child with starting value `v`"-message.
+| StartScriptMany | 46 | `*s *i` | Output a "start script `*s` for each child with starting value `*i`"-message.
+| Depivot         | 47 | | Output a "depivot"-message.
+| AddRotation     | 48 | ` v` | Output an "add `v` rotation"-message.
+| AddRotation     | 49 | `*i` | Output an "add `*i` rotation"-message.
+| SetRotation     | 50 | ` v` | Output a "set `v` rotation"-message.
+| SetRotation     | 51 | `*i` | Output a "set `*i` rotation"-message.
+| AddSpeed        | 52 | ` v` | Output an "add `v` speed"-message.
+| AddSpeed        | 53 | `*i` | Output an "add `*i` speed"-message.
+| SetSpeed        | 54 | ` v` | Output a "set `v` speed"-message.
+| SetSpeed        | 55 | `*i` | Output a "set `*i` speed"-message.
+| FacePlayer      | 56 | | Output a "face player"-message.
+| AngleToPlayer   | 57 | `*r` | output a "set `*r` to the player angle"-message.
+| Gimmick         | 58 | `*s` | Output a "use named gimmick `*s`"-message.
+| Gimmick         | 59 | `*s  v` | Output a "use named gimmick `*s(v)`"-message.
+| Gimmick         | 60 | `*s *i` | Output a "use named gimmick `*s(*i)`"-message.
+| Gimmick         | 61 | `*s  v  w` | Output a "use named gimmick `*s(v,w)`"-message.
+| Gimmick         | 62 | `*s  v *i` | Output a "use named gimmick `*s(v,*i)`"-message.
+| Gimmick         | 63 | `*s *i  v` | Output a "use named gimmick `*s(*i,v)`"-message.
+| Gimmick         | 64 | `*s *i *j` | Output a "use named gimmick `*s(*i,*j)`"-message.
+
+### Floating point math
+Exactly as it says on the tin.
+
+| Name     | OpCode | Args | Description
+| :------- | :----- | :--- | :----------
+| Not      |  80 | `*r *i` | Set `*r` to `!(*i)`.
+| Add      |  81 | `*r  v *i` | Set `*r` to `v + *i`.
+| Add      |  82 | `*r *i *j` | Set `*r` to `*i + *j`.
+| Sub      |  83 | `*r  v *i` | Set `*r` to `v - *i`.
+| Sub      |  84 | `*r *i  v` | Set `*r` to `*i - v`.
+| Sub      |  85 | `*r *i *j` | Set `*r` to `*i - *j`.
+| Mul      |  86 | `*r  v *i` | Set `*r` to `v * *i`.
+| Mul      |  87 | `*r *i *j` | Set `*r` to `*i * *j`.
+| Div      |  88 | `*r  v *i` | Set `*r` to `v / *i`.
+| Div      |  89 | `*r *i  v` | Set `*r` to `*i / v`.
+| Div      |  90 | `*r *i *j` | Set `*r` to `*i / *j`.
+| Mod      |  91 | `*r  v *i` | Set `*r` to `v % *i`.
+| Mod      |  92 | `*r *i  v` | Set `*r` to `*i % v`.
+| Mod      |  93 | `*r *i *j` | Set `*r` to `*i % *j`.
+| Pow      |  94 | `*r  v *i` | Set `*r` to `v ^ *i`.
+| Pow      |  95 | `*r *i  v` | Set `*r` to `*i ^ v`.
+| Pow      |  96 | `*r *i *j` | Set `*r` to `*i ^ *j`.
+| Square   |  97 | `*r *i` | Set `*r` to `*i * *i`.
+| Sin      |  98 | `*r *i` | Set `*r` to `sin(*i)`.
+| Cos      |  99 | `*r *i` | Set `*r` to `cos(*i)`.
+| Tan      | 100 | `*r *i` | Set `*r` to `tan(*i)`.
+| Asin     | 101 | `*r *i` | Set `*r` to `asin(*i)`.
+| Acos     | 102 | `*r *i` | Set `*r` to `acos(*i)`.
+| Atan     | 103 | `*r *i` | Set `*r` to `atan(*i)`.
+| Atan2    | 104 | `*r  v *i` | Set `*r` to `atan2(v, *i)`.
+| Atan2    | 105 | `*r *i  v` | Set `*r` to `atan2(*i, v)`.
+| Atan2    | 106 | `*r *i *j` | Set `*r` to `atan2(*i, *j)`.
+| Ceil     | 107 | `*r *i` | Set `*r` to `ceil(*i)`.
+| Floor    | 108 | `*r *i` | Set `*r` to `floor(*i)`.
+| Round    | 109 | `*r *i` | Set `*r` to `round(*i)`.
+| Abs      | 110 | `*r *i` | Set `*r` to `\|*i\|`.
+| Random   | 111 | `*r  v  w` | Set `*r` to a random float `[v,w]`.
+| Random   | 112 | `*r  v *i` | Set `*r` to a random float `[v,*i]`.
+| Random   | 113 | `*r *i  v` | Set `*r` to a random float `[*i,v]`.
+| Random   | 114 | `*r *i *j` | Set `*r` to a random float `[*i,*j]`.
+| Distance | 115 | `*r  v *i` | Set `*r` to `\|v-*i\|`.
+| Distance | 116 | `*r *i  v` | Set `*r` to `\|*i-v\|`.
+| Distance | 117 | `*r *i *j` | Set `*r` to `\|*i-*j\|`.
+
+### Vector math, excluding matrix multiplication
+Four-aligned operations. Note that variables only point to the first entry of the vector/matrix.
+
+Opcodes that are named `opcode4` do exactly the same as `opcode`, but entrywise on the entire four-aligned section.
+
+There are no literal versions for these opcodes (as there is no room for them).
+
+| Name      | OpCode | Args | Description
+| :-------- | :----- | :--- | :----------
+| Set4      | 128 | `*r *i` | *(〃)*
+| Equal4    | 129 | `*r *i *j` | *(〃)*
+| LT4       | 130 | `*r *i *j` | *(〃)*
+| LTE4      | 131 | `*r *i *j` | *(〃)*
+| Negate4   | 132 | `*r *i` | Set all entries of `*r` to `-(*i)`.
+| Not4      | 133 | `*r *i` | *(〃)*
+| Add4      | 134 | `*r *i *j` | *(〃)*
+| Sub4      | 135 | `*r *i *j` | *(〃)*
+| Mul4      | 136 | `*r *i *j` | *(〃)*
+| Div4      | 137 | `*r *i *j` | *(〃)*
+| Mod4      | 138 | `*r *i *j` | *(〃)*
+| Pow4      | 139 | `*r *i *j` | *(〃)*
+| Square4   | 140 | `*r *i` | *(〃)*
+| Sin4      | 141 | `*r *i` | *(〃)*
+| Cos4      | 142 | `*r *i` | *(〃)*
+| Tan4      | 143 | `*r *i` | *(〃)*
+| Asin4     | 144 | `*r *i` | *(〃)*
+| Acos4     | 145 | `*r *i` | *(〃)*
+| Atan4     | 146 | `*r *i` | *(〃)*
+| Atan24    | 147 | `*r *i *j` | *(〃)*
+| Ceil4     | 148 | `*r *i` | *(〃)*
+| Floor4    | 149 | `*r *i` | *(〃)*
+| Round4    | 150 | `*r *i` | *(〃)*
+| Abs4      | 151 | `*r *i` | *(〃)*
+| Random4   | 152 | `*r *i *j` | *(〃)*
+| Length4   | 153 | `*r *i` | Set non-vector `*r` to `\|\|*i\|\|`.
+| Distance4 | 154 | `*r *i *j` | Set non-vector `*r` to `\|\|*i-*j\|\|`.
+| Polar     | 155 | `*r  v  w` | Convert `(v,w)` from polar to Cartesian and put it in `(*r, *(r+1))`.
+| Polar     | 155 | `*r  v *i` | Convert `(v,*i)` from polar to Cartesian and put it in `(*r, *(r+1))`.
+| Polar     | 155 | `*r *i  v` | Convert `(*i,v)` from polar to Cartesian and put it in `(*r, *(r+1))`.
+| Polar     | 155 | `*r *i *j` | Convert `(*i,*j)` from polar to Cartesian and put it in `(*r, *(r+1))`.
+
+### Matrix multiplication
+No-one's gonna use any of these lol
+
+Here, $u$, $v$, and $w$ go over 1 through 4 (but in the opcode silently subtract one ssssh).
+
+| Name | OpCode | Args | Description
+| :--------------- | :---------------- | :--------- | :---
+| MatrixMul(u,v,w) | 192 + u +4v + 16w | `*r *i *j` | Set `*r` $\in \mathbb R^{u \times w}$ to $\mathbb R^{u \times v} \ni$ `*i` $\cdot$ `*j` $\in \mathbb R^{v \times w}$.

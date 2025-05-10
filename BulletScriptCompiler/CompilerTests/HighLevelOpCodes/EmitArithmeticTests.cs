@@ -445,6 +445,10 @@ a = floor(a);
 a = atan2(a, a);
 a = atan2(3, a);
 ", @"
+[op]             Set | [f]                a | [f]                3 | --------------------
+[op]           Floor | [f]                a | [f]                a | --------------------
+[op]           Atan2 | [f]                a | [f]                a | [f]                a
+[op]           Atan2 | [f]                a | [f]                3 | [f]                a
 ");
 
     }

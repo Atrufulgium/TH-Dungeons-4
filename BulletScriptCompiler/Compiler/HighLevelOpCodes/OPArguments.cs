@@ -41,11 +41,22 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     /// </summary>
     internal class FloatRef : IOPArgument {
 
-        readonly string id;
+        public readonly string id;
         public FloatRef(string id) => this.id = id;
 
-        public float ToFloat(Dictionary<string, float> explicitGotoTargets, Dictionary<string, float> explicitVariableIDs, Dictionary<string, float> explicitStringIDs)
-            => explicitVariableIDs[id];
+        public float ToFloat(Dictionary<string, float> explicitGotoTargets, Dictionary<string, float> explicitVariableIDs, Dictionary<string, float> explicitStringIDs) {
+            if (explicitVariableIDs.TryGetValue(id, out var f))
+                return f;
+
+            // We use a VARNAME+n syntax to describe offsets.
+            // Calculate those offsets here.
+            var parts = id.Split('+');
+            if (parts.Length != 2)
+                throw new ArgumentException("Malformed variable ID. Either expect \"VARNAME\" or \"VARNAME+n\" describing an offset.");
+            
+            var basePos = explicitVariableIDs[parts[0]];
+            return basePos + int.Parse(parts[1]);
+        }
 
         public override string ToString() => $"[f] {id.Truncate(16, ^10),16}";
     }
@@ -55,7 +66,7 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     /// </summary>
     internal class FloatLit : IOPArgument {
 
-        readonly float value;
+        public readonly float value;
         public FloatLit(float value) => this.value = value;
 
         public float ToFloat(Dictionary<string, float> explicitGotoTargets, Dictionary<string, float> explicitVariableIDs, Dictionary<string, float> explicitStringIDs)
@@ -72,7 +83,7 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     /// </summary>
     internal class StringRef : IOPArgument {
 
-        readonly string id;
+        public readonly string id;
         public StringRef(string id) => this.id = id;
 
         public float ToFloat(Dictionary<string, float> explicitGotoTargets, Dictionary<string, float> explicitVariableIDs, Dictionary<string, float> explicitStringIDs)

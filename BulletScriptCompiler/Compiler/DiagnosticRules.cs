@@ -247,5 +247,8 @@ namespace Atrufulgium.BulletScript.Compiler {
 
         public static Diagnostic InternalSimpleAssIndexCannotBeConst(SimpleAssignmentStatement node)
             => Error(node.Location, "BS1003", $"You cannot index a literal:\n    {node.ToCompactString()}");
+
+        public static Diagnostic InternalUnknown(Exception e)
+            => Error(default(Location), "BS9999", $"Unknown compiler error \"{e.Message}\". Please make an issue, include as much detail as possible, and attach the following stacktrace (if enabled):\n{e.StackTrace}");
     }
 }

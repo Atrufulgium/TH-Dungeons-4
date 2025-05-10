@@ -1,4 +1,5 @@
-﻿using static Atrufulgium.BulletScript.Compiler.HighLevelOpCodes.ThisJustSavesFourKeystrokesEachTime;
+﻿using System.Collections;
+using static Atrufulgium.BulletScript.Compiler.HighLevelOpCodes.ThisJustSavesFourKeystrokesEachTime;
 
 namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     /// <summary>
@@ -12,12 +13,12 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     /// <item> String values are still in-line. </item>
     /// </list>
     /// </summary>
-    internal class HLOP {
+    internal readonly struct HLOP : IEnumerable<IOPArgument> {
 
-        readonly float opcode;
-        readonly IOPArgument arg1;
-        readonly IOPArgument arg2;
-        readonly IOPArgument arg3;
+        public readonly float opcode;
+        public readonly IOPArgument arg1;
+        public readonly IOPArgument arg2;
+        public readonly IOPArgument arg3;
 
         static readonly Dictionary<float, string> opNames = new();
 
@@ -195,5 +196,13 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
         // matrix mul
         public static HLOP MatrixMul(int u, int v, int w, string res, string a, string b)
             => new(192 + u + 4* v + 16* w, FloatRef(res), FloatRef(a), FloatRef(b), $"MatrixMul{u}{v}{w}");
+
+        public IEnumerator<IOPArgument> GetEnumerator() {
+            yield return arg1;
+            yield return arg2;
+            yield return arg3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

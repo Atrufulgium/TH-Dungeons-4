@@ -26,23 +26,30 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
 
             // Remark: These are checked for syntactic correctness.
             // Still be careful they correspond to the semantics we want.
+            // Remark II: These initial values are not used anywhere.
+            // Be sure to keep this in sync with
+            /// <see cref="BytecodeOutput"/>
+            /// <see cref="EmitWalker.ExplicitVariableIDs"/>
+            // and probably the docs.
 
-            AddIntrinsic("harmsenemies", Float, new LiteralExpression(0, loc));
-            AddIntrinsic("harmsplayers", Float, new LiteralExpression(1, loc));
-            AddIntrinsic("clearimmune", Float, new LiteralExpression(0, loc));
-            AddIntrinsic("autoclear", Float, new LiteralExpression(1, loc));
-            AddIntrinsic("clearingtype", Float, new LiteralExpression(0, loc));
+            AddIntrinsic("bullettype", Syntax.Type.String, new LiteralExpression("\"error\"", loc));
+            AddIntrinsic("spawnrotation", Float, new LiteralExpression(0, loc));
+            AddIntrinsic("spawnspeed", Float, new LiteralExpression(1, loc));
+            AddIntrinsic("spawnrelative", Float, new LiteralExpression(1, loc));
             AddIntrinsic("spawnposition", Vector2,
                 new MatrixExpression(new List<Expression>() {
                     new LiteralExpression(0, loc),
                     new LiteralExpression(0, loc)
                 }, 2, 1, loc)
             );
-            AddIntrinsic("spawnrotation", Float, new LiteralExpression(0, loc));
-            AddIntrinsic("spawnspeed", Float, new LiteralExpression(1, loc));
-            AddIntrinsic("spawnrelative", Float, new LiteralExpression(1, loc));
+
+            // TODO: Move these to BSS
+            AddIntrinsic("harmsenemies", Float, new LiteralExpression(0, loc));
+            AddIntrinsic("harmsplayers", Float, new LiteralExpression(1, loc));
+            AddIntrinsic("clearimmune", Float, new LiteralExpression(0, loc));
+            AddIntrinsic("autoclear", Float, new LiteralExpression(1, loc));
+            AddIntrinsic("clearingtype", Float, new LiteralExpression(0, loc));
             AddIntrinsic("usepivot", Float, new LiteralExpression(0, loc));
-            AddIntrinsic("bullettype", Syntax.Type.String, new LiteralExpression("\"error\"", loc));
 
             return res;
         }

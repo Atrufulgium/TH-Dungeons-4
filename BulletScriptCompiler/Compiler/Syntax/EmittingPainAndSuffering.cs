@@ -257,12 +257,12 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
         List<HLOP> IEmittable.Emit(SemanticModel model) {
             string lhs = LHS.Name;
             if (RHS is IdentifierName id) return EmitIdentifier(model, lhs, id);
-            if (RHS is LiteralExpression lit) return EmitLiteral(model, lhs, lit);
+            if (RHS is LiteralExpression lit) return EmitLiteral(lhs, lit);
             if (RHS is PrefixUnaryExpression un) return EmitUnary(model, lhs, un);
             if (RHS is BinaryExpression bin) return EmitBinary(model, lhs, bin);
-            if (RHS is IndexExpression ind) return EmitIndex(model, lhs, ind);
+            if (RHS is IndexExpression ind) return EmitIndex(lhs, ind);
             if (RHS is MatrixExpression mat) return EmitMatrix(model, lhs, mat);
-            if (RHS is PolarExpression pol) return EmitPolar(model, lhs, pol);
+            if (RHS is PolarExpression pol) return EmitPolar(lhs, pol);
             throw new NotSupportedException($"Bad node `{ToCompactString()}`");
         }
 
@@ -275,7 +275,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             return VectoredOp(HLOP.Set4, lhs, rhs.Name, type);
         }
 
-        static List<HLOP> EmitLiteral(SemanticModel model, string lhs, LiteralExpression rhs) {
+        static List<HLOP> EmitLiteral(string lhs, LiteralExpression rhs) {
             if (rhs.FloatValue != null)
                 return HLOP.Set(lhs, rhs.FloatValue.Value);
             if (rhs.StringValue != null)
@@ -468,7 +468,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             return ret;
         }
 
-        static List<HLOP> EmitIndex(SemanticModel model, string lhs, IndexExpression rhs) {
+        static List<HLOP> EmitIndex(string lhs, IndexExpression rhs) {
             // Note:
             /// <see cref="Visitors.PrepareVMIndexersRewriter"/>
             // ensures that matrix indices take into account the structure of
@@ -483,9 +483,10 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
                 throw new InvalidOperationException("Expected one-dimensional index.");
             var index = ind.Entries[0];
 
-            if (expr is not IdentifierName name)
+            if (expr is not IdentifierName)
                 throw new InvalidOperationException("Expected index to apply to an identifier.");
 
+            // TODO: This seems incorrect.
             if (index is IdentifierName nameIndex)
                 return HLOP.IndexedGet(lhs, nameIndex.Name);
             if (index is LiteralExpression literalIndex) {
@@ -535,7 +536,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             return ret;
         }
 
-        static List<HLOP> EmitPolar(SemanticModel model, string lhs, PolarExpression rhs)
+        static List<HLOP> EmitPolar(string lhs, PolarExpression rhs)
             => (rhs.Angle is LiteralExpression, rhs.Radius is LiteralExpression) switch {
                 (true, true) => HLOP.Polar(lhs,
                     (rhs.Angle as LiteralExpression)!.FloatValue!.Value,
