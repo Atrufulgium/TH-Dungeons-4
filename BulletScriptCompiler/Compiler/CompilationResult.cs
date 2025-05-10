@@ -46,5 +46,30 @@ namespace Atrufulgium.BulletScript.Compiler {
             output = Bytecode;
             return true;
         }
+
+        /// <summary>
+        /// Returns a neat representation of all diagnostics.
+        /// </summary>
+        public string PrettyprintDiagnostics() {
+            var order = new SortedSet<Diagnostic>(
+                Comparer<Diagnostic>.Create((d1, d2) => {
+                    // Order (Level, ID, Location)
+                    // Errors should come on top
+                    var compareErrors = -d1.DiagnosticLevel.CompareTo(d2.DiagnosticLevel);
+                    if (compareErrors != 0) return compareErrors;
+
+                    var compareID = d1.ID.CompareTo(d2.ID);
+                    if (compareID != 0) return compareID;
+
+                    return d1.Location.ToString().CompareTo(d2.Location.ToString());
+                })
+            );
+
+            foreach (var d in Diagnostics) {
+                order.Add(d);
+            }
+
+            return string.Join('\n', order.Select(d => d.ToString()));
+        }
     }
 }

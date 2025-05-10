@@ -19,6 +19,10 @@ Awkwardly placed todo-list:
 - Moving things like `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers` to BSS seems more sensible than having it in code.
 - More event functions, such as `on_left_side()`, `on_border()`, etc, mixed with more intrinsics `bounce(matrix2x1 normal)`, `wraparound()`, etc.
 - Increments/decrements are currently only really allowed at statement-level.
+- IndexedGet HLOP is malformed.
+- String print.
+- The VM in Unity is outdated
+- No comments lmao
 
 BulletScript (BS)
 =================

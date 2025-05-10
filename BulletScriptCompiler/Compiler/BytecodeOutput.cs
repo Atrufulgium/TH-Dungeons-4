@@ -12,7 +12,7 @@ namespace Atrufulgium.BulletScript.Compiler {
         /// <summary>
         /// All opcodes and their args.
         /// </summary>
-        public readonly (float, float, float, float)[] OpCodes;
+        public readonly LLOP[] OpCodes;
         /// <summary>
         /// A sufficiently large pre-initialized memory.
         /// </summary>
@@ -29,21 +29,21 @@ namespace Atrufulgium.BulletScript.Compiler {
             // (3) Prepare the VM memory.
             var opcodes = emitter.OPCodes;
 
-            Dictionary<string, float> explicitGotoTargets = new();
-            Dictionary<string, float> explicitVariableIDs = new(emitter.ExplicitVariableIDs);
-            Dictionary<string, float> explicitStringIDs = new() {
+            Dictionary<string, int> explicitGotoTargets = new();
+            Dictionary<string, int> explicitVariableIDs = new(emitter.ExplicitVariableIDs);
+            Dictionary<string, int> explicitStringIDs = new() {
                 { "error", 0 }
             };
 
             // First find all goto labels and strings
             int instruction = 0;
-            var gotoLabelOpcode = HLOP.GotoLabel("").opcode;
+            var gotoLabelOpcode = HLOP.GotoLabel("").OpCode;
             foreach (var op in opcodes) {
                 // Goto
                 // (Subtract 1 because the IP increases after every op)
-                if (op.opcode == gotoLabelOpcode)
+                if (op.OpCode == gotoLabelOpcode)
                     explicitGotoTargets.Add(((InstructionRef)op.arg1).Label, instruction - 1);
-                if (op.opcode >= 0) // (negative HLOPs don't map to LLOPs)
+                if (op.OpCode >= 0) // (negative HLOPs don't map to LLOPs)
                     instruction++;
 
                 // Strings
@@ -58,7 +58,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             // Now go through all opcodes to create the bytecode array
             // (shut up bytecode is a state of mind, `float4code` just doesn't
             //  have the same ring to it)
-            List<(float, float, float, float)> llops = new();
+            List<LLOP> llops = new();
             foreach (var op in opcodes) {
                 var res = op.ToLowLevel(explicitGotoTargets, explicitVariableIDs, explicitStringIDs);
                 if (res != null)
@@ -70,7 +70,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             // Bad software design: Be sure to keep this in sync with
             /// <see cref="Semantics.IntrinsicData"/>
             /// <see cref="EmitWalker.ExplicitVariableIDs"/>
-            Memory = new float[(int)explicitVariableIDs.Values.Max()];
+            Memory = new float[explicitVariableIDs.Values.Max()];
             Memory[2] = 1f; // `spawnspeed` inits to 1
             Memory[3] = 1f; // `spawnrelative` inits to 1
 
@@ -78,7 +78,7 @@ namespace Atrufulgium.BulletScript.Compiler {
             // (When is c# getting a built-in bidict?)
             SortedDictionary<int, string> reverseStringIDs = new();
             foreach (var kv in explicitStringIDs) {
-                reverseStringIDs.Add((int)kv.Value, kv.Key);
+                reverseStringIDs.Add(kv.Value, kv.Key);
             }
             Strings = reverseStringIDs.Select(kv => kv.Value).ToArray();
         }

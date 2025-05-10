@@ -5,7 +5,11 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
     [TestClass]
     public class CompilerTests {
 
-        unsafe static void TestCode(string code, string bytecode) {
+        unsafe static int Int(float f) => *(int*)&f;
+        // Very reasonable heuristic as these floats are a bunch of subnormals
+        static bool IsInt(float f) => Int(f) is >= 0 and < 65536;
+
+        static void TestCode(string code, string bytecode) {
             var res = Compiler.Compile(code);
             res.TryGetBytecodeOutput(out var output);
             if (output == null) {
@@ -27,7 +31,11 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
 
             actual.AppendLine($"Bytecode ({output.OpCodes.Length}):");
             foreach (var (b,i) in output.OpCodes.Select((b,i) => (b,i))) {
-                actual.AppendLine($"{i,4} | {b.Item1,6:0.0} {b.Item2,10:0.000} {b.Item3,10:0.000} {b.Item4,10:0.000}");
+                string opcode = $"{Int(b.opcode),4}  ";
+                string arg1 = IsInt(b.arg1) ? $"{Int(b.arg1),6}    " : $"{b.arg1,10:0.000}";
+                string arg2 = IsInt(b.arg2) ? $"{Int(b.arg2),6}    " : $"{b.arg2,10:0.000}";
+                string arg3 = IsInt(b.arg3) ? $"{Int(b.arg3),6}    " : $"{b.arg3,10:0.000}";
+                actual.AppendLine($"{i,4} | {opcode} {arg1} {arg2} {arg3}");
             }
 
             Assert.AreEqual('\n' + bytecode.Trim(), '\n' + actual.ToString().Trim());

@@ -16,20 +16,26 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
     /// </summary>
     internal readonly struct HLOP : IEnumerable<IOPArgument> {
 
-        public readonly float opcode;
+        public unsafe int OpCode { 
+            get {
+                float copyBecauseCSPls = opcode;
+                return *(int*)&copyBecauseCSPls;
+            }
+        }
+        readonly float opcode;
         public readonly IOPArgument arg1;
         public readonly IOPArgument arg2;
         public readonly IOPArgument arg3;
 
         static readonly Dictionary<float, string> opNames = new();
 
-        private HLOP(float opcode, string name) : this(opcode, None.Singleton, name) { }
-        private HLOP(float opcode, IOPArgument arg1, string name)
+        private HLOP(int opcode, string name) : this(opcode, None.Singleton, name) { }
+        private HLOP(int opcode, IOPArgument arg1, string name)
             : this(opcode, arg1, None.Singleton, name) { }
-        private HLOP(float opcode, IOPArgument arg1, IOPArgument arg2, string name)
+        private HLOP(int opcode, IOPArgument arg1, IOPArgument arg2, string name)
             : this(opcode, arg1, arg2, None.Singleton, name) { }
-        private HLOP(float opcode, IOPArgument arg1, IOPArgument arg2, IOPArgument arg3, string name) {
-            this.opcode = opcode;
+        private unsafe HLOP(int opcode, IOPArgument arg1, IOPArgument arg2, IOPArgument arg3, string name) {
+            this.opcode = *(float*)&opcode;
             this.arg1 = arg1;
             this.arg2 = arg2;
             this.arg3 = arg3;
@@ -41,19 +47,19 @@ namespace Atrufulgium.BulletScript.Compiler.HighLevelOpCodes {
         /// <br/>
         /// Negative opcodes do not return anything.
         /// </summary>
-        /// <inheritdoc cref="IOPArgument.ToFloat(Dictionary{string, float}, Dictionary{string, float}, Dictionary{string, float})"/>
-        public (float, float, float, float)? ToLowLevel(
-            Dictionary<string, float> explicitGotoTargets,
-            Dictionary<string, float> explicitVariableIDs,
-            Dictionary<string, float> explicitStringIDs
-        ) => opcode >= 0 ? (
+        /// <inheritdoc cref="IOPArgument.ToFloat(Dictionary{string, int}, Dictionary{string, int}, Dictionary{string, int})"/>
+        public LLOP? ToLowLevel(
+            Dictionary<string, int> explicitGotoTargets,
+            Dictionary<string, int> explicitVariableIDs,
+            Dictionary<string, int> explicitStringIDs
+        ) => OpCode >= 0 ? new(
             opcode,
             arg1.ToFloat(explicitGotoTargets, explicitVariableIDs, explicitStringIDs),
             arg2.ToFloat(explicitGotoTargets, explicitVariableIDs, explicitStringIDs),
             arg3.ToFloat(explicitGotoTargets, explicitVariableIDs, explicitStringIDs)
         ) : null;
 
-        public override string ToString() => $"[op] {opNames[opcode],15} | {arg1} | {arg2} | {arg3}";
+        public override string ToString() => $"[op] {opNames[OpCode],15} | {arg1} | {arg2} | {arg3}";
 
         // This conversion is for convenience for emittable methods that return
         // a list of opcodes, to allow simply returning a single.

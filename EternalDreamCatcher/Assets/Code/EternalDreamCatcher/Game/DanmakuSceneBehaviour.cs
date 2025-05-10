@@ -1,10 +1,12 @@
 #nullable disable // Monobehaviour start instead of constructor
+using Atrufulgium.BulletScript.Compiler;
 using Atrufulgium.EternalDreamCatcher.Base;
 using Atrufulgium.EternalDreamCatcher.BulletEngine;
 using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -63,7 +65,10 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
             gameInput = new(new(), Allocator.Persistent);
 
             danmakuScene = new DanmakuScene<KeyboardInput>(quadMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures, gameInput, player);
-            danmakuScene.activeVMs.Add(CreateVM());
+
+            var vm = CreateVM();
+            if (vm.IsCreated)
+                danmakuScene.activeVMs.Add(CreateVM());
 
             camera = GetComponent<Camera>();
 
@@ -75,62 +80,44 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
         }
 
         unsafe VM CreateVM() {
-            static unsafe float Int(int value) => *(float*)&value;
-            const float NA = float.NaN;
             NativeReference<Unity.Mathematics.Random> rngRef = new(new(230), Allocator.Persistent);
             NativeReference<uint> uintRef = new(0, Allocator.Persistent);
-            VM vm = new(new float4[] {
-// High-level:
-//  float t;
-//  spawnspeed = 0.12f;
-//  soawboisutuib = [0.5; 0.5];
-//  repeat {
-//      t += 0.025f;
-//      spawnrotation += sin(t) + 0.25f;
-//      spawn();
-//      spawnrotation += 0.25f;
-//      spawn();
-//      spawnrotation += 0.25f;
-//      spawn();
-//      spawnrotation += 0.25f;
-//      spawn();
-//      wait(5);
-//  }
-// Low level:
-// mem[13] = 0 (implicit)
-// spawnspeed = 0.12
-new(Int(10), Int(2), 0.12f, NA),
-// spawnposition = [0.5; 0.5]
-new(Int(10), Int(4), 0.5f, NA),
-new(Int(10), Int(5), 0.5f, NA),
-// label: LOOP
-// mem[13] = 0.025 + mem[13]
-new(Int(81), Int(13), 0.025f, Int(13)),
-// mem[14] = sin(mem[13])
-new(Int(98), Int(14), Int(13), NA),
-// mem[14] = 0.25 + mem[14]
-new(Int(81), Int(14), 0.25f, Int(14)),
-// spawnrotation = spawnrotation + mem[14]
-new(Int(82), Int(1), Int(1), Int(14)),
-// spawn
-new(Int(34), NA, NA, NA),
-// spawnrotation = 0.25 + spawnrotation
-new(Int(81), Int(1), 0.25f, Int(1)),
-// spawn
-new(Int(34), NA, NA, NA),
-// spawnrotation = 0.25 + spawnrotation
-new(Int(81), Int(1), 0.25f, Int(1)),
-// spawn
-new(Int(34), NA, NA, NA),
-// spawnrotation = 0.25 + spawnrotation
-new(Int(81), Int(1), 0.25f, Int(1)),
-// spawn
-new(Int(34), NA, NA, NA),
-// wait 5
-new(Int(21), 5, NA, NA),
-// goto LOOP
-new(Int(19), Int(3-1), NA, NA)
-            }, 32, 32, Array.Empty<string>(), default, uintRef.GetUnsafeTypedPtr(), rngRef.GetUnsafeTypedPtr());
+
+            var compilation = Compiler.Compile(@"
+float t;
+spawnspeed = 0.12f;
+spawnposition = [0.5; 0.5];
+repeat {
+    t += 0.025f;
+    spawnrotation += sin(t) + 0.25f;
+    spawn();
+    spawnrotation += 0.25f;
+    spawn();
+    spawnrotation += 0.25f;
+    spawn();
+    spawnrotation += 0.25f;
+    spawn();
+    wait(5);
+}
+");
+            if (!compilation.TryGetBytecodeOutput(out var output)) {
+                Debug.LogError(compilation.PrettyprintDiagnostics());
+                return default;
+            } else if (compilation.Diagnostics.Count > 0) {
+                Debug.LogWarning(compilation.PrettyprintDiagnostics());
+                return default;
+            }
+            LLOP[] opcodes = output.OpCodes;
+            VM vm = new(
+                // This won't bite me in the arse
+                UnsafeUtility.As<LLOP[], float4[]>(ref opcodes),
+                output.Memory.Length,
+                output.Memory.Length, // temp
+                output.Strings,
+                default,
+                uintRef.GetUnsafeTypedPtr(),
+                rngRef.GetUnsafeTypedPtr()
+            );
             testDisposables.Add(rngRef);
             testDisposables.Add(uintRef);
             testDisposables.Add(vm);

@@ -20,6 +20,12 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
     public unsafe partial struct VM : IDisposable {
 
         /// <summary>
+        /// Only valid VMs are created. If this is false, this VM is to be
+        /// interpreted "null".
+        /// </summary>
+        public bool IsCreated => instructions.IsCreated;
+
+        /// <summary>
         /// The maximum instruction size. For more information, see
         /// <see cref="opAndCooldown"/>.
         /// </summary>

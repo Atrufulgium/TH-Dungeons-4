@@ -22,8 +22,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
         // Bad software design: Be sure to keep this in sync with
         /// <see cref="IntrinsicData"/>
         /// <see cref="BytecodeOutput"/>
-        public IReadOnlyDictionary<string, float> ExplicitVariableIDs { get; private set; }
-        readonly Dictionary<string, float> explicitVariableIDs = new() {
+        public IReadOnlyDictionary<string, int> ExplicitVariableIDs { get; private set; }
+        readonly Dictionary<string, int> explicitVariableIDs = new() {
             { "bullettype", 0 },
             { "spawnrotation", 1 },
             { "spawnspeed", 2 },
@@ -36,11 +36,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             { "on_screen_leave(float).value", 12 }
         };
 
-        float nextVariableID = 0;
+        int nextVariableID = 0;
 
         public EmitWalker() { 
             OPCodes = new ReadOnlyCollection<HLOP>(opCodes);
-            ExplicitVariableIDs = new ReadOnlyDictionary<string, float>(explicitVariableIDs);
+            ExplicitVariableIDs = new ReadOnlyDictionary<string, int>(explicitVariableIDs);
         }
 
         protected override void VisitRoot(Root node) {
