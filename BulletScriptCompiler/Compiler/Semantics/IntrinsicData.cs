@@ -88,6 +88,10 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             // Remark: These are *not* checked for correctness like everything else.
             // Please be careful.
 
+            // After adding anything, be sure to update EmittingPainAndSuffering.cs:
+            // - IntrinsicInvocationStatement if void;
+            // - IntrinsicInvocationAssignmentStatement if nonvoid.
+
             // If I don't do this it complains about ambiguity.
             Syntax.Type Void = Syntax.Type.Void;
             Syntax.Type String = Syntax.Type.String;
@@ -108,7 +112,7 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             AddIntrinsic("rotate", Void, (Float, "amount"));
             AddIntrinsic("setrotation", Void, (Float, "value"));
             AddIntrinsic("faceplayer", Void);
-            AddIntrinsic("angletoplayer", Float);
+            AddIntrinsic("turnstoplayer", Float);
             AddIntrinsic("addspeed", Void, (Float, "amount"));
             AddIntrinsic("setspeed", Void, (Float, "value"));
             AddIntrinsic("gimmick", Void, (String, "gimmick"));
@@ -118,6 +122,9 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             AddIntrinsic("random", Vector2, (Vector2, "lower"), (Vector2, "upper"));
             AddIntrinsic("random", Vector3, (Vector3, "lower"), (Vector3, "upper"));
             AddIntrinsic("random", Vector4, (Vector4, "lower"), (Vector4, "upper"));
+            AddIntrinsic("print", Void, (Float, "value"));
+            AddIntrinsic("print", Void, (MatrixUnspecified, "value"));
+            AddIntrinsic("print", Void, (String, "value"));
             AddIntrinsic("sin", Float, (Float, "value"));
             AddIntrinsic("sin", Vector2, (Vector2, "value"));
             AddIntrinsic("sin", Vector3, (Vector3, "value"));
@@ -146,6 +153,14 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             AddIntrinsic("atan2", Vector2, (Vector2, "y"), (Vector2, "x"));
             AddIntrinsic("atan2", Vector3, (Vector3, "y"), (Vector3, "x"));
             AddIntrinsic("atan2", Vector4, (Vector4, "y"), (Vector4, "x"));
+            AddIntrinsic("turns2rad", Float, (Float, "turns"));
+            AddIntrinsic("turns2rad", Vector2, (Vector2, "turns"));
+            AddIntrinsic("turns2rad", Vector3, (Vector3, "turns"));
+            AddIntrinsic("turns2rad", Vector4, (Vector4, "turns"));
+            AddIntrinsic("rad2turns", Float, (Float, "radians"));
+            AddIntrinsic("rad2turns", Vector2, (Vector2, "radians"));
+            AddIntrinsic("rad2turns", Vector3, (Vector3, "radians"));
+            AddIntrinsic("rad2turns", Vector4, (Vector4, "radians"));
             AddIntrinsic("ceil", Float, (Float, "value"));
             AddIntrinsic("ceil", Vector2, (Vector2, "value"));
             AddIntrinsic("ceil", Vector3, (Vector3, "value"));
@@ -170,6 +185,11 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
             AddIntrinsic("distance", Float, (Vector2, "a"), (Vector2, "b"));
             AddIntrinsic("distance", Float, (Vector3, "a"), (Vector3, "b"));
             AddIntrinsic("distance", Float, (Vector4, "a"), (Vector4, "b"));
+            // These are actually rewritten in compiletime and have _no_
+            // associated emission/opcodes. See
+            /// <see cref="Visitors.ConstantFoldRewriter.VisitInvocationExpression(InvocationExpression)"/>
+            AddIntrinsic("mrows", Float, (MatrixUnspecified, "m"));
+            AddIntrinsic("mcols", Float, (MatrixUnspecified, "m"));
         }
     }
 }

@@ -134,6 +134,24 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             if (name.StartsWith("atan2("))
                 return HLOP.Atan24(res, s1, s2);
 
+            if (name == "turns2rad(float)") {
+                return isLit1 switch {
+                    true => throw EmitHelpers.IntrinsicsMustBeConstantFolded(this),
+                    false => HLOP.Angle2Rad(res, s1)
+                };
+            }
+            if (name.StartsWith("turns2rad("))
+                return HLOP.Angle2Rad4(res, s1);
+
+            if (name == "rad2turns(float)") {
+                return isLit1 switch {
+                    true => throw EmitHelpers.IntrinsicsMustBeConstantFolded(this),
+                    false => HLOP.Rad2Angle(res, s1)
+                };
+            }
+            if (name.StartsWith("rad2turns("))
+                return HLOP.Rad2Angle4(res, s1);
+
             if (name == "distance(float,float)") {
                 return (isLit1, isLit2) switch {
                     (true, true) => throw EmitHelpers.IntrinsicsMustBeConstantFolded(this),
@@ -145,7 +163,7 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             if (name.StartsWith("distance("))
                 return HLOP.Distance4(res, s1, s2);
 
-            if (name == "angletoplayer()")
+            if (name == "turnstoplayer()")
                 return HLOP.AngleToPlayer(res);
 
             throw new NotImplementedException($"Unknown intrinsic `{ToCompactString()}`");
@@ -204,6 +222,15 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
                    => Invocation.Arguments[2] is LiteralExpression f3 ? HLOP.Gimmick(s1, s2, f3.FloatValue!.Value)
                     : Invocation.Arguments[2] is IdentifierName s3 ? HLOP.Gimmick(s1, s2, s3.Name)
                     : throw new InvalidOperationException("Assumed args are identifiers or literals."),
+                ("print(string)", _, _) => HLOP.Print(s1),
+                ("print(float)", true, _) => HLOP.Print(f1),
+                ("print(float)", false, _) => HLOP.Print(s1, 1, 1),
+                ("print(matrix)", _, _) => model.GetExpressionType(Invocation.Arguments[0])
+                    .TryGetMatrixSize(out var size)
+                    ? HLOP.Print(s1, size.rows, size.cols)
+                    : throw new InvalidOperationException("Assumed arg was interpretable as matrix."),
+                // This assumes statement-level non-void intrinsics are pure,
+                // which is the case if you assume RNG to be "pure" rng.
                 _ when isIntrinsicReturningNonVoid => new List<HLOP>(),
                 _ => throw new NotImplementedException($"Unknown intrinsic {ToCompactString()}")
             };
@@ -485,15 +512,14 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
                 throw new InvalidOperationException("Expected one-dimensional index.");
             var index = ind.Entries[0];
 
-            if (expr is not IdentifierName)
+            if (expr is not IdentifierName indexed)
                 throw new InvalidOperationException("Expected index to apply to an identifier.");
 
-            // TODO: This seems incorrect.
             if (index is IdentifierName nameIndex)
-                return HLOP.IndexedGet(lhs, nameIndex.Name);
+                return HLOP.IndexedGet(lhs, indexed.Name, nameIndex.Name);
             if (index is LiteralExpression literalIndex) {
                 if (literalIndex.FloatValue.HasValue)
-                    return HLOP.IndexedGet(lhs, literalIndex.FloatValue.Value);
+                    return HLOP.IndexedGet(lhs, indexed.Name, literalIndex.FloatValue.Value);
                 throw new InvalidOperationException("Expected float index.");
             }
             throw new InvalidOperationException("Expected name or literal index, but it was something else. Did you forget a rewrite?");

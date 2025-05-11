@@ -362,8 +362,8 @@ a = m[a];
 ", @"
 [op]             Set | [f]              m+0 | [f]                1 | --------------------
 [op]             Set | [f]              m+1 | [f]                2 | --------------------
-[op]      IndexedGet | [f]                a | [f]                0 | --------------------
-[op]      IndexedGet | [f]                a | [f]                a | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f]                0
+[op]      IndexedGet | [f]                a | [f]                m | [f]                a
 ");
 
         [TestMethod]
@@ -376,9 +376,9 @@ a = m[0 a];
 [op]             Set | [f]              m+1 | [f]                2 | --------------------
 [op]             Set | [f]              m+2 | [f]                3 | --------------------
 [op]             Set | [f]              m+3 | [f]                4 | --------------------
-[op]      IndexedGet | [f]                a | [f]                0 | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f]                0
 [op]             Add | [f] ari...lt#float#0 | [f]                0 | [f]                a
-[op]      IndexedGet | [f]                a | [f] ari...lt#float#0 | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f] ari...lt#float#0
 ");
 
         [TestMethod]
@@ -393,9 +393,9 @@ a = m[0 a];
 [op]             Set | [f]              m+5 | [f]                4 | --------------------
 [op]             Set | [f]              m+8 | [f]                5 | --------------------
 [op]             Set | [f]              m+9 | [f]                6 | --------------------
-[op]      IndexedGet | [f]                a | [f]                0 | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f]                0
 [op]             Add | [f] ari...lt#float#0 | [f]                0 | [f]                a
-[op]      IndexedGet | [f]                a | [f] ari...lt#float#0 | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f] ari...lt#float#0
 ");
 
         [TestMethod]
@@ -408,13 +408,13 @@ a = m[a];
 [op]             Set | [f]              m+1 | [f]                2 | --------------------
 [op]             Set | [f]              m+2 | [f]                3 | --------------------
 [op]             Set | [f]              m+3 | [f]                4 | --------------------
-[op]      IndexedGet | [f]                a | [f]                0 | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f]                0
 [op]             Div | [f] ari...lt#float#0 | [f]                a | [f]                2
 [op]           Floor | [f] ari...lt#float#1 | [f] ari...lt#float#0 | --------------------
 [op]             Mul | [f] ari...lt#float#2 | [f]                2 | [f] ari...lt#float#1
 [op]             Mod | [f] ari...lt#float#3 | [f]                a | [f]                2
 [op]             Add | [f] ari...lt#float#4 | [f] ari...lt#float#2 | [f] ari...lt#float#3
-[op]      IndexedGet | [f]                a | [f] ari...lt#float#4 | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f] ari...lt#float#4
 ");
 
         [TestMethod]
@@ -429,13 +429,13 @@ a = m[a];
 [op]             Set | [f]              m+5 | [f]                4 | --------------------
 [op]             Set | [f]              m+8 | [f]                5 | --------------------
 [op]             Set | [f]              m+9 | [f]                6 | --------------------
-[op]      IndexedGet | [f]                a | [f]                0 | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f]                0
 [op]             Div | [f] ari...lt#float#0 | [f]                a | [f]                2
 [op]           Floor | [f] ari...lt#float#1 | [f] ari...lt#float#0 | --------------------
 [op]             Mul | [f] ari...lt#float#2 | [f]                4 | [f] ari...lt#float#1
 [op]             Mod | [f] ari...lt#float#3 | [f]                a | [f]                2
 [op]             Add | [f] ari...lt#float#4 | [f] ari...lt#float#2 | [f] ari...lt#float#3
-[op]      IndexedGet | [f]                a | [f] ari...lt#float#4 | --------------------
+[op]      IndexedGet | [f]                a | [f]                m | [f] ari...lt#float#4
 ");
 
         [TestMethod]

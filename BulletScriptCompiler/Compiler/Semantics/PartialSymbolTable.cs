@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Atrufulgium.BulletScript.Compiler.Semantics {
     /// <summary>
@@ -107,6 +108,28 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
 
             if (exists)
                 return types[fullyQualifiedName];
+
+            // Some matrix intrinsics are a bit annoying in that they accept
+            // _any_ size.
+            // For now I don't have a proper way of implementing this, so hack
+            // around like this.
+            // Bad code: this is partially the same as
+            /// <see cref="SymbolTable.Fqn2Symbol(string)"/>
+            if (fullyQualifiedName.Contains("matrix")) {
+                var untypedMatrix = Regex.Replace(fullyQualifiedName, @"matrix[1-4]x[1-4]", "matrix");
+                exists = originalDeclarations.ContainsKey(untypedMatrix);
+
+                if (exists)
+                    return types[untypedMatrix];
+            }
+            if (fullyQualifiedName.Contains("vector")) {
+                var untypedVector = Regex.Replace(fullyQualifiedName, @"vector[1-4]", "matrix");
+                exists = originalDeclarations.ContainsKey(untypedVector);
+
+                if (exists)
+                    return types[untypedVector];
+            }
+
             return Syntax.Type.Error;
         }
 
@@ -185,7 +208,6 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
                 testKey = testKey[(i + 1)..];
                 if (originalDeclarations.ContainsKey(testKey)) {
                     name = testKey;
-                    exists = true;
                     break;
                 }
             }

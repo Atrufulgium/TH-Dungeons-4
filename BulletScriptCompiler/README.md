@@ -4,34 +4,30 @@ This is the compiler subproject. The compiler is a standalone DLL that simply co
 
 (This part of the repo is separate from the rest in case I want to do stuff like "create an editor" or "create server-side compilation", which is wholly independent of the Unity side of things.)
 
-&nbsp;
-
-Awkwardly placed todo-list:
-- This file. Maybe also for *once* include project setup/build instructions.
+### Awkwardly placed todo-list:
+Compiler:
 - Writing to indices `a[i] = ...` is not implemented at any level yet.
-- Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily.
 - Square is not yet used in the compiler.
-- Angular stuff (e.g. `angle2rad` is not implemented yet).
 - All of those event functions `on_..<>`.
-- Everything BSS. This includes removing the variables `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers`, `use_pivot`.
-- The `matrix` shorthand is broken.
-- Multiplication `scalar * matrix` is not supported.
-- Moving things like `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers` to BSS seems more sensible than having it in code.
 - More event functions, such as `on_left_side()`, `on_border()`, etc, mixed with more intrinsics `bounce(matrix2x1 normal)`, `wraparound()`, etc.
+- The `matrix` shorthand is broken.
+- Multiplication `scalar * matrix` is not supported. (We could do this as `MatrixMul11N` and `MatrixMulN11` opcodes per row.)
 - Increments/decrements are currently only really allowed at statement-level.
-- IndexedGet HLOP is malformed.
-- String print.
-- The VM in Unity is outdated
-- No comments lmao
+
+Other:
+- This file. Maybe also for *once* include project setup/build instructions.
+- Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily.
+- Everything BSS. This includes removing the variables `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers`, `use_pivot` from the compiler.
 
 BulletScript (BS)
 =================
 The least original name used by at least a dozen other people! And by me, for the third time.
 
-A typical bulletscript file looks as follows.
+A typical BulletScript file looks as follows.
 ```js
 float difficulty = 3;
 
+// Main entrypoint when the script is spawned in.
 function void main(float value) {
     repeat {
         bullettype = "main";
@@ -53,9 +49,12 @@ function void main(float value) {
     }
 }
 
+// Triggers when the boss has 2/3 health left.
 function void on_health<0.66>() { increase_difficulty(); }
+// Triggers when the boss has 1/3 health left.
 function void on_health<0.33>() { increase_difficulty(); }
 
+// Custom function definition
 function void increase_difficulty() { difficulty++; }
 ```
 
@@ -122,7 +121,7 @@ Arithmetic
 
 Any variable can be assigned to another compatible variable with `=`. Furthermore, floats and matrices have the following operations: `-a`, `!a` (boolean NOT), `a^b` (exponentiation), `a*b`, `a/b`, `a%b`, `a+b`, `a-b`, `a<b`, `a>b`, `a<=b`, `a>=b`, `a==b`, `a!=b`, `a&b` (boolean AND), `a|b` (boolean OR). For matrices, all of these are applied entry wise if the sizes match.
 
-However, matrices have one exception: `a*b`, when matrices are of compatible size, is matrix multiplication instead. In particular, if `a` and `b` are same-sized, matrix multiplication is applied.
+However, matrices have one exception: `a*b`, when matrices are of compatible size, is matrix multiplication instead. In particular, if `a` and `b` are same-sized square matrices, matrix multiplication is applied.
 
 All binary operators, except for the comparators, can be used in compound assignments as for instance `a += b`.
 
@@ -142,7 +141,7 @@ There are some methods that do something special when you define them. None of t
 - `function void main(float value)` is called when the script is loaded and the primary entry points. A `value` is optionally sent from the parent script (where "parent" means the script that created this script with `addscript()`, `startscript()`, or `startscriptmany()`). Otherwise, it is constant 0.
 - `function void on_message(float value)` is called whenever the _any_ script associated with the same enemy calls `message()`. The argument of the message is passed.
 - `function void on_charge(float value)` is similar to `message()`, but when calling `charge()`, and with a delay.
-- `function void on_health<fraction>()` is called whenever the attached mob's health reaches a certain fraction of its starting health (in `[0,1]`). Of particular note is `function void on_health<0>()` that is guaranteed to run when the character is killed. This `fraction` must be a compile-time constant.
+- `function void on_health<fraction>()` is called whenever the attached mob's health reaches a certain fraction of its starting health (in `[0,1]`). Of particular note is `function void on_health<0>()` that is guaranteed to run when the character is killed. This `fraction` must be a simple float literal.
 - `function void on_time<seconds>()` is called after a certain amount of time has passed (since being instantiated by the parent).
 - `function void on_screen_leave(float value)` is called whenever the bullet has visibly left the screen. The `value` represents where the bullet went off-screen: `0` means "down", `1` means "left", `2` means "up", and `3` means "right". This method can be used to created bounces, bullets, wraparounds, etc.
 
@@ -151,9 +150,9 @@ All these special `on_X` methods may not call `wait()`, whether directly or indi
 Built-in functions
 ------------------
 
-These are all functions that communicate with the c# side of things. You can call these like a normal user-defined function. In the table below, `any` means that any type is allowed. Matrix-related functions must have properly sized arguments, and _usually_ return something of the same size. The `Many?` column denotes whether a function gets called for every attached object, or just once.
+These are all functions that communicate with the c# side of things. You can call these like a normal user-defined function. The `Many?` column denotes whether a function gets called for every attached object, or just once.
 
-The methods with both a float and matrix formulation _usually_ apply the float formula entry-wise to the matrix. As such, the matrix sizes should match.
+The methods with both a float and vetor formulation _usually_ apply the float formula entry-wise to the vector. As such, the vector sizes should match.
 
 Signature | Many? | Notes
 ----------|-------|------
@@ -175,25 +174,25 @@ Signature | Many? | Notes
 `void addspeed(float)` | ✅ | Add speed¹ to all affected objects.
 `void setspeed(float)` | ✅ | Sets the speed¹ of all affected objects.
 `matrix2x1 playerpos()` | ❌ | Returns the player's position on the screen².
-`float angletoplayer()` | ❌ | Returns the angle from an arbitrary affected object to the player in turns.
-`float random(float, float)`<br/>`matrix random(matrix, matrix)` | ❌ | Returns a random number between the two endpoints, inclusive.
-`void gimmick(string[, float[, float]])` | ❌ | Runs a named gimmick. Think of Seija's flipping or Sakuya's timestop or something.
+`float turnstoplayer()` | ❌ | Returns the angle from an arbitrary affected object to the player in turns.
+`float random(float, float)`<br/>`vector random(vector, vector)` | ❌ | Returns a random number between the two arguments, inclusive.
+`void gimmick(string[, float[, float]])` | ❌ | Runs a named gimmick. Think of Seija's screen-flipping or Sakuya's timestop or something.
 `void playsound(string)` | ❌ | Plays a sound for each affected object.
-`float sin(float)`<br/>`matrix sin(matrix)` | ❌ | Returns the sine, in radians.
-`float cos(float)`<br/>`matrix cos(matrix)` | ❌ | Returns the cosine, in radians.
-`float tan(float)`<br/>`matrix tan(matrix)` | ❌ | Returns the tangent, in radians.
-`float asin(float)`<br/>`matrix asin(matrix)` | ❌ | Returns the inverse sine, in radians. The argument must be in [-1,1].
-`float acos(float)`<br/>`matrix acos(matrix)` | ❌ | Returns the inverse cosine, in radians. The argument must be in [-1,1].
-`float atan(float)`<br/>`matrix atan(matrix)` | ❌ | Returns the inverse tangent, in radians. You should prefer `atan2`.
-`float atan2(float, float)`<br/>`matrix atan2(matrix, matrix)` | ❌ | Returns the inverse tangent of `2nd arg/1st arg`, in radians. This matches `atan` in the positive quadrant. Intuitively, the angle of the line between (0,0) and (`1st arg`, `2nd arg`).
-`float angle2rad(float)`<br/>`matrix angle2rad(matrix)` | ❌ | Converts the [0,1] counterclockwise angle to radians.
-`float rad2angle(float)`<br/>`matrix rad2angle(matrix)` | ❌ | Converts an angle in radians to the angle the bullet stuff uses.
-`float ceil(float)`<br/>`matrix ceil(matrix)` | ❌ | Returns the smallest integer larger than the argument.
-`float floor(float)`<br/>`matrix floor(matrix)` | ❌ | Returns the largest integer smaller than the argument.
-`float round(float)`<br/>`matrix round(matrix)` | ❌ | Returns the integer nearest to the argument.
-`float abs(float)`<br/>`matrix abs(matrix)` | ❌ | Removes the minus sign.
-`float length(float)`<br/>`float length(matrix)` | ❌ | Calculates the Euclidean norm of a matrix.
-`float distance(matrix, matrix)` | ❌ | Calculates the Euclidean distance between two same-sized matrices.
+`float sin(float)`<br/>`vector sin(vector)` | ❌ | Returns the sine, in radians.
+`float cos(float)`<br/>`vector cos(vector)` | ❌ | Returns the cosine, in radians.
+`float tan(float)`<br/>`vector tan(vector)` | ❌ | Returns the tangent, in radians.
+`float asin(float)`<br/>`vector asin(vector)` | ❌ | Returns the inverse sine, in radians. The argument must be in [-1,1].
+`float acos(float)`<br/>`vector acos(vector)` | ❌ | Returns the inverse cosine, in radians. The argument must be in [-1,1].
+`float atan(float)`<br/>`vector atan(vector)` | ❌ | Returns the inverse tangent, in radians. You should prefer `atan2`.
+`float atan2(float, float)`<br/>`vector atan2(vector, vector)` | ❌ | Returns the inverse tangent of `2nd arg/1st arg`, in radians. This matches `atan` in the positive quadrant. Intuitively, the angle of the line between (0,0) and (`1st arg`, `2nd arg`).
+`float turn2rad(float)`<br/>`vector turn2rad(vector)` | ❌ | Converts the [0,1] clockwise turn to radians.<br/>In other words, 0, 0.25, 0.5, and 0.75 turn map to $\frac32\pi$, $\pi$, $\frac12\pi$, and 0 radians, respectively.<br/>This is equivalent to `(1.75f - float) * TAU % TAU`.
+`float rad2turn(float)`<br/>`vector rad2turn(vector)` | ❌ | Converts an angle in radians to the angle the bullet stuff uses.<br/>This is equivalent to `(1.75 - float / TAU) % 1`.
+`float ceil(float)`<br/>`vector ceil(vector)` | ❌ | Returns the smallest integer larger than the argument.
+`float floor(float)`<br/>`vector floor(vector)` | ❌ | Returns the largest integer smaller than the argument.
+`float round(float)`<br/>`vector round(vector)` | ❌ | Returns the integer nearest to the argument.
+`float abs(float)`<br/>`vector abs(vector)` | ❌ | Removes the minus sign.
+`float length(float)`<br/>`float length(vector)` | ❌ | Calculates the Euclidean norm of a vector.
+`float distance(vector, vector)` | ❌ | Calculates the Euclidean distance between two same-sized vectors.
 `float mcols(matrix)` | ❌ | The number of columns in a matrix.
 `float mrows(matrix)` | ❌ | The number of rows in a matrix.
 
@@ -288,6 +287,8 @@ Pseudo-class | Description
 `:killed` | Matches bullets that have killed the player.
 `:nth-message(N)` | Matches bullets whose attached scripts have run a total of `N` `on_message()` calls.
 `:nth-spawn(N)` | Matches with each `N`th bullet of a type *that a specific script* (not the character!) `spawn()`s.
+`:after-time(N)` | Matches bullets that have existed for at least `N` ticks.
+`:before-time(N)` | Matches bullets that have existed for at most `N` ticks.
 
 Bullet types
 ------------
@@ -345,7 +346,7 @@ The syntax in the below tables is consistent for easier browsing.
 - Other read locations will be called `i`, `j`.
 - Literal values will be called `v`, `w`.
 - String variables will be called `*s`, `*t`.  
-  Strings are nothing more than floats with an interpretation if you use the string table.
+  Strings are nothing more than float variables with an interpretation.
 
 For more details on the below opcodes, see the function documentation above.
 
@@ -374,8 +375,6 @@ These operations are the most basic things you'd expect in a VM and defined as "
 | IndexedSet | 18 | `*r *i *j` | Set `*(r+*i)` to `*j`. Offset `*j` will be clamped to `[0,16)`.
 | Jump       | 19 | ` v` | Set the IP to `v`.<br/>*Note*: The IP will also increase after this instruction.
 | JumpCond.  | 20 | ` v  *j` | Set the IP to `v` if `*j != 0`, do nothing otherwise.<br/>*Note*: The IP will also increase after this instruction.
-| Wait       | 21 | ` v` | Send a "stop execution for `v` game ticks"-message.<br/>*Note*: Only allowed in `main()`.
-| Wait       | 22 | `*i` | Send a "stop execution for `*i` game ticks"-message.<br/>*Note*: Only allowed in `main()`.
 
 ### Messaging intrinsics
 The goal of the VM is to create an output stream with filled-in commands for the engine to work with.
@@ -384,8 +383,8 @@ These operations generate those commands.
 
 | Name            | OpCode | Args | Description
 | :-------------- | :----- | :--- | :----------
-| Print           | 32 | `*i` | Output a "print `*i`"-message.
-| Print           | 33 | ` v` | Output a "print `v`"-message.
+| Message         | 32 | `*i` | Output a "message `*i` to other scripts"-message.
+| Message         | 33 | ` v` | Output a "message `v` to other scripts"-message.
 | Spawn           | 34 | | Output a "spawn bullets"-message with the current settings.
 | Destroy         | 35 | | Output a "destroy self"-message.
 | LoadBackground  | 36 | `*s` | Output a "load background `*s`"-message.
@@ -417,50 +416,57 @@ These operations generate those commands.
 | Gimmick         | 62 | `*s  v *i` | Output a "use named gimmick `*s(v,*i)`"-message.
 | Gimmick         | 63 | `*s *i  v` | Output a "use named gimmick `*s(*i,v)`"-message.
 | Gimmick         | 64 | `*s *i *j` | Output a "use named gimmick `*s(*i,*j)`"-message.
+| Print           | 65 | `*s` | Output a "`*s`"-message.
+| Print           | 66 | ` v` | Output a "`v`"-message.
+| Print           | 67 | `*r  v  w` | Output a "`*r`-message, interpreting `*r` as the start of a `v`$\times$`w` matrix.
+| Wait            | 68 | ` v` | Send a "stop execution for `v` game ticks"-message.<br/>*Note*: Only allowed in `main()`.
+| Wait            | 69 | `*i` | Send a "stop execution for `*i` game ticks"-message.<br/>*Note*: Only allowed in `main()`.
 
 ### Floating point math
 Exactly as it says on the tin.
 
-| Name     | OpCode | Args | Description
-| :------- | :----- | :--- | :----------
-| Not      |  80 | `*r *i` | Set `*r` to `!(*i)`.
-| Add      |  81 | `*r  v *i` | Set `*r` to `v + *i`.
-| Add      |  82 | `*r *i *j` | Set `*r` to `*i + *j`.
-| Sub      |  83 | `*r  v *i` | Set `*r` to `v - *i`.
-| Sub      |  84 | `*r *i  v` | Set `*r` to `*i - v`.
-| Sub      |  85 | `*r *i *j` | Set `*r` to `*i - *j`.
-| Mul      |  86 | `*r  v *i` | Set `*r` to `v * *i`.
-| Mul      |  87 | `*r *i *j` | Set `*r` to `*i * *j`.
-| Div      |  88 | `*r  v *i` | Set `*r` to `v / *i`.
-| Div      |  89 | `*r *i  v` | Set `*r` to `*i / v`.
-| Div      |  90 | `*r *i *j` | Set `*r` to `*i / *j`.
-| Mod      |  91 | `*r  v *i` | Set `*r` to `v % *i`.
-| Mod      |  92 | `*r *i  v` | Set `*r` to `*i % v`.
-| Mod      |  93 | `*r *i *j` | Set `*r` to `*i % *j`.
-| Pow      |  94 | `*r  v *i` | Set `*r` to `v ^ *i`.
-| Pow      |  95 | `*r *i  v` | Set `*r` to `*i ^ v`.
-| Pow      |  96 | `*r *i *j` | Set `*r` to `*i ^ *j`.
-| Square   |  97 | `*r *i` | Set `*r` to `*i * *i`.
-| Sin      |  98 | `*r *i` | Set `*r` to `sin(*i)`.
-| Cos      |  99 | `*r *i` | Set `*r` to `cos(*i)`.
-| Tan      | 100 | `*r *i` | Set `*r` to `tan(*i)`.
-| Asin     | 101 | `*r *i` | Set `*r` to `asin(*i)`.
-| Acos     | 102 | `*r *i` | Set `*r` to `acos(*i)`.
-| Atan     | 103 | `*r *i` | Set `*r` to `atan(*i)`.
-| Atan2    | 104 | `*r  v *i` | Set `*r` to `atan2(v, *i)`.
-| Atan2    | 105 | `*r *i  v` | Set `*r` to `atan2(*i, v)`.
-| Atan2    | 106 | `*r *i *j` | Set `*r` to `atan2(*i, *j)`.
-| Ceil     | 107 | `*r *i` | Set `*r` to `ceil(*i)`.
-| Floor    | 108 | `*r *i` | Set `*r` to `floor(*i)`.
-| Round    | 109 | `*r *i` | Set `*r` to `round(*i)`.
-| Abs      | 110 | `*r *i` | Set `*r` to `\|*i\|`.
-| Random   | 111 | `*r  v  w` | Set `*r` to a random float `[v,w]`.
-| Random   | 112 | `*r  v *i` | Set `*r` to a random float `[v,*i]`.
-| Random   | 113 | `*r *i  v` | Set `*r` to a random float `[*i,v]`.
-| Random   | 114 | `*r *i *j` | Set `*r` to a random float `[*i,*j]`.
-| Distance | 115 | `*r  v *i` | Set `*r` to `\|v-*i\|`.
-| Distance | 116 | `*r *i  v` | Set `*r` to `\|*i-v\|`.
-| Distance | 117 | `*r *i *j` | Set `*r` to `\|*i-*j\|`.
+| Name      | OpCode | Args | Description
+| :-------- | :----- | :--- | :----------
+| Not       |  80 | `*r *i` | Set `*r` to `!(*i)`.
+| Add       |  81 | `*r  v *i` | Set `*r` to `v + *i`.
+| Add       |  82 | `*r *i *j` | Set `*r` to `*i + *j`.
+| Sub       |  83 | `*r  v *i` | Set `*r` to `v - *i`.
+| Sub       |  84 | `*r *i  v` | Set `*r` to `*i - v`.
+| Sub       |  85 | `*r *i *j` | Set `*r` to `*i - *j`.
+| Mul       |  86 | `*r  v *i` | Set `*r` to `v * *i`.
+| Mul       |  87 | `*r *i *j` | Set `*r` to `*i * *j`.
+| Div       |  88 | `*r  v *i` | Set `*r` to `v / *i`.
+| Div       |  89 | `*r *i  v` | Set `*r` to `*i / v`.
+| Div       |  90 | `*r *i *j` | Set `*r` to `*i / *j`.
+| Mod       |  91 | `*r  v *i` | Set `*r` to `v % *i`.
+| Mod       |  92 | `*r *i  v` | Set `*r` to `*i % v`.
+| Mod       |  93 | `*r *i *j` | Set `*r` to `*i % *j`.
+| Pow       |  94 | `*r  v *i` | Set `*r` to `v ^ *i`.
+| Pow       |  95 | `*r *i  v` | Set `*r` to `*i ^ v`.
+| Pow       |  96 | `*r *i *j` | Set `*r` to `*i ^ *j`.
+| Square    |  97 | `*r *i` | Set `*r` to `*i * *i`.
+| Sin       |  98 | `*r *i` | Set `*r` to `sin(*i)`.
+| Cos       |  99 | `*r *i` | Set `*r` to `cos(*i)`.
+| Tan       | 100 | `*r *i` | Set `*r` to `tan(*i)`.
+| Asin      | 101 | `*r *i` | Set `*r` to `asin(*i)`.
+| Acos      | 102 | `*r *i` | Set `*r` to `acos(*i)`.
+| Atan      | 103 | `*r *i` | Set `*r` to `atan(*i)`.
+| Atan2     | 104 | `*r  v *i` | Set `*r` to `atan2(v, *i)`.
+| Atan2     | 105 | `*r *i  v` | Set `*r` to `atan2(*i, v)`.
+| Atan2     | 106 | `*r *i *j` | Set `*r` to `atan2(*i, *j)`.
+| Angle2Rad | 107 | `*r *i` | Converts an angle from turns `*i` to radians `*r`.
+| Rad2Angle | 108 | `*r *i` | Converts an angle from radians `*i` to turns `*r`.
+| Ceil      | 109 | `*r *i` | Set `*r` to `ceil(*i)`.
+| Floor     | 110 | `*r *i` | Set `*r` to `floor(*i)`.
+| Round     | 111 | `*r *i` | Set `*r` to `round(*i)`.
+| Abs       | 112 | `*r *i` | Set `*r` to `\|*i\|`.
+| Random    | 113 | `*r  v  w` | Set `*r` to a random float `[v,w]`.
+| Random    | 114 | `*r  v *i` | Set `*r` to a random float `[v,*i]`.
+| Random    | 115 | `*r *i  v` | Set `*r` to a random float `[*i,v]`.
+| Random    | 116 | `*r *i *j` | Set `*r` to a random float `[*i,*j]`.
+| Distance  | 117 | `*r  v *i` | Set `*r` to `\|v-*i\|`.
+| Distance  | 118 | `*r *i  v` | Set `*r` to `\|*i-v\|`.
+| Distance  | 119 | `*r *i *j` | Set `*r` to `\|*i-*j\|`.
 
 ### Vector math, excluding matrix multiplication
 Four-aligned operations. Note that variables only point to the first entry of the vector/matrix.
@@ -469,42 +475,44 @@ Opcodes that are named `opcode4` do exactly the same as `opcode`, but entrywise 
 
 There are no literal versions for these opcodes (as there is no room for them).
 
-| Name      | OpCode | Args | Description
-| :-------- | :----- | :--- | :----------
-| Set4      | 128 | `*r *i` | *(〃)*
-| Equal4    | 129 | `*r *i *j` | *(〃)*
-| LT4       | 130 | `*r *i *j` | *(〃)*
-| LTE4      | 131 | `*r *i *j` | *(〃)*
-| Negate4   | 132 | `*r *i` | Set all entries of `*r` to `-(*i)`.
-| Not4      | 133 | `*r *i` | *(〃)*
-| Add4      | 134 | `*r *i *j` | *(〃)*
-| Sub4      | 135 | `*r *i *j` | *(〃)*
-| Mul4      | 136 | `*r *i *j` | *(〃)*
-| Div4      | 137 | `*r *i *j` | *(〃)*
-| Mod4      | 138 | `*r *i *j` | *(〃)*
-| Pow4      | 139 | `*r *i *j` | *(〃)*
-| Square4   | 140 | `*r *i` | *(〃)*
-| Sin4      | 141 | `*r *i` | *(〃)*
-| Cos4      | 142 | `*r *i` | *(〃)*
-| Tan4      | 143 | `*r *i` | *(〃)*
-| Asin4     | 144 | `*r *i` | *(〃)*
-| Acos4     | 145 | `*r *i` | *(〃)*
-| Atan4     | 146 | `*r *i` | *(〃)*
-| Atan24    | 147 | `*r *i *j` | *(〃)*
-| Ceil4     | 148 | `*r *i` | *(〃)*
-| Floor4    | 149 | `*r *i` | *(〃)*
-| Round4    | 150 | `*r *i` | *(〃)*
-| Abs4      | 151 | `*r *i` | *(〃)*
-| Random4   | 152 | `*r *i *j` | *(〃)*
-| Length4   | 153 | `*r *i` | Set non-vector `*r` to `\|\|*i\|\|`.
-| Distance4 | 154 | `*r *i *j` | Set non-vector `*r` to `\|\|*i-*j\|\|`.
-| Polar     | 155 | `*r  v  w` | Convert `(v,w)` from polar to Cartesian and put it in `(*r, *(r+1))`.
-| Polar     | 155 | `*r  v *i` | Convert `(v,*i)` from polar to Cartesian and put it in `(*r, *(r+1))`.
-| Polar     | 155 | `*r *i  v` | Convert `(*i,v)` from polar to Cartesian and put it in `(*r, *(r+1))`.
-| Polar     | 155 | `*r *i *j` | Convert `(*i,*j)` from polar to Cartesian and put it in `(*r, *(r+1))`.
+| Name       | OpCode | Args | Description
+| :--------- | :----- | :--- | :----------
+| Set4       | 128 | `*r *i` | *(〃)*
+| Equal4     | 129 | `*r *i *j` | *(〃)*
+| LT4        | 130 | `*r *i *j` | *(〃)*
+| LTE4       | 131 | `*r *i *j` | *(〃)*
+| Negate4    | 132 | `*r *i` | Set all entries of `*r` to `-(*i)`.
+| Not4       | 133 | `*r *i` | *(〃)*
+| Add4       | 134 | `*r *i *j` | *(〃)*
+| Sub4       | 135 | `*r *i *j` | *(〃)*
+| Mul4       | 136 | `*r *i *j` | *(〃)*
+| Div4       | 137 | `*r *i *j` | *(〃)*
+| Mod4       | 138 | `*r *i *j` | *(〃)*
+| Pow4       | 139 | `*r *i *j` | *(〃)*
+| Square4    | 140 | `*r *i` | *(〃)*
+| Sin4       | 141 | `*r *i` | *(〃)*
+| Cos4       | 142 | `*r *i` | *(〃)*
+| Tan4       | 143 | `*r *i` | *(〃)*
+| Asin4      | 144 | `*r *i` | *(〃)*
+| Acos4      | 145 | `*r *i` | *(〃)*
+| Atan4      | 146 | `*r *i` | *(〃)*
+| Atan24     | 147 | `*r *i *j` | *(〃)*
+| Angle2Rad4 | 148 | `*r *i` | *(〃)*
+| Rad2Angle4 | 149 | `*r *i` | *(〃)*
+| Ceil4      | 150 | `*r *i` | *(〃)*
+| Floor4     | 151 | `*r *i` | *(〃)*
+| Round4     | 152 | `*r *i` | *(〃)*
+| Abs4       | 153 | `*r *i` | *(〃)*
+| Random4    | 154 | `*r *i *j` | *(〃)*
+| Length4    | 155 | `*r *i` | Set non-vector `*r` to `\|\|*i\|\|`.
+| Distance4  | 156 | `*r *i *j` | Set non-vector `*r` to `\|\|*i-*j\|\|`.
+| Polar      | 157 | `*r  v  w` | Converts a point `(v,w)` from polar to Cartesian `(*r, *(r+1))`.
+| Polar      | 158 | `*r  v *i` | Converts a point `(v,*i)` from polar to Cartesian `(*r, *(r+1))`.
+| Polar      | 159 | `*r *i  v` | Converts a point `(*i,v)` from polar to Cartesian `(*r, *(r+1))`.
+| Polar      | 160 | `*r *i *j` | Converts a point `(*i,*j)` from polar to Cartesian `(*r, *(r+1))`.
 
 ### Matrix multiplication
-No-one's gonna use any of these lol
+Also used for scalar-vector multiplication.
 
 Here, $u$, $v$, and $w$ go over 1 through 4 (but in the opcode silently subtract one ssssh).
 

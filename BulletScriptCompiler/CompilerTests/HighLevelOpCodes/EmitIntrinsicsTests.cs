@@ -17,7 +17,7 @@ matrix3x1 u = [1 2 3];
 matrix3x1 v = u;
 matrix3x1 w = u;
 
-angletoplayer();
+turnstoplayer();
 
 wait(a);
 wait(3);
@@ -37,12 +37,17 @@ depivot();
 rotate(a);
 setrotation(a);
 faceplayer();
-a = angletoplayer();
+a = turnstoplayer();
 addspeed(a);
 setspeed(a);
 gimmick(s);
 gimmick(s, b);
 gimmick(s, b, c);
+print(""hi"");
+print(s);
+print(3);
+print(a);
+print(u);
 a = random(b,c);
 u = random(v,w);
 a = sin(b);
@@ -59,6 +64,10 @@ a = atan(b);
 u = atan(v);
 a = atan2(b, c);
 u = atan2(v, w);
+a = turns2rad(b);
+u = turns2rad(v);
+a = rad2turns(b);
+u = rad2turns(v);
 a = ceil(b);
 u = ceil(v);
 a = floor(b);
@@ -71,6 +80,8 @@ a = length(b);
 a = length(v);
 a = distance(b, c);
 a = distance(v, w);
+a = mrows(u);
+a = mcols(u);
 ", @"
 [op]             Set | [f]                a | [f]                0 | --------------------
 [op]             Set | [f]                b | [f]                1 | --------------------
@@ -105,6 +116,11 @@ a = distance(v, w);
 [op]         Gimmick | [s]                s | -------------------- | --------------------
 [op]         Gimmick | [s]                s | [f]                b | --------------------
 [op]         Gimmick | [s]                s | [f]                b | [f]                c
+[op]           Print | [s]             ""hi"" | -------------------- | --------------------
+[op]           Print | [s]                s | -------------------- | --------------------
+[op]           Print | [f]                3 | -------------------- | --------------------
+[op]           Print | [f]                a | [f]                1 | [f]                1
+[op]           Print | [f]                u | [f]                3 | [f]                1
 [op]             Rng | [f]                a | [f]                b | [f]                c
 [op]            Rng4 | [f]                u | [f]                v | [f]                w
 [op]             Sin | [f]                a | [f]                b | --------------------
@@ -121,6 +137,10 @@ a = distance(v, w);
 [op]           Atan4 | [f]                u | [f]                v | --------------------
 [op]           Atan2 | [f]                a | [f]                b | [f]                c
 [op]          Atan24 | [f]                u | [f]                v | [f]                w
+[op]       Angle2Rad | [f]                a | [f]                b | --------------------
+[op]      Angle2Rad4 | [f]                u | [f]                v | --------------------
+[op]       Rad2Angle | [f]                a | [f]                b | --------------------
+[op]      Rad2Angle4 | [f]                u | [f]                v | --------------------
 [op]            Ceil | [f]                a | [f]                b | --------------------
 [op]           Ceil4 | [f]                u | [f]                v | --------------------
 [op]           Floor | [f]                a | [f]                b | --------------------
@@ -133,6 +153,8 @@ a = distance(v, w);
 [op]         Length4 | [f]                a | [f]                v | --------------------
 [op]        Distance | [f]                a | [f]                b | [f]                c
 [op]       Distance4 | [f]                a | [f]                v | [f]                w
+[op]             Set | [f]                a | [f]                3 | --------------------
+[op]             Set | [f]                a | [f]                1 | --------------------
 ");
 
     }

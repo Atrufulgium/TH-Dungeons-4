@@ -39,7 +39,8 @@
         MoreThan,
         Equals,
         And,
-        Or
+        Or,
+        Comment
     }
 
     /// <summary>

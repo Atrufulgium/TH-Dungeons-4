@@ -105,6 +105,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                         // - somevar for an Identifier
                         // - "... for a String
                         // - 0123 for a Number
+                        // - //a comment
                         if (token.Length == 9 && token.StartsWith("matrix") && token[7] == 'x') {
                             if (token[6] >= '1' && token[6] <= '4' && token[8] >= '1' && token[8] <= '4') {
                                 tokens.Add(new(TokenKind.MatrixKeyword, token, location));
@@ -122,6 +123,11 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                             tokens.Add(new(TokenKind.String, token, location));
                         } else if (char.IsDigit(token[0])) {
                             tokens.Add(new(TokenKind.Number, token, location));
+                        } else if (token.StartsWith("//")) {
+                            // Ignore comments for now. If I ever want to support
+                            // formatters, I might have to add these to the tree
+                            // later though.
+                            //tokens.Add(new(TokenKind.Comment, token, location));
                         } else {
                             diagnostics.Add(
                                 DiagnosticRules.UnknownToken(location, token)
@@ -143,6 +149,7 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
         /// <item>A full alphanumeric+. range if we start with a letter;</item>
         /// <item>A number if we start with a number, taking into account e+ and f notation.</item>
         /// <item>A "-delimited string, possibly excluding the last " if malformed.</item>
+        /// <item>A //comment.</item>
         /// </list>
         /// </summary>
         (string token, int advance) GrabToken(ReadOnlySpan<char> remainingLine) {
@@ -189,6 +196,12 @@ namespace Atrufulgium.BulletScript.Compiler.Parsing {
                         break;
                 }
                 return (sb.ToString(), i + 1);
+            }
+
+            // A //comment
+            if (remainingLine.StartsWith("//")) {
+                sb.Append(remainingLine);
+                return (sb.ToString(), remainingLine.Length);
             }
 
             // "The single non-alphanumeric character we start with"

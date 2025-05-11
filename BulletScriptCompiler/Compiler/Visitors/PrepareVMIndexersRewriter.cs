@@ -31,8 +31,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// </item>
     /// </list>
     /// This rewrite is to make indices compatible with the
-    /// <see cref="HighLevelOpCodes.HLOP.IndexedGet(string, float)"/> and
-    /// <see cref="HighLevelOpCodes.HLOP.IndexedGet(string, string)"/>
+    /// <see cref="HighLevelOpCodes.HLOP.IndexedGet(string, string, float)"/> and
+    /// <see cref="HighLevelOpCodes.HLOP.IndexedGet(string, string, string)"/>
     /// opcodes directly.
     /// <br/>
     /// The weird dichotomy between 2x2 and NxM is because of how the VM stores

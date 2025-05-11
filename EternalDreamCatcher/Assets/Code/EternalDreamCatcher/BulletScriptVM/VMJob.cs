@@ -105,11 +105,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         case  15:
                         case  16:
                         case  17:
-                        case  18: throw new NotImplementedException();
-                        case  19: *op = ai; break; // TODO: Don't forget to make the generated assembly set the label to 1 instruction before, due to the *op++.
+                        case  18: throw new NotImplementedException("No indexed stuff yet");
+                        case  19: *op = ai; break;
                         case  20: if (mem[bi] != 0) *op = ai; break;
-                        case  21: Command(CommandEnum.ContinueAfterTime, a); goto pause;
-                        case  22: Command(CommandEnum.ContinueAfterTime, mem[ai]); goto pause;
 
                         // Misc intrinsics
                         case  32: Command(CommandEnum.SendMessage, mem[ai]); break;
@@ -140,7 +138,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         case  54: Command(CommandEnum.SetSpeed, a); break;
                         case  55: Command(CommandEnum.SetSpeed, mem[ai]); break;
                         case  56: Command(CommandEnum.FacePlayer); break;
-                        case  57: Command(CommandEnum.AngleToPlayer); break; // No don't
+                        case  57: Command(CommandEnum.AngleToPlayer); break; // No don't, we need this value now!
                         case  58: Command(CommandEnum.Gimmick, mem[ai]); break;
                         case  59: Command(CommandEnum.Gimmick, mem[ai], b); break;
                         case  60: Command(CommandEnum.Gimmick, mem[ai], mem[bi]); break;
@@ -148,6 +146,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         case  62: Command(CommandEnum.Gimmick, mem[ai], b, mem[ci]); break;
                         case  63: Command(CommandEnum.Gimmick, mem[ai], mem[bi], c); break;
                         case  64: Command(CommandEnum.Gimmick, mem[ai], mem[bi], mem[ci]); break;
+                        case  65:
+                        case  66:
+                        case  67: throw new NotImplementedException("No printing yet.");
+                        case  68: Command(CommandEnum.ContinueAfterTime, a); goto pause;
+                        case  69: Command(CommandEnum.ContinueAfterTime, mem[ai]); goto pause;
 
                         // Float math
                         case  80: mem[ai] = mem[bi] == 0 ? 1 : 0; break;
@@ -177,17 +180,19 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         case 104: mem[ai] = atan2(b, mem[ci]); break; // note the order!
                         case 105: mem[ai] = atan2(mem[bi], c); break;
                         case 106: mem[ai] = atan2(mem[bi], mem[ci]); break;
-                        case 107: mem[ai] = ceil(mem[bi]); break;
-                        case 108: mem[ai] = floor(mem[bi]); break;
-                        case 109: mem[ai] = round(mem[bi]); break;
-                        case 110: mem[ai] = abs(mem[bi]); break;
-                        case 111: mem[ai] = rng->NextFloat(b, c); break;
-                        case 112: mem[ai] = rng->NextFloat(b, mem[ci]); break;
-                        case 113: mem[ai] = rng->NextFloat(mem[bi], c); break;
-                        case 114: mem[ai] = rng->NextFloat(mem[bi], mem[ci]); break;
-                        case 115: mem[ai] = distance(b, mem[ci]); break;
-                        case 116: mem[ai] = distance(mem[bi], c); break;
-                        case 117: mem[ai] = distance(mem[bi], mem[ci]); break;
+                        case 107: throw new NotImplementedException("Angle2Rad impl here");
+                        case 108: throw new NotImplementedException("Rad2Angle impl here");
+                        case 109: mem[ai] = ceil(mem[bi]); break;
+                        case 110: mem[ai] = floor(mem[bi]); break;
+                        case 111: mem[ai] = round(mem[bi]); break;
+                        case 112: mem[ai] = abs(mem[bi]); break;
+                        case 113: mem[ai] = rng->NextFloat(b, c); break;
+                        case 114: mem[ai] = rng->NextFloat(b, mem[ci]); break;
+                        case 115: mem[ai] = rng->NextFloat(mem[bi], c); break;
+                        case 116: mem[ai] = rng->NextFloat(mem[bi], mem[ci]); break;
+                        case 117: mem[ai] = distance(b, mem[ci]); break;
+                        case 118: mem[ai] = distance(mem[bi], c); break;
+                        case 119: mem[ai] = distance(mem[bi], mem[ci]); break;
 
                         // Vector math (excluding matrix-matrix multiplication)
                         case 128: mem4[ai] = mem4[bi]; break;
@@ -211,16 +216,18 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
                         case 146: mem4[ai] = atan(mem4[bi]); break;
                         case 147: mem4[ai] = atan2(mem4[bi], mem4[ci]); break; // arg order, again
                         case 148: mem4[ai] = ceil(mem4[bi]); break;
-                        case 149: mem4[ai] = floor(mem4[bi]); break;
-                        case 150: mem4[ai] = round(mem4[bi]); break;
-                        case 151: mem4[ai] = abs(mem4[bi]); break;
-                        case 152: mem4[ai] = rng->NextFloat4(mem4[bi], mem4[ci]); break;
-                        case 153: mem[ai] = length(mem4[bi]); break;
-                        case 154: mem[ai] = distance(mem4[bi], mem4[ci]); break;
-                        case 155: mem4[ai] = polar(b, c); break;
-                        case 156: mem4[ai] = polar(b, mem[ci]); break;
-                        case 157: mem4[ai] = polar(mem[bi], c); break;
-                        case 158: mem4[ai] = polar(mem[bi], mem[ci]); break;
+                        case 149: throw new NotImplementedException("Angle2Rad4 impl here");
+                        case 150: throw new NotImplementedException("Rad2Angle4 impl here");
+                        case 151: mem4[ai] = floor(mem4[bi]); break;
+                        case 152: mem4[ai] = round(mem4[bi]); break;
+                        case 153: mem4[ai] = abs(mem4[bi]); break;
+                        case 154: mem4[ai] = rng->NextFloat4(mem4[bi], mem4[ci]); break;
+                        case 155: mem[ai] = length(mem4[bi]); break;
+                        case 156: mem[ai] = distance(mem4[bi], mem4[ci]); break;
+                        case 157: mem4[ai] = polar(b, c); break;
+                        case 158: mem4[ai] = polar(b, mem[ci]); break;
+                        case 159: mem4[ai] = polar(mem[bi], c); break;
+                        case 160: mem4[ai] = polar(mem[bi], mem[ci]); break;
 
                         // Matrix multiplication
 

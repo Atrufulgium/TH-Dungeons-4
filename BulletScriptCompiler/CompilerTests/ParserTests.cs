@@ -1376,6 +1376,71 @@ statements:
 ");
 
         [TestMethod]
+        public void CompileComment() => TestCompile(@"
+// comment
+float i = 1; // more comment
+// even more comment
+i = 2;
+i = 3; // = 4;
+i = 5;
+", @"
+[root]
+statements:
+    [local declaration]
+    declaration:
+        [variable declaration]
+        identifier:
+            [identifier name]
+            name:
+                i
+        type:
+            float
+        initializer:
+            [literal float]
+            value:
+                1
+    [expression statement]
+    statement:
+        [assignment]
+        lhs:
+            [identifier name]
+            name:
+                i
+        op:
+            =
+        rhs:
+            [literal float]
+            value:
+                2
+    [expression statement]
+    statement:
+        [assignment]
+        lhs:
+            [identifier name]
+            name:
+                i
+        op:
+            =
+        rhs:
+            [literal float]
+            value:
+                3
+    [expression statement]
+    statement:
+        [assignment]
+        lhs:
+            [identifier name]
+            name:
+                i
+        op:
+            =
+        rhs:
+            [literal float]
+            value:
+                5
+");
+
+        [TestMethod]
         public void ErrorTestStatementInDeclarationMode() => TestFail(@"
 function void hoi() {}
 i += 3;

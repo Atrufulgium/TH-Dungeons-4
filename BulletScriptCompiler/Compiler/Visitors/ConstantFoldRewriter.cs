@@ -127,9 +127,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 "acos(float)" => new LiteralExpression(MathF.Acos(args[0])),
                 "atan(float)" => new LiteralExpression(MathF.Atan(args[0])),
                 "atan2(float,float)" => new LiteralExpression(MathF.Atan2(args[0], args[1])),
-                // TODO: Check these two
-                "angle2rad(float)" => new LiteralExpression((1.75f - args[0]) * TAU % TAU),
-                "rad2angle(float)" => new LiteralExpression((1.75f - args[0] / TAU) % 1),
+                "turns2rad(float)" => new LiteralExpression((1.75f - args[0]) * TAU % TAU),
+                "rad2turns(float)" => new LiteralExpression((1.75f - args[0] / TAU) % 1),
 
                 "ceil(float)" => new LiteralExpression(MathF.Ceiling(args[0])),
                 "floor(float)" => new LiteralExpression(MathF.Floor(args[0])),

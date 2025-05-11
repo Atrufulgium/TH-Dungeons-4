@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Atrufulgium.BulletScript.Compiler.Semantics {
     /// <summary>
@@ -78,11 +79,30 @@ namespace Atrufulgium.BulletScript.Compiler.Semantics {
         /// </summary>
         public ISymbol? GetSymbolInfo(Node node) {
             CheckInTree(node);
-            if (node2fqn.ContainsKey(node))
-                return fqn2symbol[node2fqn[node]];
-            if (sugarNode2fqn.ContainsKey(node))
-                return fqn2symbol[sugarNode2fqn[node]];
+            if (node2fqn.ContainsKey(node) && TryFqn2Symbol(node2fqn[node], out var symbol))
+                return symbol;
+            if (sugarNode2fqn.ContainsKey(node) && TryFqn2Symbol(sugarNode2fqn[node], out symbol))
+                return symbol;
             return null;
+        }
+
+        private bool TryFqn2Symbol(string fqn, out ISymbol symbol) {
+            // Bad design: This is the same as in
+            /// <see cref="PartialSymbolTable.GetType(string)"/>
+            if (fqn2symbol.TryGetValue(fqn, out symbol))
+                return true;
+
+            if (fqn.Contains("matrix")) {
+                var untypedMatrix = Regex.Replace(fqn, @"matrix[1-4]x[1-4]", "matrix");
+                if (fqn2symbol.TryGetValue(untypedMatrix, out symbol))
+                    return true;
+            }
+            if (fqn.Contains("vector")) {
+                var untypedVector = Regex.Replace(fqn, @"vector[1-4]", "matrix");
+                if (fqn2symbol.TryGetValue(untypedVector, out symbol))
+                    return true;
+            }
+            return false;
         }
 
         readonly Dictionary<ISymbol, int> refCount = new();

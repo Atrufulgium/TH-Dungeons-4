@@ -197,7 +197,6 @@ addscript(string)                          | (Not user code)      | [n/a]       
 addscript(string).script_id                | (Not user code)      | (Not user code)      | string    |    0 | Read
 addspeed(float)                            | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
 addspeed(float).amount                     | (Not user code)      | (Not user code)      | float     |    0 | Read
-angletoplayer()                            | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
 asin(float)                                | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
 asin(float).value                          | (Not user code)      | (Not user code)      | float     |    0 | Read
 asin(matrix1x2)                            | (Not user code)      | [n/a]                | matrix1x2 |    0 | Intrinsic method
@@ -290,8 +289,26 @@ length(matrix1x4)                          | (Not user code)      | [n/a]       
 length(matrix1x4).vector                   | (Not user code)      | (Not user code)      | matrix1x4 |    0 | Read
 loadbackground(string)                     | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
 loadbackground(string).background_id       | (Not user code)      | (Not user code)      | string    |    0 | Read
+mcols(matrix)                              | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
+mcols(matrix).m                            | (Not user code)      | (Not user code)      | matrix    |    0 | Read
 message(float)                             | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
 message(float).value                       | (Not user code)      | (Not user code)      | float     |    0 | Read
+mrows(matrix)                              | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
+mrows(matrix).m                            | (Not user code)      | (Not user code)      | matrix    |    0 | Read
+print(float)                               | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
+print(float).value                         | (Not user code)      | (Not user code)      | float     |    0 | Read
+print(matrix)                              | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
+print(matrix).value                        | (Not user code)      | (Not user code)      | matrix    |    0 | Read
+print(string)                              | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
+print(string).value                        | (Not user code)      | (Not user code)      | string    |    0 | Read
+rad2turns(float)                           | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
+rad2turns(float).radians                   | (Not user code)      | (Not user code)      | float     |    0 | Read
+rad2turns(matrix1x2)                       | (Not user code)      | [n/a]                | matrix1x2 |    0 | Intrinsic method
+rad2turns(matrix1x2).radians               | (Not user code)      | (Not user code)      | matrix1x2 |    0 | Read
+rad2turns(matrix1x3)                       | (Not user code)      | [n/a]                | matrix1x3 |    0 | Intrinsic method
+rad2turns(matrix1x3).radians               | (Not user code)      | (Not user code)      | matrix1x3 |    0 | Read
+rad2turns(matrix1x4)                       | (Not user code)      | [n/a]                | matrix1x4 |    0 | Intrinsic method
+rad2turns(matrix1x4).radians               | (Not user code)      | (Not user code)      | matrix1x4 |    0 | Read
 random(float,float)                        | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
 random(float,float).lower                  | (Not user code)      | (Not user code)      | float     |    0 | Read
 random(float,float).upper                  | (Not user code)      | (Not user code)      | float     |    0 | Read
@@ -349,6 +366,15 @@ tan(matrix1x3)                             | (Not user code)      | [n/a]       
 tan(matrix1x3).value                       | (Not user code)      | (Not user code)      | matrix1x3 |    0 | Read
 tan(matrix1x4)                             | (Not user code)      | [n/a]                | matrix1x4 |    0 | Intrinsic method
 tan(matrix1x4).value                       | (Not user code)      | (Not user code)      | matrix1x4 |    0 | Read
+turns2rad(float)                           | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
+turns2rad(float).turns                     | (Not user code)      | (Not user code)      | float     |    0 | Read
+turns2rad(matrix1x2)                       | (Not user code)      | [n/a]                | matrix1x2 |    0 | Intrinsic method
+turns2rad(matrix1x2).turns                 | (Not user code)      | (Not user code)      | matrix1x2 |    0 | Read
+turns2rad(matrix1x3)                       | (Not user code)      | [n/a]                | matrix1x3 |    0 | Intrinsic method
+turns2rad(matrix1x3).turns                 | (Not user code)      | (Not user code)      | matrix1x3 |    0 | Read
+turns2rad(matrix1x4)                       | (Not user code)      | [n/a]                | matrix1x4 |    0 | Intrinsic method
+turns2rad(matrix1x4).turns                 | (Not user code)      | (Not user code)      | matrix1x4 |    0 | Read
+turnstoplayer()                            | (Not user code)      | [n/a]                | float     |    0 | Intrinsic method
 usepivot                                   | (Not user code)      | [n/a]                | float     |    2 | Read
 wait(float)                                | (Not user code)      | [n/a]                | void      |    0 | Intrinsic method
 wait(float).seconds                        | (Not user code)      | (Not user code)      | float     |    0 | Read
