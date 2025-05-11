@@ -29,18 +29,30 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             { "spawnspeed", 2 },
             { "spawnrelative", 3 },
             { "spawnposition", 4 },
-            // TODO: Rewriter that enforces these names
-            { "main(float).value", 9 },
-            { "on_message(float).value", 10 },
-            { "on_charge(float).value", 11 },
-            { "on_screen_leave(float).value", 12 }
+            { "##main(float)##", 9 },
+            { "##on_message(float)##", 10 },
+            { "##on_charge(float)##", 11 },
+            { "##on_screen_leave(float)##", 12 }
         };
 
+        /// <summary>
+        /// The location of the first variable that's in the block that needs
+        /// to be swapped out on context switches.
+        /// </summary>
+        public int MainMethodMemoryStart => mainMethodMemoryStart;
+
         int nextVariableID = 0;
+
+        /// <summary>
+        /// The location of the first variable that's either in
+        /// <see cref="localFloatVariables"/> or <see cref="localVectorVariables"/>.
+        /// </summary>
+        int mainMethodMemoryStart = 0;
 
         public EmitWalker() { 
             OPCodes = new ReadOnlyCollection<HLOP>(opCodes);
             ExplicitVariableIDs = new ReadOnlyDictionary<string, int>(explicitVariableIDs);
+            seenVariables = new(explicitVariableIDs.Keys);
         }
 
         protected override void VisitRoot(Root node) {
@@ -60,9 +72,18 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             nextVariableID = explicitVariableIDs.Values.Max() + 1;
             base.VisitRoot(node);
 
-            // Add a final placeholder 4-aligned 16 after the last bit of
+            // Now use the variables we've meticulously extracted in
+            /// <see cref="VisitIdentifierName(IdentifierName)"/>.
+            int lastVectorStart = explicitVariableIDs["spawnposition"];
+            HandleGlobalOrLocalChunk(globalFloatVariables, globalVectorVariables, ref lastVectorStart);
+            mainMethodMemoryStart = nextVariableID;
+            HandleGlobalOrLocalChunk(localFloatVariables, localVectorVariables, ref lastVectorStart);
+
+            // Add a final placeholder 4-aligned after the last indexable
             // memory so that getters can't go out of bounds.
-            explicitVariableIDs.Add("n/a", (nextVariableID + 16)/4 * 4);
+            int safeAfterAll = (nextVariableID + 16) / 4 * 4;
+            int safeAfterVectors = lastVectorStart + 16;
+            explicitVariableIDs.Add("n/a", Math.Min(safeAfterAll, safeAfterVectors));
         }
 
         protected override void VisitIdentifierName(IdentifierName node) {
@@ -74,24 +95,108 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
             var name = var.FullyQualifiedName;
 
-            if (explicitVariableIDs.ContainsKey(name))
+            if (seenVariables.Contains(name))
                 return;
+
+            // Very simple heuristic, but correct where it matters nonetheless:
+            // - In top-level-statement type files, there's no context
+            //   switching so this doesn't matter anyways.
+            // - Otherwise, every FQN contains delimiters `#` when something is
+            //   not at the top level.
+            // - This might accidentally take intermediate result vars with it
+            //   in top-level mode, but that doesn't really matter.
+            // This could be a little coarser even (as control flow within
+            // methods really doesn't matter with how local it is), but eh.
+            bool local = name.Contains("#");
 
             // Floats take up 1. Vectors take up 4.
             if (var.Type.TryGetVectorSize(out int vectorSize)) {
-                explicitVariableIDs.Add(name, nextVariableID);
-                nextVariableID += vectorSize == 1 ? 1 : 4;
+                if (vectorSize == 1) {
+                    (local ? localFloatVariables : globalFloatVariables)
+                        .Enqueue(name);
+                } else {
+                    (local ? localVectorVariables : globalVectorVariables)
+                        .Add(name, 1);
+                }
+                seenVariables.Add(name);
                 return;
             }
 
             // Matrices take up 4*rows.
             if (var.Type.TryGetMatrixSize(out var matrixSize)) {
-                explicitVariableIDs.Add(name, nextVariableID);
-                nextVariableID += 4 * matrixSize.rows;
+                (local ? localVectorVariables : globalVectorVariables)
+                    .Add(name, matrixSize.rows);
+                seenVariables.Add(name);
                 return;
             }
 
             // Other than that there's strings, but they don't go in float mem.
         }
+
+        /// <summary>
+        /// Add both <paramref name="floatVariables"/> and <paramref name="vectorVariables"/>
+        /// to <see cref="explicitVariableIDs"/> in an order that 4-aligns the
+        /// vector variables.
+        /// <br/>
+        /// The starting index of the last vector variable is stored in
+        /// <paramref name="lastVectorStart"/>.
+        /// </summary>
+        private void HandleGlobalOrLocalChunk(
+            Queue<string> floatVariables,
+            Dictionary<string, int> vectorVariables,
+            ref int lastVectorStart
+        ) {
+            // Add enough floats from the floats list to 4-align.
+            // If there's not enough, jump ahead.
+            var orderedFloatVariables = new Stack<string>(floatVariables);
+            while (nextVariableID % 4 != 0) {
+                if (orderedFloatVariables.TryPop(out var name)) {
+                    explicitVariableIDs.Add(name, nextVariableID);
+                    // There's left, so put the next one after
+                    nextVariableID++;
+                } else {
+                    // If nothing left, round up to the next four-align
+                    nextVariableID = (nextVariableID / 4 + 1) * 4;
+                }
+            }
+
+            // Add the 4-aligned variables.
+            foreach (var kv in vectorVariables) {
+                explicitVariableIDs.Add(kv.Key, nextVariableID);
+                lastVectorStart = nextVariableID;
+                nextVariableID += 4 * kv.Value;
+            }
+
+            // Add the remaining float variables.
+            while (orderedFloatVariables.TryPop(out var name)) {
+                explicitVariableIDs.Add(name, nextVariableID);
+                nextVariableID++;
+            }
+        }
+
+        /// <summary>
+        /// All variables in one of the below four collections.
+        /// </summary>
+        readonly HashSet<string> seenVariables;
+
+        /// <summary>
+        /// All 1-float variables and strings in the vm outside methods.
+        /// </summary>
+        readonly Queue<string> globalFloatVariables = new();
+        /// <summary>
+        /// All 4<i>n</i>-float variables in the vm outside methods.
+        /// The values stores <i>n</i>.
+        /// </summary>
+        readonly Dictionary<string, int> globalVectorVariables = new();
+        /// <summary>
+        /// All 1-float variables and strings in the vm inside methods.
+        /// These get swapped away when context switching.
+        /// </summary>
+        readonly Queue<string> localFloatVariables = new();
+        /// <summary>
+        /// All 4<i>n</i>-float variables in the vm inside methods.
+        /// These get swapped away when context switching.
+        /// </summary>
+        readonly Dictionary<string, int> localVectorVariables = new();
     }
 }

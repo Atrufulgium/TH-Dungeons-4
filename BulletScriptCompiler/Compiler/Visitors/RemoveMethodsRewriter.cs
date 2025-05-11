@@ -60,6 +60,18 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// </code>
     /// get hoisted to the top of the file.
     /// </item>
+    /// <item>
+    /// Non-root level variable declarations
+    /// <code>
+    ///     function void my_method( .. ) {
+    ///         .. my_var ..
+    ///     }
+    /// </code>
+    /// become fully-qualified in the flattened tree:
+    /// <code>
+    ///     .. my_method#my_var ..
+    /// </code>
+    /// </item>
     /// </list>
     /// </summary>
     /// <remarks>
@@ -70,6 +82,8 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// </list>
     /// Furthermore, compiler special methods get their goto label surrounded
     /// by pairs of `##`.
+    /// <br/>
+    /// (Does this rewrite do too much? Very much yes.)
     /// </remarks>
     internal class RemoveMethodsRewriter : AbstractTreeRewriter {
 
@@ -253,7 +267,9 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
         // (Visited via ExpressionStatement instead.)
         protected override Node? VisitInvocationExpression(InvocationExpression node)
-            => throw new VisitorAssumptionFailedException("Assumed invocations are completely on their own.");
+            => Model.GetSymbolInfo(node).IsIntrinsic
+            ? base.VisitInvocationExpression(node)
+            : throw new VisitorAssumptionFailedException("Assumed invocations are completely on their own.");
 
         protected override Node? VisitExpressionStatement(ExpressionStatement expressionStatement) {
             if (expressionStatement.Statement is not InvocationExpression node)
@@ -261,7 +277,7 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
 
             var methodSymbol = Model.GetSymbolInfo(node);
             if (methodSymbol.IsIntrinsic)
-                return node;
+                return base.VisitExpressionStatement(expressionStatement);
 
             int i = callsProcessed[methodSymbol];
             callsProcessed[methodSymbol] += 1;
@@ -278,6 +294,20 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 new GotoStatement(methodLabels[methodSymbol]),
                 entryLabels[methodSymbol][i]
             );
+        }
+
+        protected override Node? VisitIdentifierName(IdentifierName node) {
+            var symbol = Model.GetSymbolInfo(node);
+            if (symbol == null)
+                throw new InvalidOperationException("Identifier symbols should always exist?");
+
+            // The only variables that _can_ be fully qualified are those the
+            // user introduce. So if it's a variable with null original def,
+            // we're in the clear anyways.
+            if (symbol.OriginalDefinition == null || symbol.OriginalDefinition is not VariableDeclaration) {
+                return node;
+            }
+            return node.WithName(symbol.FullyQualifiedName.Replace('.', '#'));
         }
 
         // For correctness all we need to do is simply _count_ the number of

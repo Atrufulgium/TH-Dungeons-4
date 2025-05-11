@@ -13,6 +13,8 @@ Compiler:
 - The `matrix` shorthand is broken.
 - Multiplication `scalar * matrix` is not supported. (We could do this as `MatrixMul11N` and `MatrixMulN11` opcodes per row.)
 - Increments/decrements are currently only really allowed at statement-level.
+- Constant folded index in-range check.
+- `RemoveMethodsRewriter` didn't quite work with intrinsics. I also added additional qualification. Neither of these are tested, so go test them.
 
 Other:
 - This file. Maybe also for *once* include project setup/build instructions.
@@ -317,7 +319,7 @@ Index   | Init    | Description
 13~*N-1*| 0...0   | User variables, for some *N* the VM knows about.
 *N*~*M* | 0...0   | Control flow variable block.†
 
-† Whenever non-`main()` execution is started, the `main()` thread's block gets copied somewhere, this thread's block gets reset to zero, and then execution starts. Once done, the `main()` thread's block gets copied back. This contains variables such as "we entered this method from this label", "this method has these arguments", etc. In particular, this block contains variables such as `main()`'s float argument, which the VM can set freely.
+† Whenever non-`main()` execution is started, the `main()` thread's block gets copied somewhere, this thread's block gets reset to zero, and then execution starts. Once done, the `main()` thread's block gets copied back. This contains variables such as "we entered this method from this label", "this method has these arguments", etc. In particular, this block contains variables such as `main()`'s float argument, which the VM can set freely. Note that the `main()` thread's IP should also be stored along with this, but _only_ the IP. Remember that the IP is shared in a value with the cooldown.
 
 String memory is a whole lot simpler.
 Index | Init | Description
