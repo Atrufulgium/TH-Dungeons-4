@@ -1,12 +1,14 @@
 ﻿using Atrufulgium.EternalDreamCatcher.Base;
 using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using System;
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
@@ -115,6 +117,38 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             return handle;
         }
 
+        /// <inheritdoc cref="ScheduleTickSinglethreaded(int, List{IJob})"/>
+        public abstract JobHandle ScheduleTickSinglethreaded(JobHandle dep = default);
+
+        /// <summary>
+        /// Proceeds the simulation of this DanmakuScene. Unlike
+        /// <see cref="ScheduleTick(int, JobHandle)"/>, this does not use the
+        /// JobSystem dependency system, and instead just directly runs a list
+        /// of jobs.
+        /// </summary>
+        /// <param name="ticks">
+        /// A strictly positive number of ticks to handle.
+        /// A tick represents 1/60th of a second.
+        /// </param>
+        /// <param name="jobs">
+        /// A non-optional list that will be appended to. May not be null.
+        /// </param>
+        public virtual JobHandle ScheduleTickSinglethreaded(int ticks, JobHandle dep = default) {
+            if (ticks <= 0)
+                throw new ArgumentOutOfRangeException(nameof(ticks), "Can only tick a positive number of times.");
+#if UNITY_EDITOR
+            // See the "TODO: NOTE: OBNOXIOUS:" comment below.
+            if (ticks == 1)
+                Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobDebuggerEnabled = true;
+            else
+                Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobDebuggerEnabled = false;
+#endif
+            ref JobHandle handle = ref dep;
+            for (int i = 0; i < ticks; i++)
+                handle = ScheduleTickSinglethreaded(dep);
+            return handle;
+        }
+
         /// <inheritdoc cref="BulletField.CreateBullet(ref BulletCreationParams)"/>
         public BulletReference? CreateBullet(ref BulletCreationParams bullet)
             => bulletField.CreateBullet(ref bullet);
@@ -170,6 +204,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         public override JobHandle ScheduleTick(JobHandle dep = default) {
             // WARNING: EVERY .Schedule() HERE MUST HAVE A HANDLE ARG
             // YOU"RE DOING IT WRONG OTHERWISE
+            // WARNING II: Sync changes between this and
+            /// <see cref="ScheduleTickSinglethreaded(ref List{IJob})"/>
             // You don't notice it until you run it at [ridiculus]x speed in
             // the player, but then you just freeze and all threads are Burst
             // and waiting. Notice that behaviour? This is the problem.
@@ -240,6 +276,126 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             return handle;
         }
 
+        [BurstCompile(CompileSynchronously = true, DisableSafetyChecks = true, OptimizeFor = OptimizeFor.Performance)]
+        struct MegaJob : IJob {
+            [NativeDisableContainerSafetyRestriction]
+            public VMJobMany j1;
+            [NativeDisableContainerSafetyRestriction]
+            public VMsCommandsJob j2;
+            [NativeDisableContainerSafetyRestriction]
+            public MoveBulletsJob j3;
+            [NativeDisableContainerSafetyRestriction]
+            public MovePlayerJob<KeyboardInput> j4;
+            [NativeDisableContainerSafetyRestriction]
+            public BulletCollisionJob j5;
+            [NativeDisableContainerSafetyRestriction]
+            public BulletCollisionJob j6;
+            [NativeDisableContainerSafetyRestriction]
+            public PostProcessPlayerCollisionJob j7;
+            [NativeDisableContainerSafetyRestriction]
+            public PostProcessDeletionsJob j8;
+            [NativeDisableContainerSafetyRestriction]
+            public IncrementTickJob j9;
+
+            [NativeDisableContainerSafetyRestriction]
+            public NativeReference<int> iters;
+
+            public void Execute() {
+                int limit = iters.Value;
+                for (int i = 0; i < limit; i++) {
+                    j1.Execute();
+                    j2.Execute();
+                    j3.Execute();
+                    j4.Execute();
+                    j5.Execute();
+                    j6.Execute();
+                    j7.Execute();
+                    j8.Execute();
+                    j9.Execute();
+                }
+            }
+        }
+
+        public unsafe override JobHandle ScheduleTickSinglethreaded(int ticks, JobHandle dep = default) {
+
+            var t = input.Value;
+
+            return new MegaJob {
+                // Run VMs. As we're singlethreaded, we only need one.
+                j1 = new VMJobMany() {
+                    vms = activeVMs,
+                    jobIndex = 0,
+                    totalJobs = 1
+                },
+
+                // TODO: see above
+                j2 = new VMsCommandsJob() {
+                    field = bulletField,
+                    player = player,
+                    vms = activeVMs,
+                    createdBullets = createdBullets
+                },
+
+                j3 = new MoveBulletsJob(in bulletField),
+                j4 = new MovePlayerJob<KeyboardInput>(
+                    in player, (KeyboardInput*)&t, in playerHitbox, in playerGrazebox
+                ),
+
+                j5 = new BulletCollisionJob(in bulletField, in playerHitbox, playerHitboxResult),
+                j6 = new BulletCollisionJob(in bulletField, in playerGrazebox, playerGrazeboxResult),
+
+                j7 = new PostProcessPlayerCollisionJob(
+                    player, in bulletField, playerHitboxResult, playerGrazeboxResult
+                ),
+                j8 = new PostProcessDeletionsJob(in bulletField),
+
+                j9 = new IncrementTickJob(gameTick, input),
+
+                iters = new(ticks, Allocator.TempJob)
+            }.Schedule(dep);
+        }
+
+        public unsafe override JobHandle ScheduleTickSinglethreaded(JobHandle dep) {
+            // WARNING: Sync changes between this and
+            /// whatever
+
+            var t = input.Value;
+
+            return new MegaJob {
+                // Run VMs. As we're singlethreaded, we only need one.
+                j1 = new VMJobMany() {
+                    vms = activeVMs,
+                    jobIndex = 0,
+                    totalJobs = 1
+                },
+
+                // TODO: see above
+                j2 = new VMsCommandsJob() {
+                    field = bulletField,
+                    player = player,
+                    vms = activeVMs,
+                    createdBullets = createdBullets
+                },
+
+                j3 = new MoveBulletsJob(in bulletField),
+                j4 = new MovePlayerJob<KeyboardInput>(
+                    in player, (KeyboardInput*)&t, in playerHitbox, in playerGrazebox
+                ),
+
+                j5 = new BulletCollisionJob(in bulletField, in playerHitbox, playerHitboxResult),
+                j6 = new BulletCollisionJob(in bulletField, in playerGrazebox, playerGrazeboxResult),
+
+                j7 = new PostProcessPlayerCollisionJob(
+                    player, in bulletField, playerHitboxResult, playerGrazeboxResult
+                ),
+                j8 = new PostProcessDeletionsJob(in bulletField),
+
+                j9 = new IncrementTickJob(gameTick, input),
+
+                iters = new(0, Allocator.TempJob)
+            }.Schedule(dep);
+        }
+
         // Burst can _only_ compile generic jobs whose constructor is of the
         // form `MyJob<ExplicitType>`. Constructors of the form `MyJob<T>` for
         // some ambient generic T type won't work.  `TGameInput` is like that,
@@ -273,7 +429,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
         private struct IncrementTickJob : IJob {
 
+        [NativeDisableContainerSafetyRestriction]
             public NativeReference<int> gameTick;
+        [NativeDisableContainerSafetyRestriction]
             public NativeReference<TGameInput> input;
 
             public IncrementTickJob(NativeReference<int> gameTick, NativeReference<TGameInput> input) {
@@ -292,6 +450,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         /// </summary>
         [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
         private struct PostProcessDeletionsJob : IJob {
+            [NativeDisableContainerSafetyRestriction]
             public BulletField field;
             public PostProcessDeletionsJob(in BulletField field) => this.field = field;
             public void Execute() => field.FinalizeDeletion();

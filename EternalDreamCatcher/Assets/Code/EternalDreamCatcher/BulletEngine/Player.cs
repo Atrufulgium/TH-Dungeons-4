@@ -53,6 +53,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
     public unsafe struct MovePlayerJob<TGameInput> : IJob where TGameInput : unmanaged, IGameInput {
 
+        [NativeDisableContainerSafetyRestriction]
         public NativeReference<Player> player;
         // This is needed for a really ugly workaround.
         // See
@@ -61,8 +62,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         [NativeDisableUnsafePtrRestriction]
         public TGameInput* gameInput;
         [WriteOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeReference<Circle> hitbox;
         [WriteOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeReference<Circle> grazebox;
 
         public MovePlayerJob(
@@ -100,9 +103,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
     public struct PostProcessPlayerCollisionJob : IJob {
 
+        [NativeDisableContainerSafetyRestriction]
         public NativeReference<Player> player;
+        [NativeDisableContainerSafetyRestriction]
         public BulletField field;
+        [NativeDisableContainerSafetyRestriction]
         public NativeList<BulletReference> hitList;
+        [NativeDisableContainerSafetyRestriction]
         public NativeList<BulletReference> grazeList;
 
         public PostProcessPlayerCollisionJob(

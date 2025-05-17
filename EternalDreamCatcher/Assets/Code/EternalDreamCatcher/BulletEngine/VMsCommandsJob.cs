@@ -3,6 +3,7 @@ using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using System;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
@@ -16,10 +17,14 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
     internal struct VMsCommandsJob : IJob {
 
+        [NativeDisableContainerSafetyRestriction]
         public NativeList<VM> vms;
+        [NativeDisableContainerSafetyRestriction]
         public BulletField field;
+        [NativeDisableContainerSafetyRestriction]
         public NativeReference<Player> player;
         // See the docs -- these are the bullets AddScript etc add to.
+        [NativeDisableContainerSafetyRestriction]
         public NativeList<BulletReference> createdBullets;
 
         private float2 bulletSpawnPos;

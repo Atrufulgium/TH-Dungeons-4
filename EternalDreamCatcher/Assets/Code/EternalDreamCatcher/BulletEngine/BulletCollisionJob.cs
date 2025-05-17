@@ -15,23 +15,29 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     public struct BulletCollisionJob : IJob {
 
         [ReadOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<float> bulletXs;
         [ReadOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<float> bulletYs;
         [ReadOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<float> bulletRadii;
         [ReadOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeReference<int> activeBullets;
 
         /// <summary>
         /// What hitbox to test intersection with.
         /// </summary>
         [ReadOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeReference<Circle> target;
         /// <summary>
         /// A list of all bullets that collided with the target.
         /// </summary>
         [WriteOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeList<BulletReference> collided;
 
         /// <summary>

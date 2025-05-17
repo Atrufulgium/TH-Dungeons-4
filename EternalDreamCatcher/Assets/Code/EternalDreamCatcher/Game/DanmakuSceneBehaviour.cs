@@ -143,7 +143,8 @@ repeat {
 
             gameInput.GetUnsafeTypedPtr()->HandleInputMainThread();
 
-            currentUpdate = danmakuScene.ScheduleTick(TicksPerTick);
+            currentUpdate = danmakuScene.ScheduleTickSinglethreaded(TicksPerTick);
+
             // Note: Do not be tempted by JobHandle.ScheduleBatchedJobs().
             // Even with the gap between the end of this Update() and the start
             // of the jobs, not having it is faster. idk why.

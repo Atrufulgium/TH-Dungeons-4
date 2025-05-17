@@ -14,13 +14,18 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
     public struct MoveBulletsJob : IJob {
 
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<float> bulletXs;
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<float> bulletYs;
         [ReadOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<float> bulletMovementXs;
         [ReadOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeArray<float> bulletMovementYs;
         [ReadOnly]
+        [NativeDisableContainerSafetyRestriction]
         public NativeReference<int> activeBullets;
 
         public MoveBulletsJob(in BulletField field) {

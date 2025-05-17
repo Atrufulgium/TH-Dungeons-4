@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Burst.CompilerServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine.Assertions;
 
@@ -33,6 +34,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         /// <summary>
         /// How many bullets are valid.
         /// </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeReference<int> active;
 
         // WHENEVER ADDING AN ARRAY:
@@ -43,40 +45,53 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
         #region basic properties
         /// <summary> For valid bullets, stores the x position. Undefined for invalid bullets. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<float> x;
         /// <summary> For valid bullets, stores the y position. Undefined for invalid bullets. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<float> y;
         /// <summary> Whether this bullet is valid. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeBitArray valid;
 
         /// <summary> Miscellaneous collection of properties together in one flags enum. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<MiscBulletProps> prop;
         #endregion
 
         #region movement
         /// <summary> Stores the movement in the x component each gametick. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<float> dx;
         /// <summary> Stores the movement in the y component each gametick. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<float> dy;
         #endregion
 
         #region gameplay stuff
         /// <summary> Stores the hitbox size of each bullet. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<float> radius;
         #endregion
 
         #region rendering stuff
         /// <summary> The index in <see cref="BulletFieldRenderer.bulletTextures"/>. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<int> textureID;
         /// <summary> The layer determines coarse draw order. </summary>
-        internal NativeArray<short> layer;
+            [NativeDisableContainerSafetyRestriction]
+        internal NativeArray<int> layer;
         /// <summary> The ID determines fine draw order. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<uint> id;
         /// <summary> The usually-outer color of a bullet. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<float4> outerColor;
         /// <summary> The usually-inner color of a bullet. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<float4> innerColor;
         /// <summary> An arbitrary scale factor for bullet size. </summary>
+            [NativeDisableContainerSafetyRestriction]
         internal NativeArray<float> renderScale;
         #endregion
 
@@ -88,11 +103,14 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         /// value of `65231` signifies the same, but is specifically the value of
         /// `deleteShifts[old Active]`.
         /// </summary>
+            [NativeDisableContainerSafetyRestriction]
         private NativeArray<ushort> deleteShifts;
+            [NativeDisableContainerSafetyRestriction]
         private NativeReference<ushort> deletedCount;
         private const ushort DELETED = 65230;
         private const ushort DELETE_BOUNDARY = 65231;
 
+            [NativeDisableContainerSafetyRestriction]
         private NativeReference<uint> nextID;
 
         public BulletField(bool validConstructor = true) {
@@ -136,6 +154,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             radius[a] = bullet.hitboxSize;
             textureID[a] = bullet.textureID;
             layer[a] = (short)bullet.layer;
+            layer[a] = bullet.layer;
             id[a] = nextID.Value;
             outerColor[a] = bullet.outerColor;
             innerColor[a] = bullet.innerColor;
