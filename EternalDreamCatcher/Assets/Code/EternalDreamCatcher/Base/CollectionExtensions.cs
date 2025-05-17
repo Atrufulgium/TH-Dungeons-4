@@ -73,6 +73,14 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
         }
 
         /// <summary>
+        /// Resets the first <paramref name="length"/> values in an array to
+        /// `default`.
+        /// </summary>
+        public static unsafe void Clear<T>(ref this NativeArray<T> array, int length) where T : unmanaged {
+            UnsafeUtility.MemClear(array.GetUnsafePtr(), length * (long)UnsafeUtility.SizeOf<T>());
+        }
+
+        /// <summary>
         /// Resets all values in an array to `default`.
         /// </summary>
         // Put this here instead of the UnsafeArray class as that isn't really

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -51,6 +52,17 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
             // TODO: Put this someplace better
             Application.targetFrameRate = 60;
+            // TODO: Stop using Unity lmao, if the multithreading model is
+            // incompatible with what I throw at it, the Burst compiler can
+            // viably be replaced with modern .NET features, and I'm doing the
+            // rendering myself anyways, is there even anything left to bind
+            // me to the engine at this point?
+            // Anyways.
+            // The overhead of the jobs system is much too much for the stream
+            // of tiny tasks I throw at it. Forcing everything on the main
+            // thread allows for -- and I'm not kidding -- a ~x10 speedup.
+            // With 1/10th of the resources available. Yep.
+            JobsUtility.JobWorkerCount = 0;
 
             player = new(new() {
                 position = new(0.5f, 1.1f),

@@ -83,6 +83,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             // The buffers can just be set as they don't care about the order.
             // Our material however needs to take into account the layer and
             // texture data, giving `sorteds.Count` rendering passses.
+            // TODO: Make each sortedKey group monotonous in bulletField.id.
             buffer.SetBufferData(transformBuffer, transformBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(transformsID, transformBuffer);
             buffer.SetBufferData(rBuffer, rBufferValues, 0, 0, field.Active);

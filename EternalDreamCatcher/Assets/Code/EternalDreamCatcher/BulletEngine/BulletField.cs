@@ -68,8 +68,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         #region rendering stuff
         /// <summary> The index in <see cref="BulletFieldRenderer.bulletTextures"/>. </summary>
         internal NativeArray<int> textureID;
-        /// <summary> The layer determines draw order. </summary>
-        internal NativeArray<int> layer;
+        /// <summary> The layer determines coarse draw order. </summary>
+        internal NativeArray<short> layer;
+        /// <summary> The ID determines fine draw order. </summary>
+        internal NativeArray<uint> id;
         /// <summary> The usually-outer color of a bullet. </summary>
         internal NativeArray<float4> outerColor;
         /// <summary> The usually-inner color of a bullet. </summary>
@@ -80,14 +82,18 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
         /// <summary>
         /// What index this bullet shifted to due to <see cref="FinalizeDeletion"/>:
-        /// a value of `t` indicates that this index was moved to index `t-1`.
+        /// a value of `t` at index `i` indicates that this index was moved to `i-t`.
         /// <br/>
-        /// A value of `0` signifies "this bullet was deleted or invalid." A
-        /// value of `-1` signifies the same, but is specifically the value of
+        /// A value of `65230` signifies "this bullet was deleted or invalid." A
+        /// value of `65231` signifies the same, but is specifically the value of
         /// `deleteShifts[old Active]`.
         /// </summary>
-        private NativeArray<int> deleteShifts;
-        private NativeReference<int> deletedCount;
+        private NativeArray<ushort> deleteShifts;
+        private NativeReference<ushort> deletedCount;
+        private const ushort DELETED = 65230;
+        private const ushort DELETE_BOUNDARY = 65231;
+
+        private NativeReference<uint> nextID;
 
         public BulletField(bool validConstructor = true) {
             active = new(0, Allocator.Persistent);
@@ -100,11 +106,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             radius = new(MAX_BULLETS, Allocator.Persistent);
             textureID = new(MAX_BULLETS, Allocator.Persistent);
             layer = new(MAX_BULLETS, Allocator.Persistent);
+            id = new(MAX_BULLETS, Allocator.Persistent);
             outerColor = new(MAX_BULLETS, Allocator.Persistent);
             innerColor = new(MAX_BULLETS, Allocator.Persistent);
             renderScale = new(MAX_BULLETS, Allocator.Persistent);
             deleteShifts = new(MAX_BULLETS, Allocator.Persistent);
             deletedCount = new(0, Allocator.Persistent);
+            nextID = new(0, Allocator.Persistent);
         }
 
         /// <summary>
@@ -127,12 +135,14 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             dy[a] = bullet.movement.y;
             radius[a] = bullet.hitboxSize;
             textureID[a] = bullet.textureID;
-            layer[a] = bullet.layer;
+            layer[a] = (short)bullet.layer;
+            id[a] = nextID.Value;
             outerColor[a] = bullet.outerColor;
             innerColor[a] = bullet.innerColor;
             renderScale[a] = bullet.renderScale;
 
             active.Value++;
+            nextID.Value++;
 
             return (BulletReference)a;
         }
@@ -185,30 +195,80 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             if (deletedCount.Value == 0)
                 return;
 
-            deleteShifts.Clear();
+            // By default, mark "didn't move" and "not deleted".
+            deleteShifts.Clear(Active);
 
             // Compactify by removing the gaps of `deletedReferences`.
-            // Unfortunately, we care about order, so we cannot do the O(1)
-            // thing and simply have to move everything over to fill up the
-            // gaps.
-            var newActive = Active - deletedCount.Value;
-            int writeIndex = 0;
-            int readIndex = 0;
-            for (; writeIndex < newActive; writeIndex++, readIndex++) {
-                while (Hint.Unlikely(valid.GetBits(readIndex) == 0)) {
-                    if (!BurstUtils.IsBurstCompiled) {
-                        Assert.IsTrue(readIndex < Active);
-                    }
-                    readIndex++;
+            // Unfortunately, this messes with the order, so swapping bullets
+            // around like this means the renderer has to a little more work.
+            int newActive = Active - deletedCount.Value;
+            int backIndex = Active - 1;
+            int frontIndex = 0;
+            
+            while (Hint.Likely(frontIndex < newActive)) {
+                // Note: `GetBits` does not throw if "`pos + numBits` exceeds
+                // the length of the array", which is incredibly convenient.
+                // This way we can skip huge chunks at a time, which is common
+                // due to how rare bullet deletions are.
+                var bits = valid.GetBits(frontIndex, 64);
+
+                // We can skip over all 1-bits to the next 0-bit.
+                // (Note that math.tzcnt(0) gives 64.)
+                var validCount = math.tzcnt(~bits);
+                frontIndex += validCount;
+                if (Hint.Likely(validCount == 64)) {
+                    continue;
                 }
-                Overwrite(readIndex, writeIndex);
-                deleteShifts[readIndex] = writeIndex + 1;
+                // (Keep the invariant "frontIndex < newActive" going)
+                if (Hint.Unlikely(frontIndex >= newActive)) {
+                    break;
+                }
+
+                // We're on a deleted bullet in [0,newActive).
+                // Grab a bullet [newActive,Active) to put there, searching
+                // from the back.
+                // This bullet must exist (as otherwise the Active/newActive
+                // bookkeeping went wrong somewhere).
+
+                // Swap an invalid bullet with the last currently valid bullet
+                while (Hint.Likely(backIndex > frontIndex)) {
+                    // First do a sweeping larger-scale search.
+                    // If we can't do the larger-scale search, do a smol one,
+                    // step by step.
+                    if (Hint.Unlikely(backIndex < newActive + 64)) {
+                        while (backIndex > newActive && valid.GetBits(backIndex) == 0) {
+                            backIndex--;
+                        }
+                        break;
+                    }
+
+                    // We can do a large-scale search!
+                    // These are generally unlikely due to how rare bullet deletions are.
+                    var backBits = valid.GetBits(backIndex - 63, 64);
+                    // (Fount from the other direction because we're going backwards)
+                    var invalidCount = math.lzcnt(backBits);
+                    backIndex -= invalidCount;
+                }
+
+                if (!BurstUtils.IsBurstCompiled) {
+                    Assert.IsTrue(valid.GetBits(backIndex) == 1, "Trying to grab a deleted bullet.");
+                    Assert.IsTrue(backIndex > frontIndex, "Trying to put a bullet _back_.");
+                }
+
+                // We can actually move the boolet from back to front
+                Overwrite(backIndex, frontIndex);
+                valid.Set(backIndex, false);
+                deleteShifts[backIndex] = (ushort)(backIndex - frontIndex);
+                deleteShifts[frontIndex] = DELETED;
+
+                frontIndex++;
+                backIndex--;
             }
 
             // Don't forget to invalidate the rest of the range.
-            valid.SetBits(writeIndex, false, Active - newActive);
+            valid.SetBits(newActive, false, Active - newActive);
             if (Active + 1 < MAX_BULLETS)
-                deleteShifts[Active + 1] = -1;
+                deleteShifts[Active + 1] = DELETE_BOUNDARY;
 
             active.Value = newActive;
             deletedCount.Value = 0;
@@ -232,13 +292,14 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         /// </summary>
         public IEnumerable<(BulletReference from, BulletReference to)> GetFinalizeDeletionShifts() {
             for (int from = 0; from < MAX_BULLETS; from++) {
-                int to = deleteShifts[from] - 1;
-                if (Hint.Unlikely(to == -2))
+                int offset = deleteShifts[from];
+                if (Hint.Unlikely(offset == DELETE_BOUNDARY))
                     break;
-                if (Hint.Unlikely(to == -1))
+                if (Hint.Unlikely(offset == DELETED))
                     continue;
-                if (from == to)
+                if (offset == 0)
                     continue;
+                int to = from - offset;
                 yield return ((BulletReference)from, (BulletReference)to);
             }
         }
@@ -249,9 +310,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         /// updates.
         /// </summary>
         public BulletReference GetFinalizeDeletionShift(BulletReference from) {
-            int to = deleteShifts[(int)from] - 1;
-            if (to < 0)
+            int offset = deleteShifts[(int)from];
+            if (offset == DELETED || offset == DELETE_BOUNDARY)
                 throw new ArgumentException("This bullet was deleted or not valid to begin with.");
+            int to = (int)from - offset;
             return (BulletReference)to;
         }
 
@@ -264,6 +326,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             Overwrite(i, j, dy);
             Overwrite(i, j, textureID);
             Overwrite(i, j, layer);
+            Overwrite(i, j, id);
             Overwrite(i, j, outerColor);
             Overwrite(i, j, innerColor);
             Overwrite(i, j, renderScale);
@@ -284,6 +347,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             radius.Dispose();
             textureID.Dispose();
             layer.Dispose();
+            id.Dispose();
             outerColor.Dispose();
             innerColor.Dispose();
             renderScale.Dispose();

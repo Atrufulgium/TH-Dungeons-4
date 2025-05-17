@@ -19,24 +19,24 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.Tests {
             for (int i = 0; i < 10; i++)
                 bullets.Add(f.CreateBullet(ref bulletParams)!.Value);
 
-            // This range forces the internal array to collapse as we create
+            // This range forces the internal array to shrink as we create
             // a gap [....XXXX..].
             for (int i = 4; i < 8; i++)
                 f.DeleteBullet(bullets[i]);
             f.FinalizeDeletion();
             Assert.AreEqual(6, f.Active);
 
-            // NOTE: The array gets collapsed but order gets maintained, so
-            // there is only one correct order for these.
+            // NOTE: The array gets shrunk without maintaining order. If we
+            // mess with the code again, this test might fail.
             UnityEngine.Debug.Log("First removal moves:");
             foreach (var p in f.GetFinalizeDeletionShifts()) UnityEngine.Debug.Log(p);
             CollectionAssert.AreEqual(
-                Moves((8, 4), (9, 5)),
+                Moves((8, 5), (9, 4)),
                 f.GetFinalizeDeletionShifts()
             );
 
             // Now delete again, around what was previously deleted.
-            // This again forces array collapse.
+            // This again forces the array to shrink.
             // This case caused a bug.
             // The collapse creates gaps [..X.X.], which can happen in 2 ways.
             f.DeleteBullet(bullets[2]);
@@ -47,7 +47,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.Tests {
             UnityEngine.Debug.Log("\nSecond removal moves:");
             foreach (var p in f.GetFinalizeDeletionShifts()) UnityEngine.Debug.Log(p);
             CollectionAssert.AreEqual(
-                Moves((3,2), (5,3)),
+                Moves((5,2)),
                 f.GetFinalizeDeletionShifts()
             );
 
