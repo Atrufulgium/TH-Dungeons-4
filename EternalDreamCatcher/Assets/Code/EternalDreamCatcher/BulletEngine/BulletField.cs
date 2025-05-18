@@ -69,7 +69,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         /// <summary> The index in <see cref="BulletFieldRenderer.bulletTextures"/>. </summary>
         internal NativeArray<int> textureID;
         /// <summary> The layer determines coarse draw order. </summary>
-        internal NativeArray<short> layer;
+        internal NativeArray<int> layer;
         /// <summary> The ID determines fine draw order. </summary>
         internal NativeArray<uint> id;
         /// <summary> The usually-outer color of a bullet. </summary>
@@ -135,7 +135,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             dy[a] = bullet.movement.y;
             radius[a] = bullet.hitboxSize;
             textureID[a] = bullet.textureID;
-            layer[a] = (short)bullet.layer;
+            layer[a] = bullet.layer;
             id[a] = nextID.Value;
             outerColor[a] = bullet.outerColor;
             innerColor[a] = bullet.innerColor;
@@ -206,11 +206,15 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             int frontIndex = 0;
             
             while (Hint.Likely(frontIndex < newActive)) {
-                // Note: `GetBits` does not throw if "`pos + numBits` exceeds
-                // the length of the array", which is incredibly convenient.
-                // This way we can skip huge chunks at a time, which is common
+                // Note: _Supposedly_ `GetBits` does not throw if "`pos + numBits`
+                // exceeds the length of the array".
+                // It does though. Lmao.
+                // Either way, we can skip huge chunks at a time, which is common
                 // due to how rare bullet deletions are.
-                var bits = valid.GetBits(frontIndex, 64);
+                ulong bits = valid.GetBits(
+                    frontIndex,
+                    math.min(64, MAX_BULLETS - frontIndex)
+                );
 
                 // We can skip over all 1-bits to the next 0-bit.
                 // (Note that math.tzcnt(0) gives 64.)

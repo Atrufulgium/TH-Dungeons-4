@@ -26,8 +26,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         // 32 bits layer; 16 bits additive 0/1; 16 bits texture ID
         readonly NativeParallelHashMap<long, int> countPerLayer = new(64, Allocator.Persistent);
         readonly NativeParallelHashMap<long, int> startingIndices = new(64, Allocator.Persistent);
-        readonly NativeParallelHashSet<long> keysSet = new(64, Allocator.Persistent);
         readonly NativeList<long> sortedKeys = new(64, Allocator.Persistent);
+        // We need an intermediate place to order the data.
+        readonly NativeList<ComputeData> intermediate = new(BulletField.MAX_BULLETS, Allocator.Persistent);
 
         readonly Material material;
         readonly Mesh rectMesh;
@@ -73,8 +74,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 gsC = gBufferValues,
                 countPerLayer = countPerLayer,
                 startingIndices = startingIndices,
-                keysSet = keysSet,
                 sortedKeys = sortedKeys,
+                intermediate = intermediate,
 
                 bulletField = field
             }.Run();
@@ -83,7 +84,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             // The buffers can just be set as they don't care about the order.
             // Our material however needs to take into account the layer and
             // texture data, giving `sorteds.Count` rendering passses.
-            // TODO: Make each sortedKey group monotonous in bulletField.id.
+            // TODO: Occassionally bullets flicker out of existence for a moment.
+            // Also, sometimes they just appear late? This seems layer-related.
+            // After exactly 160 ticks after start, a really obvious ofuda
+            // appears with my current setup.
+            // Is this an off-by-one? Do a frame-by-frame analysis of the first few seconds.
             buffer.SetBufferData(transformBuffer, transformBufferValues, 0, 0, field.Active);
             buffer.SetGlobalBuffer(transformsID, transformBuffer);
             buffer.SetBufferData(rBuffer, rBufferValues, 0, 0, field.Active);
@@ -101,6 +106,58 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             }
         }
 
+        private readonly struct ComputeData : IComparable<ComputeData> {
+            public readonly float4 ComputeTransform; // x, y, scale, rot
+            public readonly float4 ComputeRed; // What "red" turns into
+            public readonly float4 ComputeGreen; // What "green" turns into
+            public readonly long OrderKey; // (layer, textureID)
+            public readonly long SuborderID; // monotonous
+
+            public ComputeData(BulletField f, ushort bulletReference) {
+                float4 transform = default;
+                transform.xy = new(f.x[bulletReference], f.y[bulletReference]);
+                transform.z = f.renderScale[bulletReference];
+
+                var p = f.prop[bulletReference];
+                // (bulletReference have trust issues with "hasflag")
+                if (Hint.Unlikely((p & MiscBulletProps.RotationFixed) != 0)) {
+                    transform.w = 0;
+                } else if (Hint.Unlikely((p & MiscBulletProps.RotationContinuous) != 0)) {
+                    transform.w = 230; // Message value.
+                } else if (Hint.Unlikely((p & MiscBulletProps.RotationWiggle) != 0)) {
+                    transform.w = 231; // Message value.
+                } else {
+                    // Mess with the angle so that "0" means "down".
+                    transform.w = math.atan2(f.dy[bulletReference], f.dx[bulletReference]) - math.PI / 2;
+                }
+
+                ComputeTransform = transform;
+                ComputeRed = f.innerColor[bulletReference];
+                ComputeGreen = f.outerColor[bulletReference];
+
+                OrderKey = BulletToKey(bulletReference, ref f);
+                SuborderID = f.id[bulletReference];
+            }
+
+            public int CompareTo(ComputeData other) {
+                var res = OrderKey.CompareTo(other.OrderKey);
+                if (res != 0)
+                    return res;
+                return SuborderID.CompareTo(other.SuborderID);
+            }
+
+            /// <summary>
+            /// Turns a bullet into its coarse draw order key.
+            /// </summary>
+            static unsafe long BulletToKey(int bulletReference, ref BulletField f) {
+                long ret = f.textureID[bulletReference];
+                if ((f.prop[bulletReference] & MiscBulletProps.RendersAdditiviely) != 0)
+                    ret += (long)1 << 16;
+                ret += (long)f.layer[bulletReference] << 32;
+                return ret;
+            }
+        }
+
         [BurstCompile(CompileSynchronously = true, OptimizeFor = OptimizeFor.Performance)]
         private unsafe struct PrepareRenderFieldJob : IJob {
 
@@ -109,8 +166,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             public NativeArray<float4> gsC;
             public NativeParallelHashMap<long, int> countPerLayer;
             public NativeParallelHashMap<long, int> startingIndices;
-            public NativeParallelHashSet<long> keysSet;
             public NativeList<long> sortedKeys;
+            public NativeList<ComputeData> intermediate;
 
             public BulletField bulletField;
 
@@ -119,90 +176,61 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 var rs = (float4*)rsC.GetUnsafePtr();
                 var gs = (float4*)gsC.GetUnsafePtr();
 
-                var x = (float*)bulletField.x.GetUnsafeReadOnlyPtr();
-                var y = (float*)bulletField.y.GetUnsafeReadOnlyPtr();
-                var dx = (float*)bulletField.dx.GetUnsafeReadOnlyPtr();
-                var dy = (float*)bulletField.dy.GetUnsafeReadOnlyPtr();
-                var tex = (int*)bulletField.textureID.GetUnsafeReadOnlyPtr();
-                var layer = (int*)bulletField.layer.GetUnsafeReadOnlyPtr();
-                var r = (float4*)bulletField.innerColor.GetUnsafeReadOnlyPtr();
-                var g = (float4*)bulletField.outerColor.GetUnsafeReadOnlyPtr();
-                var prop = (MiscBulletProps*)bulletField.prop.GetUnsafeReadOnlyPtr();
-                var renderScales = (float*)bulletField.renderScale.GetUnsafeReadOnlyPtr();
-
                 // The idea: as we're copying over data _anyway_, might as well
                 // order it for very easy draw calls.
-                // First, count how many of each (textreID, layer) there are.
+                // First, count how many of each (layer, textureID) there are.
                 // This allows us to make the `intermediatePosses` array have the
                 // following shape:
                 //   [(0,0) bullets] [(0,1) bullets] .. [(1,0) bullets] .. [etc]
-                // which we can take into account when copying.
                 // (This int-tuple is collapsed into a long.)
+                // We can then make sure the data we copy over is sorted by
+                // (layer, textureID, bulletID).
+                // This third param is needed because otherwise bullet deletion
+                // will cause flickering by putting other bullets on top
+                // suddenly.
                 countPerLayer.Clear();
-                keysSet.Clear();
                 sortedKeys.Clear();
-
-                // Get how much space to allocate for each
-                // (I could SIMD this one but ehhhh)
-                for (int i = 0; i < bulletField.Active; i++) {
-                    var key = GetKey(i, tex, layer, prop);
-                    countPerLayer.Increment(key);
-                    keysSet.Add(key);
-                }
-
-                foreach (var key in keysSet)
-                    sortedKeys.Add(key);
-                sortedKeys.Sort();
-
-                // Calculate starting indices
-                int cumulative = 0;
                 startingIndices.Clear();
-                foreach (var key in sortedKeys) {
-                    startingIndices.Add(key, cumulative);
-                    cumulative += countPerLayer[key];
+
+                // Add and sort the data.
+                // (We always need to clear data but only need to do other
+                //  stuff when there are active bullets.)
+                intermediate.Clear();
+                int active = bulletField.Active;
+                if (active == 0)
+                    return;
+
+                for (ushort i = 0; i < active; i++) {
+                    intermediate.Add(new(bulletField, i));
                 }
+                intermediate.Sort();
 
-                // We're again going to recount `countPerLayer`.
-                // This time because it has the meaning "this is the offset wrt
-                // the current startingIndex".
-                countPerLayer.Clear();
+                // Copy into the buffers.
+                // Keep track of the keys -- they are contiguous so adding
+                // their metadata is easy.
+                long currentKey = intermediate[0].OrderKey;
+                int currentCount = 0;
+                startingIndices.Add(currentKey, 0);
+                for (int i = 0; i < active; i++) {
+                    transforms[i] = intermediate[i].ComputeTransform;
+                    rs[i] = intermediate[i].ComputeRed;
+                    gs[i] = intermediate[i].ComputeGreen;
+                    currentCount++;
 
-                for (int i = 0; i < bulletField.Active; i++) {
-                    var key = GetKey(i, tex, layer, prop);
-                    // (First increment, then -1 to guarantee existence.)
-                    // (Yes, pure laziness.)
-                    countPerLayer.Increment(key);
-                    int bufferIndex = startingIndices[key] + countPerLayer[key] - 1;
-
-                    // Now we can just set all data.
-                    float4 transform = default;
-                    transform.xy = new(x[i], y[i]);
-                    transform.z = renderScales[i];
-                    rs[bufferIndex] = r[i];
-                    gs[bufferIndex] = g[i];
-
-                    var p = prop[i];
-                    // (i have trust issues with "hasflag")
-                    if (Hint.Unlikely((p & MiscBulletProps.RotationFixed) != 0)) {
-                        transform.w = 0;
-                    } else if (Hint.Unlikely((p & MiscBulletProps.RotationContinuous) != 0)) {
-                        transform.w = 230; // Message value.
-                    } else if (Hint.Unlikely((p & MiscBulletProps.RotationWiggle) != 0)) {
-                        transform.w = 231; // Message value.
-                    } else {
-                        // Mess with the angle so that "0" means "down".
-                        transform.w = math.atan2(dy[i], dx[i]) - math.PI/2;
+                    if (currentKey != intermediate[i].OrderKey) {
+                        sortedKeys.Add(currentKey);
+                        countPerLayer.Add(currentKey, currentCount);
+                        
+                        currentKey = intermediate[i].OrderKey;
+                        currentCount = 0;
+                        startingIndices.Add(currentKey, i);
                     }
-                    transforms[bufferIndex] = transform;
                 }
-            }
 
-            public long GetKey(int i, int* tex, int* layer, MiscBulletProps* prop) {
-                long ret = tex[i];
-                if ((prop[i] & MiscBulletProps.RendersAdditiviely) != 0)
-                    ret += (long)1 << 16;
-                ret += (long)layer[i] << 32;
-                return ret;
+                if (currentCount != 0) {
+                    sortedKeys.Add(currentKey);
+                    countPerLayer.Add(currentKey, currentCount);
+                }
             }
         }
 
@@ -218,8 +246,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
             countPerLayer.Dispose();
             startingIndices.Dispose();
-            keysSet.Dispose();
             sortedKeys.Dispose();
+            intermediate.Dispose();
         }
 
         /// <summary>
