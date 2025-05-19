@@ -16,10 +16,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     ///     float temp = count;
     ///     repeat {
     ///         temp--;
-    ///         if (temp &lt; 0) {
-    ///             break;
+    ///         if (temp &gt;= 0) {
+    ///             ...
+    ///             continue;
     ///         }
-    ///         ...
+    ///         break;
     ///     }
     /// </code>
     /// </item>
@@ -33,10 +34,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     /// turn into
     /// <code>
     ///     repeat {
-    ///         if (!condition) {
-    ///             break;
+    ///         if (condition) {
+    ///             ...
+    ///             continue;
     ///         }
-    ///         ...
+    ///         break;
     ///     }
     /// </code>
     /// </item>
@@ -58,10 +60,11 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
     ///         } else {
     ///             incr;
     ///         }]
-    ///         if (!condition) {
-    ///             break;
+    ///         if (condition) {
+    ///             ...
+    ///             continue;
     ///         }
-    ///         ...
+    ///         break;
     ///     }
     /// </code>
     /// </list>
@@ -100,21 +103,24 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 // repeat {
                 node.WithCount(null)
                     .WithBody(
-                    node.Body.WithPrependedStatements(
+                    new Block(
                         // temp--;
                         new ExpressionStatement(
                             new PostfixUnaryExpression(name, PostfixUnaryOp.Decrement)
                         ),
-                        // if (temp < 0) { break; }
+                        // if (temp >= 0) { ... continue; }
                         new IfStatement(
                             new BinaryExpression(
                                 name,
-                                BinaryOp.Lt,
+                                BinaryOp.Gte,
                                 new LiteralExpression(0)
                             ),
-                            new Block(new BreakStatement())
-                        )
-                        // ...
+                            node.Body.WithAppendedStatements(
+                                new ContinueStatement()
+                            )
+                        ),
+                        // break;
+                        new BreakStatement()
                     )
                 )
             );
@@ -124,28 +130,31 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
             node = (WhileStatement) base.VisitWhileStatement(node)!;
             return new RepeatStatement(
                 // repeat {
-                node.Body.WithPrependedStatements(
-                    // if (!condition) { break; }
+                new Block(
+                    // if (condition) { ... continue; }
                     new IfStatement(
-                        new PrefixUnaryExpression(
-                            node.Condition,
-                            PrefixUnaryOp.Not
-                        ),
-                        new Block(new BreakStatement())
-                    )
+                        node.Condition,
+                        node.Body.WithAppendedStatements(
+                            new ContinueStatement()
+                        )
+                    ),
+                    // break;
+                    new BreakStatement()
                 )
             );
         }
 
         protected override Node? VisitForStatement(ForStatement node) {
             node = (ForStatement) base.VisitForStatement(node)!;
-            // Conditionally on `node` having `incr`, represents
+            // Conditionally on `node` having `incr`, represents the inner
             // [if (temp_first) {
             //     temp_first = false;
             // } else {
             //     incr;
             // }]
-            // if (!condition) { break; }
+            // if (condition) { ... continue; }
+            //
+            // The outer inits come later.
             var loopBodyPrefix = new MultipleStatements();
             var name = GetLoopTemp();
             if (node.Increment != null) {
@@ -166,14 +175,15 @@ namespace Atrufulgium.BulletScript.Compiler.Visitors {
                 );            }
             loopBodyPrefix = loopBodyPrefix.WithAppendedStatements(
                 new IfStatement(
-                    new PrefixUnaryExpression(
-                        node.Condition,
-                        PrefixUnaryOp.Not
-                    ),
-                    new Block(new BreakStatement())
+                    node.Condition,
+                    node.Body.WithAppendedStatements(
+                        new ContinueStatement()
+                    )
                 )
             );
-            var loopBody = node.Body.WithPrependedStatements(loopBodyPrefix.Statements);
+            var loopBody = new Block(
+                new BreakStatement()
+            ).WithPrependedStatements(loopBodyPrefix.Statements);
             var repeatStatement = new RepeatStatement(loopBody);
             // Now the [init] and [temp_first = true] optionals.
             var ret = new MultipleStatements();

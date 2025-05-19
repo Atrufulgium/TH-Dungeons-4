@@ -126,19 +126,13 @@ a = 1 >= 1;
 [op]   LessThanEqual | [f]                a | [f]                a | [f]                1
 [op]   LessThanEqual | [f]                a | [f]                1 | [f]                a
 [op]             Set | [f]                a | [f]                1 | --------------------
-[op]   LessThanEqual | [f]                a | [f]                a | [f]                a
-[op]             Not | [f]                a | [f]                a | --------------------
-[op]   LessThanEqual | [f]                a | [f]                1 | [f]                a
-[op]             Not | [f]                a | [f]                a | --------------------
-[op]   LessThanEqual | [f]                a | [f]                a | [f]                1
-[op]             Not | [f]                a | [f]                a | --------------------
-[op]             Set | [f]                a | [f]                0 | --------------------
 [op]        LessThan | [f]                a | [f]                a | [f]                a
-[op]             Not | [f]                a | [f]                a | --------------------
 [op]        LessThan | [f]                a | [f]                1 | [f]                a
-[op]             Not | [f]                a | [f]                a | --------------------
 [op]        LessThan | [f]                a | [f]                a | [f]                1
-[op]             Not | [f]                a | [f]                a | --------------------
+[op]             Set | [f]                a | [f]                0 | --------------------
+[op]   LessThanEqual | [f]                a | [f]                a | [f]                a
+[op]   LessThanEqual | [f]                a | [f]                1 | [f]                a
+[op]   LessThanEqual | [f]                a | [f]                a | [f]                1
 [op]             Set | [f]                a | [f]                1 | --------------------
 ");
 
@@ -305,8 +299,8 @@ m1 = m1 < m2;
 [op]            Add4 | [f]             m1+4 | [f]             m1+4 | [f]             m2+4
 [op]          Equal4 | [f]               m1 | [f]               m1 | [f]               m2
 [op]          Equal4 | [f]             m1+4 | [f]             m1+4 | [f]             m2+4
-[op]          Equal4 | [f]               m1 | [f]               m2 | [f]               m1
-[op]          Equal4 | [f]             m1+4 | [f]             m2+4 | [f]             m1+4
+[op]          Equal4 | [f]               m1 | [f]               m1 | [f]               m2
+[op]          Equal4 | [f]             m1+4 | [f]             m1+4 | [f]             m2+4
 [op]            Not4 | [f]               m1 | [f]               m1 | --------------------
 [op]            Not4 | [f]             m1+4 | [f]             m1+4 | --------------------
 [op]       LessThan4 | [f]               m1 | [f]               m1 | [f]               m2

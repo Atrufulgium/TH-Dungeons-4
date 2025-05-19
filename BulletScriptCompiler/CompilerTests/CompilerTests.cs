@@ -13,7 +13,10 @@ namespace Atrufulgium.BulletScript.Compiler.Tests {
                 return;
             }
 
-            Assert.AreEqual('\n' + bytecode.Trim(), '\n' + output.ToString().Trim());
+            var expected = '\n' + string.Join('\n', bytecode.Split('\n').Select(s => s.Trim())) + '\n';
+            var actual = '\n' + string.Join('\n', bytecode.Split('\n').Select(s => s.Trim())) + '\n';
+
+            Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]

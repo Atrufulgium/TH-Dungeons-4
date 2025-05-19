@@ -15,11 +15,15 @@ Compiler:
 - Increments/decrements are currently only really allowed at statement-level.
 - Constant folded index in-range check.
 - `RemoveMethodsRewriter` didn't quite work with intrinsics. I also added additional qualification. Neither of these are tested, so go test them.
+- A simple `i >= 10` compiles to a comparison and a not `!(i < 10)`. Turn it into `(10-ε) < i` instead.
+- Allow for `main()` and other message functions without arguments, when it makes sense.
+- Past self, explain to me why variable names aren't allowed to start with `_`?
 
 Other:
 - This file. Maybe also for *once* include project setup/build instructions.
 - Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily.
 - Everything BSS. This includes removing the variables `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers`, `use_pivot` from the compiler.
+- The renderer has that one bug you already knew (bullets flickering), but there's also "rendering bullets at another bullet's position" somewhere.
 
 BulletScript (BS)
 =================

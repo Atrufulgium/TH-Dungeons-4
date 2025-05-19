@@ -361,8 +361,11 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
 
         static readonly Dictionary<BinaryOp, BinaryOp> invertedOps = new() {
             { BinaryOp.Neq, BinaryOp.Eq },
-            { BinaryOp.Gt, BinaryOp.Lte },
-            { BinaryOp.Gte, BinaryOp.Lt }
+        };
+
+        static readonly Dictionary<BinaryOp, BinaryOp> swappedOps = new() {
+            { BinaryOp.Gt, BinaryOp.Lt },
+            { BinaryOp.Gte, BinaryOp.Lte }
         };
 
         static List<HLOP> HandleNonCommutativeBinop(
@@ -461,16 +464,21 @@ namespace Atrufulgium.BulletScript.Compiler.Syntax {
             }
 
             var type = model.GetExpressionType(rhs);
-            // When inverted, lhs and rhs also swap places.
             // Inverted ops need to be postprocessed with a not.
             bool inverted = false;
             if (invertedOps.TryGetValue(rhs.OP, out var invertedOp)) {
                 inverted = true;
                 var rhslhs = rhs.LHS;
+                rhs = rhs.WithOP(invertedOp);
+            }
+
+            // There is no a>b or a>=b, so map these to b<a or b<=a resp.
+            if (swappedOps.TryGetValue(rhs.OP, out var swappedOp)) {
+                var rhslhs = rhs.LHS;
                 rhs = rhs
                     .WithLHS(rhs.RHS)
                     .WithRHS(rhslhs)
-                    .WithOP(invertedOp);
+                    .WithOP(swappedOp);
             }
 
             var op = rhs.OP;

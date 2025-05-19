@@ -71,5 +71,18 @@ namespace Atrufulgium.BulletScript.Compiler {
 
             return string.Join('\n', order.Select(d => d.ToString()));
         }
+
+        /// <summary>
+        /// Print all relevant data of this CompilationResult.
+        /// </summary>
+        public override string ToString() {
+            if (!TryGetBytecodeOutput(out var output)) {
+                return "Failed compilation:\n" + PrettyprintDiagnostics();
+            }
+            if (Diagnostics.Any()) {
+                return "Succesful compilation:\n" + output.ToString() + "\n\n" + PrettyprintDiagnostics();
+            }
+            return "Succesful compilation:\n" + output.ToString();
+        }
     }
 }
