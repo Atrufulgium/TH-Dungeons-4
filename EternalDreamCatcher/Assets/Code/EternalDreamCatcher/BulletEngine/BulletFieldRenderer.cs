@@ -146,6 +146,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 return SuborderID.CompareTo(other.SuborderID);
             }
 
+            public override string ToString()
+                => $"[{OrderKey}|{SuborderID}] {ComputeTransform} with R: {ComputeRed} G: {ComputeGreen}";
+
             /// <summary>
             /// Turns a bullet into its coarse draw order key.
             /// </summary>
@@ -212,11 +215,6 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 int currentCount = 0;
                 startingIndices.Add(currentKey, 0);
                 for (int i = 0; i < active; i++) {
-                    transforms[i] = intermediate[i].ComputeTransform;
-                    rs[i] = intermediate[i].ComputeRed;
-                    gs[i] = intermediate[i].ComputeGreen;
-                    currentCount++;
-
                     if (currentKey != intermediate[i].OrderKey) {
                         sortedKeys.Add(currentKey);
                         countPerLayer.Add(currentKey, currentCount);
@@ -225,12 +223,15 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                         currentCount = 0;
                         startingIndices.Add(currentKey, i);
                     }
+
+                    transforms[i] = intermediate[i].ComputeTransform;
+                    rs[i] = intermediate[i].ComputeRed;
+                    gs[i] = intermediate[i].ComputeGreen;
+                    currentCount++;
                 }
 
-                if (currentCount != 0) {
-                    sortedKeys.Add(currentKey);
-                    countPerLayer.Add(currentKey, currentCount);
-                }
+                sortedKeys.Add(currentKey);
+                countPerLayer.Add(currentKey, currentCount);
             }
         }
 

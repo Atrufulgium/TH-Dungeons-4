@@ -80,7 +80,6 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
             var vm = CreateVM();
             if (vm.IsCreated)
-                danmakuScene.activeVMs.Add(CreateVM());
                 danmakuScene.activeVMs.Add(vm);
 
             camera = GetComponent<Camera>();

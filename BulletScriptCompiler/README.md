@@ -23,7 +23,7 @@ Other:
 - This file. Maybe also for *once* include project setup/build instructions.
 - Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily.
 - Everything BSS. This includes removing the variables `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers`, `use_pivot` from the compiler.
-- The renderer has that one bug you already knew (bullets flickering), but there's also "rendering bullets at another bullet's position" somewhere.
+- Look into banning floats in favour of fixed point for determinism across all platforms.
 
 BulletScript (BS)
 =================
