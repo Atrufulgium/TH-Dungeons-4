@@ -11,6 +11,9 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
         /// <summary>
         /// Some input systems rely on the current gametick.
         /// This function is called to message this.
+        /// <br/>
+        /// <b>Warning:</b> This MUST be the first field of each struct
+        /// implementing this.
         /// </summary>
         public int GameTick { set; }
 

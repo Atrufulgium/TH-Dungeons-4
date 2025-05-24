@@ -6,15 +6,20 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
     /// Standard-layout currently-not-customizable keyboard game input.
     /// </summary>
     internal struct KeyboardInput : IUnityGameInput {
-        public int GameTick { set { } }
+        int gameTick;
+        public int GameTick { set { gameTick = value; } }
 
-        public int2 MoveDirection { get; private set; }
+        int2 moveDirection;
+        public int2 MoveDirection { readonly get => moveDirection; private set => moveDirection = value; }
 
-        public bool IsShooting { get; private set; }
+        bool isShooting;
+        public bool IsShooting { readonly get => isShooting; private set => isShooting = value; }
 
-        public bool IsBombing { get; private set; }
+        bool isBombing;
+        public bool IsBombing { readonly get => isBombing; private set => isBombing = value; }
 
-        public bool IsFocusing { get; private set; }
+        bool isFocusing;
+        public bool IsFocusing { readonly get => isFocusing; private set => isFocusing = value; }
 
         public void HandleInputMainThread() {
             MoveDirection = (Input.GetKey(KeyCode.LeftArrow) ? new int2(-1, 0) : default)

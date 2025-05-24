@@ -265,36 +265,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 in player, t, in playerHitbox, in playerGrazebox
             ).Schedule(deps);
         }
+        public override JobHandle ScheduleTick(JobHandle dep = default)
+            => TickStrategy.ScheduleTick(this, dep);
 
-        /// <summary>
-        /// Increments the current game tick both generally and for the game
-        /// input.
-        /// </summary>
-        [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
-        private struct IncrementTickJob : IJob {
-
-            public NativeReference<int> gameTick;
-            public NativeReference<TGameInput> input;
-
-            public IncrementTickJob(NativeReference<int> gameTick, NativeReference<TGameInput> input) {
-                this.gameTick = gameTick;
-                this.input = input;
-            }
-
-            public unsafe void Execute() {
-                gameTick.Value++;
-                input.GetUnsafeTypedPtr()->GameTick = gameTick.Value;
-            }
-        }
-
-        /// <summary>
-        /// Calls <see cref="BulletField.FinalizeDeletion"/>.
-        /// </summary>
-        [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
-        private struct PostProcessDeletionsJob : IJob {
-            public BulletField field;
-            public PostProcessDeletionsJob(in BulletField field) => this.field = field;
-            public void Execute() => field.FinalizeDeletion();
-        }
     }
 }

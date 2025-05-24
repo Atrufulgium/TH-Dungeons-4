@@ -22,10 +22,22 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         // See the docs -- these are the bullets AddScript etc add to.
         public NativeList<BulletReference> createdBullets;
 
-        private float2 bulletSpawnPos;
-        private float bulletSpawnRot;
 
         public unsafe void Execute() {
+            VMCommandsPass.Execute(in vms, in player, ref field, ref createdBullets);
+        }
+    }
+
+    public static class VMCommandsPass {
+        public static unsafe void Execute(
+            in NativeList<VM> vms,
+            in NativeReference<Player> player,
+            ref BulletField field,
+            ref NativeList<BulletReference> createdBullets
+        ) {
+            float2 bulletSpawnPos = 0;
+            float bulletSpawnRot = 0;
+
             // In general, the underlying pointer for lists may move around.
             // Luckily, we do not resize this list during this, so that is not
             // a problem.
@@ -34,13 +46,29 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 var vm = ptr + i;
                 createdBullets.Clear();
                 foreach (var command in vm->outputCommands) {
-                    RunCommand(vm, command);
+                    RunCommand(
+                        in vm,
+                        in command,
+                        player.Value,
+                        ref bulletSpawnPos,
+                        ref bulletSpawnRot,
+                        ref createdBullets,
+                        ref field
+                    );
                 }
                 vm->outputCommands.Clear();
             }
         }
 
-        unsafe void RunCommand(VM* vm, Command command) {
+        static unsafe void RunCommand(
+            in VM* vm,
+            in Command command,
+            in Player player,
+            ref float2 bulletSpawnPos,
+            ref float bulletSpawnRot,
+            ref NativeList<BulletReference> createdBullets,
+            ref BulletField field
+        ) {
             switch (command.command) {
                 case CommandEnum.ContinueAfterTime:
                     // The cooldown is stored in the top half of the VM's OP.
@@ -55,7 +83,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                     bulletSpawnRot = command.arg3;
                     break;
                 case CommandEnum.Spawn:
-                    RunSpawnCommand(vm, command);
+                    RunSpawnCommand(
+                        in command,
+                        ref bulletSpawnPos,
+                        ref bulletSpawnRot,
+                        ref createdBullets,
+                        ref field
+                    );
                     break;
                 case CommandEnum.Destroy:
                     throw new NotImplementedException();
@@ -75,19 +109,19 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 case CommandEnum.Depivot:
                     throw new NotImplementedException();
                 case CommandEnum.AddRotation:
-                    AddRotationCommand(vm, command);
+                    AddRotationCommand(vm, command, ref field);
                     break;
                 case CommandEnum.SetRotation:
-                    SetRotationCommand(vm, command);
+                    SetRotationCommand(vm, command, ref field);
                     break;
                 case CommandEnum.AddSpeed:
-                    AddSpeedCommand(vm, command);
+                    AddSpeedCommand(vm, command, ref field);
                     break;
                 case CommandEnum.SetSpeed:
-                    SetSpeedCommand(vm, command);
+                    SetSpeedCommand(vm, command, ref field);
                     break;
                 case CommandEnum.FacePlayer:
-                    FacePlayerCommand(vm, command);
+                    FacePlayerCommand(vm, command, player, ref field);
                     break;
                 case CommandEnum.Gimmick:
                     throw new NotImplementedException();
@@ -96,7 +130,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             }
         }
 
-        unsafe void RunSpawnCommand(VM* vm, Command command) {
+        static unsafe void RunSpawnCommand(
+            in Command command,
+            ref float2 bulletSpawnPos,
+            ref float bulletSpawnRot,
+            ref NativeList<BulletReference> createdBullets,
+            ref BulletField field
+        ) {
             // TODO: Actually pass the bullet properties.
             var spawnSpeed = command.arg1;
             var bulletTypeIndex = command.arg2;
@@ -109,8 +149,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 hitboxSize: 0.03f,
                 textureID: 0,
                 layer: 0,
-                outerColor: new(0,0,1,1),
-                innerColor: new(1,1,1,1),
+                outerColor: new(0, 0, 1, 1),
+                innerColor: new(1, 1, 1, 1),
                 bulletProps: MiscBulletProps.HarmsPlayers | MiscBulletProps.ClearOnEdge,
                 renderScale: 1f
             );
@@ -121,7 +161,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             createdBullets.Add(bref.Value);
         }
 
-        unsafe void AddRotationCommand(VM* vm, Command command) {
+        static unsafe void AddRotationCommand(
+            in VM* vm,
+            in Command command,
+            ref BulletField field
+        ) {
             foreach (var bref in vm->affectedBullets) {
                 int i = (int)bref;
                 var dx = field.dx[i];
@@ -136,7 +180,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             }
         }
 
-        unsafe void SetRotationCommand(VM* vm, Command command) {
+        static unsafe void SetRotationCommand(
+            in VM* vm,
+            in Command command,
+            ref BulletField field
+        ) {
             foreach (var bref in vm->affectedBullets) {
                 int i = (int)bref;
                 var dx = field.dx[i];
@@ -150,7 +198,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             }
         }
 
-        unsafe void AddSpeedCommand(VM* vm, Command command) {
+        static unsafe void AddSpeedCommand(
+            in VM* vm,
+            in Command command,
+            ref BulletField field
+        ) {
             foreach (var bref in vm->affectedBullets) {
                 int i = (int)bref;
                 var dx = field.dx[i];
@@ -164,7 +216,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             }
         }
 
-        unsafe void SetSpeedCommand(VM* vm, Command command) {
+        static unsafe void SetSpeedCommand(
+            in VM* vm,
+            in Command command,
+            ref BulletField field
+        ) {
             foreach (var bref in vm->affectedBullets) {
                 int i = (int)bref;
                 var dx = field.dx[i];
@@ -177,10 +233,15 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             }
         }
 
-        unsafe void FacePlayerCommand(VM* vm, Command command) {
+        static unsafe void FacePlayerCommand(
+            in VM* vm,
+            in Command command,
+            in Player player,
+            ref BulletField field
+        ) {
             foreach (var bref in vm->affectedBullets) {
                 int i = (int)bref;
-                var playerPos = player.Value.position;
+                var playerPos = player.position;
                 var x = field.x[i];
                 var y = field.y[i];
                 var dx = field.dx[i];

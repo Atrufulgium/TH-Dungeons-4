@@ -1,9 +1,4 @@
-﻿using Atrufulgium.EternalDreamCatcher.Base;
-using Unity.Burst;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
-using Unity.Jobs;
-using Unity.Mathematics;
+﻿using Unity.Mathematics;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     public struct Player {
@@ -44,96 +39,5 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         /// How many bullets the player has grazed.
         /// </summary>
         public int graze;
-    }
-
-    /// <summary>
-    /// Moves the player depending on the game input.
-    /// Also writes the new hit- and grazeboxes.
-    /// </summary>
-    [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
-    public unsafe struct MovePlayerJob<TGameInput> : IJob where TGameInput : unmanaged, IGameInput {
-
-        public NativeReference<Player> player;
-        // This is needed for a really ugly workaround.
-        // See
-        /// <seealso cref="DanmakuScene{TGameInput}.ScheduleMovePlayerJob(JobHandle)"/>
-        // for some more comments on this.
-        [NativeDisableUnsafePtrRestriction]
-        public TGameInput* gameInput;
-        [WriteOnly]
-        public NativeReference<Circle> hitbox;
-        [WriteOnly]
-        public NativeReference<Circle> grazebox;
-
-        public MovePlayerJob(
-            in NativeReference<Player> player,
-            TGameInput* gameInput,
-            in NativeReference<Circle> hitbox,
-            in NativeReference<Circle> grazebox
-        ) {
-            this.player = player;
-            this.gameInput = gameInput;
-            this.hitbox = hitbox;
-            this.grazebox = grazebox;
-        }
-
-        public unsafe void Execute() {
-            var p = player.GetUnsafeTypedPtr();
-            ref var g = ref gameInput;
-            float2 delta = g->MoveDirection;
-            delta = math.normalizesafe(delta);
-            delta *= g->IsFocusing ? p->focusedSpeed : p->unfocusedSpeed;
-            float2 newPos = p->position + delta;
-            newPos = math.clamp(newPos, new(0.02f, 0.05f), new(0.98f, 1.15f));
-            p->position = newPos;
-            hitbox.Value = new(newPos, p->hitboxRadius);
-            grazebox.Value = new(newPos, p->grazeboxRadius);
-        }
-    }
-
-    /// <summary>
-    /// Deletes collided bullets and adds to the graze counter. This also
-    /// clears the lists for future use.
-    /// <br/>
-    /// This assumes bullets may have been deleted already.
-    /// </summary>
-    [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
-    public struct PostProcessPlayerCollisionJob : IJob {
-
-        public NativeReference<Player> player;
-        public BulletField field;
-        public NativeList<BulletReference> hitList;
-        public NativeList<BulletReference> grazeList;
-
-        public PostProcessPlayerCollisionJob(
-            NativeReference<Player> player,
-            in BulletField field,
-            NativeList<BulletReference> hitList,
-            NativeList<BulletReference> grazeList
-        ) {
-            this.player = player;
-            this.field = field;
-            this.hitList = hitList;
-            this.grazeList = grazeList;
-        }
-
-        public unsafe void Execute() {
-            var p = player.GetUnsafeTypedPtr();
-            p->graze += grazeList.Length;
-
-            bool hit = false;
-            for (int i = 0; i < hitList.Length; i++) {
-                if (field.ReferenceIsDeleted(hitList[i]))
-                    continue;
-                hit = true;
-                field.DeleteBullet(hitList[i]);
-            }
-
-            if (hit)
-                p->remainingLives--;
-
-            hitList.Clear();
-            grazeList.Clear();
-        }
     }
 }

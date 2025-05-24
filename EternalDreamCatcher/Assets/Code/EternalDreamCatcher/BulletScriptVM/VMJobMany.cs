@@ -26,9 +26,19 @@ namespace Atrufulgium.EternalDreamCatcher.BulletScriptVM {
         public int jobIndex;
         public int totalJobs;
 
-        public unsafe void Execute() {
+        public unsafe readonly void Execute() {
+            VMPassMany.Execute(in vms, in jobIndex, in totalJobs);
+        }
+    }
+
+    internal static class VMPassMany {
+        public static unsafe void Execute(
+            in NativeList<VM> vms,
+            in int jobIndex,
+            in int totalJobs
+        ) {
             // x: lower, inclusive; y: upper, exclusive
-            int2 range = (int2)math.floor(vms.Length * new float2(jobIndex, jobIndex+1)/totalJobs);
+            int2 range = (int2)math.floor(vms.Length * new float2(jobIndex, jobIndex + 1) / totalJobs);
             // While the above is guaranteed to go right for 0, I don't trust
             // floats enough to be sure that the last vm is not skipped.
             if (jobIndex == totalJobs - 1)
