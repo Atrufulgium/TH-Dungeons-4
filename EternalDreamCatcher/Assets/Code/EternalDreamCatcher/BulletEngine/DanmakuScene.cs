@@ -1,7 +1,7 @@
 ﻿using Atrufulgium.EternalDreamCatcher.Base;
+using Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies;
 using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using System;
-using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -28,26 +28,26 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     public abstract class DanmakuScene : IDisposable {
 
         public const int MAX_BULLETS = BulletField.MAX_BULLETS;
-        protected readonly BulletField bulletField = new(true);
+        internal readonly BulletField bulletField = new(true);
         protected readonly BulletFieldRenderer bulletFieldRenderer;
 
         protected Mesh quadMesh;
         protected Material entityMaterial;
         protected Texture2D[] entityTextures;
 
-        protected NativeReference<Player> player;
-        protected NativeReference<int> gameTick;
+        internal NativeReference<Player> player;
+        internal NativeReference<int> gameTick;
 
-        protected NativeReference<Circle> playerHitbox;
-        protected NativeReference<Circle> playerGrazebox;
-        protected NativeList<BulletReference> playerHitboxResult;
-        protected NativeList<BulletReference> playerGrazeboxResult;
+        internal NativeReference<Circle> playerHitbox;
+        internal NativeReference<Circle> playerGrazebox;
+        internal NativeList<BulletReference> playerHitboxResult;
+        internal NativeList<BulletReference> playerGrazeboxResult;
 
         protected VMList templates;
-        /*protected*/public NativeList<VM> activeVMs;
+        /*internal*/public NativeList<VM> activeVMs;
 
         // The VMsCommandsJob needs this array.
-        protected NativeList<BulletReference> createdBullets;
+        internal NativeList<BulletReference> createdBullets;
 
         readonly int gameTickID;
         readonly int entityTexID;
@@ -84,36 +84,8 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             entityPosScaleID = Shader.PropertyToID("_EntityPosScale");
         }
 
-        /// <inheritdoc cref="ScheduleTick(int, JobHandle)"/>
         public abstract JobHandle ScheduleTick(JobHandle dep = default);
-
-        /// <summary>
-        /// Proceeds the simulation of this DanmakuScene. Returns a
-        /// <see cref="JobHandle"/> of the <b>scheduled</b> job.
-        /// </summary>
-        /// <param name="ticks">
-        /// A strictly positive number of ticks to handle.
-        /// A tick represents 1/60th of a second.
-        /// </param>
-        /// <param name="dep">
-        /// An optional job to make this job depend on.
-        /// </param>
-        public JobHandle ScheduleTick(int ticks, JobHandle dep = default) {
-            if (ticks <= 0)
-                throw new ArgumentOutOfRangeException(nameof(ticks), "Can only tick a positive number of times.");
-#if UNITY_EDITOR
-            // See the "TODO: NOTE: OBNOXIOUS:" comment below.
-            if (ticks == 1)
-                Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobDebuggerEnabled = true;
-            else
-                Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobDebuggerEnabled = false;
-#endif
-
-            ref JobHandle handle = ref dep;
-            for (int i = 0; i < ticks; i++)
-                handle = ScheduleTick(dep);
-            return handle;
-        }
+        public abstract JobHandle ScheduleTick(int ticks, JobHandle dep = default);
 
         /// <inheritdoc cref="BulletField.CreateBullet(ref BulletCreationParams)"/>
         public BulletReference? CreateBullet(ref BulletCreationParams bullet)
@@ -153,7 +125,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     }
 
     public class DanmakuScene<TGameInput> : DanmakuScene where TGameInput : unmanaged, IGameInput {
-        NativeReference<TGameInput> input;
+        internal NativeReference<TGameInput> input;
+
+        public ITickStrategy<TGameInput> TickStrategy { get; set; }
 
         public DanmakuScene(
             Mesh rectMesh,
@@ -162,111 +136,17 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             Material entityMaterial,
             Texture2D[] entityTextures,
             NativeReference<TGameInput> input,
-            NativeReference<Player> player
+            NativeReference<Player> player,
+            ITickStrategy<TGameInput> tickStrategy
         ) : base(rectMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures, player) {
             this.input = input;
+            TickStrategy = tickStrategy;
         }
 
-        public override JobHandle ScheduleTick(JobHandle dep = default) {
-            // WARNING: EVERY .Schedule() HERE MUST HAVE A HANDLE ARG
-            // YOU"RE DOING IT WRONG OTHERWISE
-            // You don't notice it until you run it at [ridiculus]x speed in
-            // the player, but then you just freeze and all threads are Burst
-            // and waiting. Notice that behaviour? This is the problem.
-            
-            // NOTE: CombineDependencies may cause jobs to run already, as in
-            // JobHandle.ScheduleBatchedJobs().
-            // Look into the performance implications of this.
-            ref JobHandle handle = ref dep;
-
-            // Run VMs
-            // We cannot assume how many VMs there actually are, so schedule a
-            // predictable, always-non-zero number of jobs.
-            // Note: Scheduling X jobs with X available worker threads that are
-            // all idle does not actually guarantee an even distribution of
-            // work, but in the player the workers are saturated anyway so who
-            // gives.
-            int concurrentVMs = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount;
-            concurrentVMs = math.max(1, concurrentVMs);
-            NativeArray<JobHandle> vmHandles = new(concurrentVMs, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-            for (int i = 0; i < concurrentVMs; i++) {
-                vmHandles[i] = new VMJobMany() {
-                    vms = activeVMs,
-                    jobIndex = i,
-                    totalJobs = concurrentVMs
-                }.Schedule(handle);
-            }
-            handle = JobHandle.CombineDependencies(vmHandles);
-            vmHandles.Dispose();
-
-            // TODO: Message handling, detecting and disabling VMs with zero
-            // bullets. Unfortunately, both of these operations are sequental :(
-            handle = new VMsCommandsJob() {
-                field = bulletField,
-                player = player,
-                vms = activeVMs,
-                createdBullets = createdBullets
-            }.Schedule(handle);
-
-            // Update positions
-            var moveHandle1 = new MoveBulletsJob(in bulletField).Schedule(handle);
-            var moveHandle2 = ScheduleMovePlayerJob(handle);
-            handle = JobHandle.CombineDependencies(moveHandle1, moveHandle2);
-
-            // Check player collisions (note that bullets may be deleted already)
-            var collideHandle1 = new BulletCollisionJob(in bulletField, in playerHitbox, playerHitboxResult).Schedule(handle);
-            var collideHandle2 = new BulletCollisionJob(in bulletField, in playerGrazebox, playerGrazeboxResult).Schedule(handle);
-            handle = JobHandle.CombineDependencies(collideHandle1, collideHandle2);
-
-            // Post-process deletions
-            // TODO: NOTE: OBNOXIOUS: for both of these jobs, the jobs debugger
-            // suddenly takes up an exponential amount of time verifying the
-            // dependency graph. Scheduling 1 iteration, fine, 30 takes up the
-            // entire frame, 60 crashes Unity.
-            // The workaround: in the editor, toggle Jobs > JobsDebugger.
-            // The ScheduleTick(int, JobHandle) overload automatically enables
-            // it when doing one tick and disables it when doing multiple ticks.
-            // This disables the race condition check however.
-            // Disabled and I can run 500 iterations a frame no problem.
-            handle = new PostProcessPlayerCollisionJob(
-                player, in bulletField,
-                playerHitboxResult, playerGrazeboxResult
-            ).Schedule(handle);
-            handle = new PostProcessDeletionsJob(in bulletField).Schedule(handle);
-
-            // Prepare the next frame
-            handle = new IncrementTickJob(gameTick, input).Schedule(handle);
-
-            return handle;
-        }
-
-        // Burst can _only_ compile generic jobs whose constructor is of the
-        // form `MyJob<ExplicitType>`. Constructors of the form `MyJob<T>` for
-        // some ambient generic T type won't work.  `TGameInput` is like that,
-        // so...
-        // Unroll the generic into explicit types. :(
-        unsafe JobHandle ScheduleMovePlayerJob(JobHandle deps) {
-            // Also, I _would_ use those nice is/switch expressions, but...
-            // https://sharplab.io/#v2:D4AQzABAzgLgTgVwMYwgWQDwGkB8EDeAsAFARkTgQCWAdqlANwnkWRoAUmuEAtgJQFmLclAgBeXgDpGQsgF8SC4iUogATBADC2PEVLkueKk2X6ytVADF2AsUegB3KjCQALQWeGYLRjXYg0AKYO6Bg+7FRqfNIANLLCAPrieEEhhhHRUPFyJnJAA=
-            // They box. This is a hot loop. Ffs.
-            // Even uglier manual pointer shit it is.
-            TGameInput* t = input.GetUnsafeTypedPtr();
-            if (typeof(TGameInput) == typeof(KeyboardInput)) {
-                return new MovePlayerJob<KeyboardInput>(
-                    in player, (KeyboardInput*)t, in playerHitbox, in playerGrazebox
-                ).Schedule(deps);
-            }
-
-            // If other, fall back to non-bursted code. The only downside is
-            // the performance, which is much more acceptable than crashing.
-            // Easily recognisable by large blue blobs instead of thin green
-            // blobs in Unity's profiler.
-            return new MovePlayerJob<TGameInput>(
-                in player, t, in playerHitbox, in playerGrazebox
-            ).Schedule(deps);
-        }
         public override JobHandle ScheduleTick(JobHandle dep = default)
             => TickStrategy.ScheduleTick(this, dep);
 
+        public override JobHandle ScheduleTick(int ticks, JobHandle dep = default)
+            => TickStrategy.ScheduleTick(this, dep, ticks);
     }
 }

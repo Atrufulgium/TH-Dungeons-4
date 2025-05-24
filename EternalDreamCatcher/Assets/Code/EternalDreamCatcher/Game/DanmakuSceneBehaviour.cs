@@ -2,6 +2,7 @@
 using Atrufulgium.BulletScript.Compiler;
 using Atrufulgium.EternalDreamCatcher.Base;
 using Atrufulgium.EternalDreamCatcher.BulletEngine;
+using Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies;
 using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using System;
 using System.Collections.Generic;
@@ -76,7 +77,11 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
             gameInput = new(new(), Allocator.Persistent);
 
-            danmakuScene = new DanmakuScene<KeyboardInput>(quadMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures, gameInput, player);
+            danmakuScene = new DanmakuScene<KeyboardInput>(
+                quadMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures,
+                gameInput, player,
+                new TickStrategySeparated<KeyboardInput>()
+            );
 
             var vm = CreateVM();
             if (vm.IsCreated)

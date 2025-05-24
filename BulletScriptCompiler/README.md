@@ -24,6 +24,7 @@ Other:
 - Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily.
 - Everything BSS. This includes removing the variables `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers`, `use_pivot` from the compiler.
 - Look into banning floats in favour of fixed point for determinism across all platforms.
+- `TGameInput` is leaking all over the codebase. Ew.
 
 BulletScript (BS)
 =================
