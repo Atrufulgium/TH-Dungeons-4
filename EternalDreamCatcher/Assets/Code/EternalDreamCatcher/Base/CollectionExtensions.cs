@@ -88,5 +88,13 @@ namespace Atrufulgium.EternalDreamCatcher.Base {
         public static unsafe void Clear<T>(ref this UnsafeArray<T> array) where T : unmanaged {
             UnsafeUtility.MemClear(array.Ptr, array.Length * (long)UnsafeUtility.SizeOf<T>());
         }
+
+        /// <summary>
+        /// Resets the first <paramref name="length"/> values in an array to
+        /// `default`.
+        /// </summary>
+        public static unsafe void Clear<T>(ref this UnsafeArray<T> array, int length) where T : unmanaged {
+            UnsafeUtility.MemClear(array.Ptr, length * (long)UnsafeUtility.SizeOf<T>());
+        }
     }
 }

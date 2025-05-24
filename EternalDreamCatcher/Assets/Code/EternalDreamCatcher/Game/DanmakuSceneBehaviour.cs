@@ -46,6 +46,14 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
         List<IDisposable> testDisposables = new();
 
+        public enum TickStrategy {
+            Separated = 0,
+            Parallizable = 1,
+            MegaJob = 2
+        }
+        public TickStrategy tickStrategy = TickStrategy.Separated;
+        public bool limitJobWorkerCount = true;
+
         void Start() {
             if (bulletMaterial == null) throw new System.NullReferenceException();
             if (quadMesh == null) throw new System.NullReferenceException();
@@ -53,17 +61,6 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
 
             // TODO: Put this someplace better
             Application.targetFrameRate = 60;
-            // TODO: Stop using Unity lmao, if the multithreading model is
-            // incompatible with what I throw at it, the Burst compiler can
-            // viably be replaced with modern .NET features, and I'm doing the
-            // rendering myself anyways, is there even anything left to bind
-            // me to the engine at this point?
-            // Anyways.
-            // The overhead of the jobs system is much too much for the stream
-            // of tiny tasks I throw at it. Forcing everything on the main
-            // thread allows for -- and I'm not kidding -- a ~x10 speedup.
-            // With 1/10th of the resources available. Yep.
-            JobsUtility.JobWorkerCount = 0;
 
             player = new(new() {
                 position = new(0.5f, 1.1f),
@@ -82,6 +79,7 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
                 gameInput, player,
                 new TickStrategySeparated<KeyboardInput>()
             );
+            UpdateStrategy<KeyboardInput>();
 
             var vm = CreateVM();
             if (vm.IsCreated)
@@ -178,6 +176,10 @@ repeat {
             player.Dispose();
         }
 
+        private void OnValidate() {
+            UpdateStrategy<KeyboardInput>();
+        }
+
         private void SetBuffer() {
             if (buffer == null) {
                 buffer = new() { name = "BulletFieldRendering" };
@@ -201,6 +203,27 @@ repeat {
                 CameraEvent.AfterEverything,
                 buffer
             );
+        }
+
+        private void UpdateStrategy<TGameInput>() where TGameInput : unmanaged, IGameInput {
+            if (danmakuScene == null)
+                return;
+
+            ((DanmakuScene<TGameInput>)danmakuScene).TickStrategy = tickStrategy switch {
+                TickStrategy.Separated => new TickStrategySeparated<TGameInput>(),
+                TickStrategy.Parallizable => new TickStrategyParallizable<TGameInput>(),
+                TickStrategy.MegaJob => new TickStrategyMegaJob<TGameInput>(),
+                _ => throw new ArgumentException("Invalid tick strategy.")
+            };
+
+            // Multithreaded synchronisation has overhead.
+            // Setting JobWorkerCount to 0 removes this overhead.
+            // Only the entire ticks strategy doesn't suffer from this overhead
+            // (as it's just one job).
+            if (limitJobWorkerCount)
+                JobsUtility.JobWorkerCount = 0;
+            else
+                JobsUtility.ResetJobWorkerCount();
         }
     }
 }
