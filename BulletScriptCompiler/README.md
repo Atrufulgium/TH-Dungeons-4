@@ -21,10 +21,11 @@ Compiler:
 
 Other:
 - This file. Maybe also for *once* include project setup/build instructions.
-- Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily.
+- Even though the keys behave properly, glowy/nonglowy render passes are ordered arbitrarily. (TODO: Is this still the case after the rework?)
 - Everything BSS. This includes removing the variables `autoclear`, `clearimmune`, `clearingtype`, `harmsenemies`, `harmsplayers`, `use_pivot` from the compiler.
 - Look into banning floats in favour of fixed point for determinism across all platforms.
-- `TGameInput` is leaking all over the codebase. Ew.
+- The alternative way to get a speedup is to just dodge the copies entirely. This requires making BulletField and VM entirely pointer-based instead of using Unity collections. This loses out on what little safety is left -- so just think about it for a while.
+- DanmakuScene is a mess.
 
 BulletScript (BS)
 =================

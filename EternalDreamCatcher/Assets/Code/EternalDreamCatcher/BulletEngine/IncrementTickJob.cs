@@ -1,38 +1,30 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
     /// <summary>
-    /// Increments the current game tick both generally and for the game
-    /// input.
+    /// Increments the current game tick.
     /// </summary>
     [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
-    internal unsafe struct IncrementTickJob : IJob {
+    internal struct IncrementTickJob : IJob {
 
         public NativeReference<int> gameTick;
-        [NativeDisableUnsafePtrRestriction]
-        public int* inputGameTick;
 
-        public IncrementTickJob(NativeReference<int> gameTick, int* inputGameTick) {
+        public IncrementTickJob(NativeReference<int> gameTick) {
             this.gameTick = gameTick;
-            this.inputGameTick = inputGameTick;
         }
 
-        public unsafe void Execute() {
-            IncrementTickPass.Execute(ref gameTick, inputGameTick);
+        public void Execute() {
+            IncrementTickPass.Execute(ref gameTick);
         }
     }
 
     /// <inheritdoc cref="IncrementTickJob{TGameInput}"/>
     internal static class IncrementTickPass {
-        public static unsafe void Execute(
-            ref NativeReference<int> gameTick,
-            int* inputGameTick) {
+        public static void Execute(ref NativeReference<int> gameTick) {
                 gameTick.Value++;
-                *inputGameTick = gameTick.Value;
         }
     }
 }

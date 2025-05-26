@@ -13,23 +13,17 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     /// <summary>
     /// A <see cref="BulletField"/> consists of just the bullet data.
     /// <br/>
-    /// A <see cref="DanmakuScene{TGameInput}"/> consists of everything in addition, the
+    /// A <see cref="DanmakuScene"/> consists of everything in addition, the
     /// player, the enemy/ies, and basically everything else 2D that does
     /// something and/or has to be rendered.
     /// </summary>
-    // (I like how the job system makes interface boxing *explicit* and has you
-    //  manually require the interface to be unmanaged as a generic.)
-    // Unfortunately need to split the class into a non-generic and generic
-    // part because of the TGameInput bit.
-    // Even if we later have to unroll this generic again in the overwritten
-    // `DanmakuScene<T>.ScheduleTick()`, I can't just use
-    // NativeReference<IGameInput> as that arg may be managed, blegh.
-    // We _need_ the generic constraint to satisfy NativeReference<>.
-    public abstract class DanmakuScene : IDisposable {
+    public class DanmakuScene : IDisposable {
 
         public const int MAX_BULLETS = BulletField.MAX_BULLETS;
         internal readonly BulletField bulletField = new(true);
         protected readonly BulletFieldRenderer bulletFieldRenderer;
+        
+        public ITickStrategy TickStrategy { get; set; }
 
         protected Mesh quadMesh;
         protected Material entityMaterial;
@@ -37,6 +31,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
         internal NativeReference<Player> player;
         internal NativeReference<int> gameTick;
+        // Main gameplay: fill [N] ticks when skipping [N] ticks.
+        // Replays: fill this up completely at the beginning.
+        internal NativeList<GameInput> input;
 
         internal NativeReference<Circle> playerHitbox;
         internal NativeReference<Circle> playerGrazebox;
@@ -59,15 +56,19 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             Texture2D[] bulletTextures,
             Material entityMaterial,
             Texture2D[] entityTextures,
-            NativeReference<Player> player
+            NativeReference<Player> player,
+            ITickStrategy tickStrategy
         ) {
             bulletFieldRenderer = new(bulletMaterial, quadMesh, bulletTextures);
+            TickStrategy = tickStrategy;
             this.quadMesh = quadMesh;
             this.entityMaterial = entityMaterial;
             this.entityTextures = entityTextures;
 
             this.player = player;
             gameTick = new(0, Allocator.Persistent);
+            // Pre-allocate half an hour of gameplay worth of input space
+            input = new(60 * 60 * 30, Allocator.Persistent);
 
             playerHitbox = new(Allocator.Persistent);
             playerGrazebox = new(Allocator.Persistent);
@@ -84,8 +85,11 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             entityPosScaleID = Shader.PropertyToID("_EntityPosScale");
         }
 
-        public abstract JobHandle ScheduleTick(JobHandle dep = default);
-        public abstract JobHandle ScheduleTick(int ticks, JobHandle dep = default);
+        public JobHandle ScheduleTick(JobHandle dep = default)
+            => TickStrategy.ScheduleTick(this, dep);
+
+        public JobHandle ScheduleTick(int ticks, JobHandle dep = default)
+            => TickStrategy.ScheduleTick(this, dep, ticks);
 
         /// <inheritdoc cref="BulletField.CreateBullet(ref BulletCreationParams)"/>
         public BulletReference? CreateBullet(ref BulletCreationParams bullet)
@@ -95,13 +99,12 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
         /// Adds commands to a buffer to fully render this scene onto the
         /// current active render target.
         /// </summary>
-        public unsafe void Render(CommandBuffer buffer) {
-            var p = player.GetUnsafeTypedPtr();
+        public void Render(CommandBuffer buffer) {
             // For the time being put player rendering here.
             // Once I get a more general "renderable entities" system, move it.
             // Bullets are more important than any entity, so put them below.
             buffer.SetGlobalTexture(entityTexID, entityTextures[0]);
-            buffer.SetGlobalVector(entityPosScaleID, new float4(p->position, 0, 1));
+            buffer.SetGlobalVector(entityPosScaleID, new float4(player.Value.position, 0, 1));
             buffer.SetGlobalFloat(gameTickID, gameTick.Value / 60f);
             buffer.DrawMesh(
                 quadMesh, matrix: default, entityMaterial, 0, 0
@@ -114,6 +117,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             bulletField.Dispose();
             bulletFieldRenderer.Dispose();
             gameTick.Dispose();
+            input.Dispose();
             playerHitbox.Dispose();
             playerGrazebox.Dispose();
             playerHitboxResult.Dispose();
@@ -122,31 +126,5 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             activeVMs.Dispose();
             createdBullets.Dispose();
         }
-    }
-
-    public class DanmakuScene<TGameInput> : DanmakuScene where TGameInput : unmanaged, IGameInput {
-        internal NativeReference<TGameInput> input;
-
-        public ITickStrategy<TGameInput> TickStrategy { get; set; }
-
-        public DanmakuScene(
-            Mesh rectMesh,
-            Material bulletMaterial,
-            Texture2D[] bulletTextures,
-            Material entityMaterial,
-            Texture2D[] entityTextures,
-            NativeReference<TGameInput> input,
-            NativeReference<Player> player,
-            ITickStrategy<TGameInput> tickStrategy
-        ) : base(rectMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures, player) {
-            this.input = input;
-            TickStrategy = tickStrategy;
-        }
-
-        public override JobHandle ScheduleTick(JobHandle dep = default)
-            => TickStrategy.ScheduleTick(this, dep);
-
-        public override JobHandle ScheduleTick(int ticks, JobHandle dep = default)
-            => TickStrategy.ScheduleTick(this, dep, ticks);
     }
 }

@@ -2,7 +2,6 @@ using Atrufulgium.EternalDreamCatcher.Base;
 using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
@@ -14,22 +13,20 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     /// all the way up to <see cref="IncrementTickJob"/>.
     /// </summary>
     [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
-    internal unsafe struct PostVMGameTickJob<TGameInput> : IJob where TGameInput : unmanaged, IGameInput{
+    internal struct PostVMGameTickJob : IJob {
 
         BulletField field;
         NativeReference<Player> player;
         NativeList<VM> vms;
         NativeList<BulletReference> createdBullets;
 
-        [NativeDisableUnsafePtrRestriction]
-        TGameInput* input;
+        NativeList<GameInput> input;
+        NativeReference<int> gameTick;
         NativeReference<Circle> playerHitbox;
         NativeReference<Circle> playerGrazebox;
 
         NativeList<BulletReference> playerHitboxResult;
         NativeList<BulletReference> playerGrazeboxResult;
-
-        NativeReference<int> gameTick;
 
         public PostVMGameTickJob(
             in BulletField field,
@@ -37,7 +34,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             in NativeList<VM> vms,
             in NativeList<BulletReference> createdBullets,
             
-            in TGameInput* input,
+            in NativeList<GameInput> input,
             in NativeReference<Circle> playerHitbox,
             in NativeReference<Circle> playerGrazebox,
             
@@ -58,7 +55,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             this.gameTick = gameTick;
         }
 
-        public unsafe void Execute() {
+        public void Execute() {
             // Parse the outputs of all VMs.
             VMCommandsPass.Execute(in vms, in player, ref field, ref createdBullets);
 
@@ -70,9 +67,10 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
                 in field.dy,
                 in field.active
             );
-            MovePlayerPass<TGameInput>.Execute(
+            MovePlayerPass.Execute(
                 in player,
-                input,
+                in input,
+                in gameTick,
                 ref playerHitbox,
                 ref playerGrazebox
             );
@@ -106,10 +104,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             PostProcessDeletionsPass.Execute(ref field);
 
             // Prepare the next frame
-            // TODO: This is the reason IGameInput requires the first field of
-            // its implementors be `gameTick`.
-            // I haven't found a neater solution.
-            IncrementTickPass.Execute(ref gameTick, (int*)input);
+            IncrementTickPass.Execute(ref gameTick);
         }
     }
 }

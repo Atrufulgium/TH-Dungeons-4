@@ -1,4 +1,3 @@
-using Atrufulgium.EternalDreamCatcher.Base;
 using Unity.Jobs;
 
 namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
@@ -7,21 +6,21 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
     /// Represents a specific way to schedule one or multiple gameticks taking
     /// place in a <see cref="DanmakuScene"/>.
     /// <br/>
-    /// You can consider <see cref="TickStrategySeparated{TGameInput}"/> as a
-    /// sort-of reference implementation all other implementations need to be
+    /// You can consider <see cref="TickStrategySeparated"/> the sort-of
+    /// reference implementation all other implementations need to be
     /// synced with.
     /// </summary>
-    public interface ITickStrategy<TGameInput> where TGameInput : unmanaged, IGameInput {
+    public interface ITickStrategy {
 
         /// <summary>
         /// Add a gametick of processing <paramref name="scene"/> after <paramref name="dependency"/>.
         /// </summary>
-        public JobHandle ScheduleTick(DanmakuScene<TGameInput> scene, JobHandle dependency);
+        public JobHandle ScheduleTick(DanmakuScene scene, JobHandle dependency);
 
         /// <summary>
         /// Add <paramref name="ticks"/> gameticks of processing <paramref name="scene"/>
         /// after <paramref name="dependency"/>.
         /// </summary>
-        public JobHandle ScheduleTick(DanmakuScene<TGameInput> scene, JobHandle dependency, int ticks);
+        public JobHandle ScheduleTick(DanmakuScene scene, JobHandle dependency, int ticks);
     }
 }

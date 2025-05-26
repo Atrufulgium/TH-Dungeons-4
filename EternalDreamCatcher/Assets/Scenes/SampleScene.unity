@@ -254,7 +254,7 @@ MonoBehaviour:
   - {fileID: 2800000, guid: 51b979ed9b44faa4a8beb036b091b196, type: 3}
   entityTextures:
   - {fileID: 2800000, guid: 495167c80492ede46b6dad10fff4c10a, type: 3}
-  tickStrategy: 2
+  tickStrategy: 0
   limitJobWorkerCount: 1
 --- !u!1 &572371175
 GameObject:

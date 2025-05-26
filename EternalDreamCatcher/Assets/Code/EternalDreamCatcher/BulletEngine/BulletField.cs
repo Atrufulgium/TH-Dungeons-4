@@ -357,6 +357,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
             renderScale.Dispose();
             deleteShifts.Dispose();
             deletedCount.Dispose();
+            nextID.Dispose();
         }
     }
 }

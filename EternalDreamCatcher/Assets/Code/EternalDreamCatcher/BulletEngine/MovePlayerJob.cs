@@ -1,7 +1,6 @@
 ﻿using Atrufulgium.EternalDreamCatcher.Base;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 
@@ -11,15 +10,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
     /// Also writes the new hit- and grazeboxes.
     /// </summary>
     [BurstCompile(CompileSynchronously = true, FloatMode = FloatMode.Fast, OptimizeFor = OptimizeFor.Performance)]
-    internal unsafe struct MovePlayerJob<TGameInput> : IJob where TGameInput : unmanaged, IGameInput {
+    internal struct MovePlayerJob : IJob {
 
         public NativeReference<Player> player;
-        // This is needed for a really ugly workaround.
-        // See
-        /// <seealso cref="DanmakuScene{TGameInput}.SchedulePostVMGameTickJob(JobHandle)"/>
-        // for some more comments on this.
-        [NativeDisableUnsafePtrRestriction]
-        public TGameInput* gameInput;
+        [ReadOnly]
+        public NativeList<GameInput> input;
+        [ReadOnly]
+        public NativeReference<int> gameTick;
         [WriteOnly]
         public NativeReference<Circle> hitbox;
         [WriteOnly]
@@ -27,33 +24,37 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine {
 
         public MovePlayerJob(
             in NativeReference<Player> player,
-            TGameInput* gameInput,
+            in NativeList<GameInput> input,
+            in NativeReference<int> gameTick,
             in NativeReference<Circle> hitbox,
             in NativeReference<Circle> grazebox
         ) {
             this.player = player;
-            this.gameInput = gameInput;
+            this.input = input;
+            this.gameTick = gameTick;
             this.hitbox = hitbox;
             this.grazebox = grazebox;
         }
 
-        public unsafe void Execute() {
-            MovePlayerPass<TGameInput>.Execute(player, gameInput, ref hitbox, ref grazebox);
+        public void Execute() {
+            MovePlayerPass.Execute(player, input, gameTick, ref hitbox, ref grazebox);
         }
     }
 
-    /// <inheritdoc cref="MovePlayerJob{TGameInput}"/>
-    internal static class MovePlayerPass<TGameInput> where TGameInput : unmanaged, IGameInput {
+    /// <inheritdoc cref="MovePlayerJob"/>
+    internal static class MovePlayerPass {
         public static unsafe void Execute(
             in NativeReference<Player> player,
-            in TGameInput* gameInput,
+            in NativeList<GameInput> input,
+            in NativeReference<int> gameTick,
             ref NativeReference<Circle> hitbox,
             ref NativeReference<Circle> grazebox
         ) {
             var p = player.GetUnsafeTypedPtr();
-            float2 delta = gameInput->MoveDirection;
+            var gameInput = input[gameTick.Value];
+            float2 delta = gameInput.MoveDirection;
             delta = math.normalizesafe(delta);
-            delta *= gameInput->IsFocusing ? p->focusedSpeed : p->unfocusedSpeed;
+            delta *= gameInput.IsFocusing ? p->focusedSpeed : p->unfocusedSpeed;
             float2 newPos = p->position + delta;
             newPos = math.clamp(newPos, new(0.02f, 0.05f), new(0.98f, 1.15f));
             p->position = newPos;

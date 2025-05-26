@@ -20,7 +20,6 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
     [RequireComponent(typeof(Camera))]
     public class DanmakuSceneBehaviour : MonoBehaviour {
 
-        NativeReference<KeyboardInput> gameInput;
         DanmakuScene danmakuScene;
         [Min(1)]
         public int TicksPerTick = 1;
@@ -72,14 +71,12 @@ namespace Atrufulgium.EternalDreamCatcher.Game {
                 grazeboxRadius = 0.025f
             }, Allocator.Persistent);
 
-            gameInput = new(new(), Allocator.Persistent);
-
-            danmakuScene = new DanmakuScene<KeyboardInput>(
+            danmakuScene = new DanmakuScene(
                 quadMesh, bulletMaterial, bulletTextures, entityMaterial, entityTextures,
-                gameInput, player,
-                new TickStrategySeparated<KeyboardInput>()
+                player,
+                new TickStrategySeparated()
             );
-            UpdateStrategy<KeyboardInput>();
+            UpdateStrategy();
 
             var vm = CreateVM();
             if (vm.IsCreated)
@@ -141,11 +138,24 @@ repeat {
         }
 
         JobHandle currentUpdate;
-        private unsafe void Update() {
+        private void Update() {
             // (This does nothing with `default`, and does not throw.)
             currentUpdate.Complete();
 
-            gameInput.GetUnsafeTypedPtr()->HandleInputMainThread();
+            // Add current tick's input
+            // TODO: only if not in replay mode.
+            var input = new GameInput(
+                (Input.GetKey(KeyCode.LeftArrow) ? new int2(-1, 0) : default)
+                + (Input.GetKey(KeyCode.RightArrow) ? new int2(1, 0) : default)
+                + (Input.GetKey(KeyCode.UpArrow) ? new int2(0, -1) : default)
+                + (Input.GetKey(KeyCode.DownArrow) ? new int2(0, 1) : default),
+                Input.GetKey(KeyCode.Z),
+                Input.GetKeyDown(KeyCode.X),
+                Input.GetKey(KeyCode.LeftShift)
+            );
+            for (int i = 0; i < TicksPerTick; i++) {
+                danmakuScene.input.Add(input);
+            }
 
             currentUpdate = danmakuScene.ScheduleTick(TicksPerTick);
             // Note: Do not be tempted by JobHandle.ScheduleBatchedJobs().
@@ -167,7 +177,6 @@ repeat {
         }
 
         private void OnDestroy() {
-            gameInput.Dispose();
             // TODO: Remove once not testing anymore
             foreach (var d in testDisposables)
                 d.Dispose();
@@ -177,7 +186,7 @@ repeat {
         }
 
         private void OnValidate() {
-            UpdateStrategy<KeyboardInput>();
+            UpdateStrategy();
         }
 
         private void SetBuffer() {
@@ -205,14 +214,14 @@ repeat {
             );
         }
 
-        private void UpdateStrategy<TGameInput>() where TGameInput : unmanaged, IGameInput {
+        private void UpdateStrategy() {
             if (danmakuScene == null)
                 return;
 
-            ((DanmakuScene<TGameInput>)danmakuScene).TickStrategy = tickStrategy switch {
-                TickStrategy.Separated => new TickStrategySeparated<TGameInput>(),
-                TickStrategy.Parallizable => new TickStrategyParallizable<TGameInput>(),
-                TickStrategy.MegaJob => new TickStrategyMegaJob<TGameInput>(),
+            danmakuScene.TickStrategy = tickStrategy switch {
+                TickStrategy.Separated => new TickStrategySeparated(),
+                TickStrategy.Parallizable => new TickStrategyParallizable(),
+                TickStrategy.MegaJob => new TickStrategyMegaJob(),
                 _ => throw new ArgumentException("Invalid tick strategy.")
             };
 

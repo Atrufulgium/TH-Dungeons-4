@@ -1,5 +1,4 @@
-﻿using Atrufulgium.EternalDreamCatcher.Base;
-using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
+﻿using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using System;
 using Unity.Collections;
 using Unity.Jobs;
@@ -14,11 +13,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
     /// depends on how heavy the VMs are. It might be possible to do a hybrid
     /// strategy based on real-time data.
     /// </summary>
-    internal class TickStrategyParallizable<TGameInput>
-        : ITickStrategy<TGameInput>
-        where TGameInput : unmanaged, IGameInput {
+    internal class TickStrategyParallizable : ITickStrategy {
 
-        public JobHandle ScheduleTick(DanmakuScene<TGameInput> scene, JobHandle dependency, int ticks) {
+        public JobHandle ScheduleTick(DanmakuScene scene, JobHandle dependency, int ticks) {
             if (ticks <= 0)
                 throw new ArgumentOutOfRangeException(nameof(ticks), "Can only tick a positive number of times.");
 #if UNITY_EDITOR
@@ -35,7 +32,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
             return handle;
         }
 
-        public unsafe JobHandle ScheduleTick(DanmakuScene<TGameInput> scene, JobHandle dependency) {
+        public JobHandle ScheduleTick(DanmakuScene scene, JobHandle dependency) {
             ref JobHandle handle = ref dependency;
 
             int concurrentVMs = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount;
@@ -51,40 +48,18 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
             handle = JobHandle.CombineDependencies(vmHandles);
             vmHandles.Dispose();
 
-            handle = SchedulePostVMGameTickJob(scene, handle);
-
-            return handle;
-        }
-
-        unsafe JobHandle SchedulePostVMGameTickJob(DanmakuScene<TGameInput> scene, JobHandle deps) {
-            TGameInput* t = scene.input.GetUnsafeTypedPtr();
-            if (typeof(TGameInput) == typeof(KeyboardInput)) {
-                return new PostVMGameTickJob<KeyboardInput>(
+            return new PostVMGameTickJob(
                     in scene.bulletField,
                     in scene.player,
                     in scene.activeVMs,
                     in scene.createdBullets,
-                    (KeyboardInput*)t,
+                    in scene.input,
                     in scene.playerHitbox,
                     in scene.playerGrazebox,
                     in scene.playerHitboxResult,
                     in scene.playerGrazeboxResult,
                     in scene.gameTick
-                ).Schedule(deps);
-            }
-
-            return new PostVMGameTickJob<TGameInput>(
-                    in scene.bulletField,
-                    in scene.player,
-                    in scene.activeVMs,
-                    in scene.createdBullets,
-                    t,
-                    in scene.playerHitbox,
-                    in scene.playerGrazebox,
-                    in scene.playerHitboxResult,
-                    in scene.playerGrazeboxResult,
-                    in scene.gameTick
-            ).Schedule(deps);
+            ).Schedule(handle);
         }
     }
 }

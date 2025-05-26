@@ -1,5 +1,4 @@
-﻿using Atrufulgium.EternalDreamCatcher.Base;
-using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
+﻿using Atrufulgium.EternalDreamCatcher.BulletScriptVM;
 using System;
 using Unity.Collections;
 using Unity.Jobs;
@@ -17,14 +16,13 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
     /// This is the commented reference implementation. All other strategies
     /// will not contain comments unless it's particular to that strategy.
     /// <br/>
-    /// For instance, the generic unrolling is necessary in each, but I'll only
-    /// comment it here.
+    /// Note that the behaviour is mixed between the strategy and the jobs.
+    /// Strategies that put more in jobs have less to put in the strategy, and
+    /// vice-versa.
     /// </remarks>
-    internal class TickStrategySeparated<TGameInput>
-        : ITickStrategy<TGameInput>
-        where TGameInput : unmanaged, IGameInput {
+    internal class TickStrategySeparated : ITickStrategy {
 
-        public JobHandle ScheduleTick(DanmakuScene<TGameInput> scene, JobHandle dependency, int ticks) {
+        public JobHandle ScheduleTick(DanmakuScene scene, JobHandle dependency, int ticks) {
             if (ticks <= 0)
                 throw new ArgumentOutOfRangeException(nameof(ticks), "Can only tick a positive number of times.");
 #if UNITY_EDITOR
@@ -42,7 +40,7 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
             return handle;
         }
 
-        public unsafe JobHandle ScheduleTick(DanmakuScene<TGameInput> scene, JobHandle dependency) {
+        public JobHandle ScheduleTick(DanmakuScene scene, JobHandle dependency) {
             // WARNING: EVERY .Schedule() HERE MUST HAVE A HANDLE ARG
             // YOU"RE DOING IT WRONG OTHERWISE
             // You don't notice it until you run it at [ridiculus]x speed in
@@ -85,7 +83,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
 
             // Update positions
             var moveHandle1 = new MoveBulletsJob(in scene.bulletField).Schedule(handle);
-            var moveHandle2 = ScheduleMovePlayerJob(scene, handle);
+            var moveHandle2 = new MovePlayerJob(
+                in scene.player, in scene.input, in scene.gameTick, in scene.playerHitbox, in scene.playerGrazebox
+            ).Schedule(handle);
             handle = JobHandle.CombineDependencies(moveHandle1, moveHandle2);
 
             // Check player collisions (note that bullets may be deleted already)
@@ -118,38 +118,9 @@ namespace Atrufulgium.EternalDreamCatcher.BulletEngine.TickStrategies {
             handle = new PostProcessDeletionsJob(in scene.bulletField).Schedule(handle);
 
             // Prepare the next frame
-            handle = new IncrementTickJob(
-                scene.gameTick,
-                (int*)scene.input.GetUnsafeTypedPtr()
-            ).Schedule(handle);
+            handle = new IncrementTickJob(scene.gameTick).Schedule(handle);
 
             return handle;
-        }
-
-        // Burst can _only_ compile generic jobs whose constructor is of the
-        // form `MyJob<ExplicitType>`. Constructors of the form `MyJob<T>` for
-        // some ambient generic T type won't work.  `TGameInput` is like that,
-        // so...
-        // Unroll the generic into explicit types. :(
-        unsafe JobHandle ScheduleMovePlayerJob(DanmakuScene<TGameInput> scene, JobHandle deps) {
-            // Also, I _would_ use those nice is/switch expressions, but...
-            // https://sharplab.io/#v2:D4AQzABAzgLgTgVwMYwgWQDwGkB8EDeAsAFARkTgQCWAdqlANwnkWRoAUmuEAtgJQFmLclAgBeXgDpGQsgF8SC4iUogATBADC2PEVLkueKk2X6ytVADF2AsUegB3KjCQALQWeGYLRjXYg0AKYO6Bg+7FRqfNIANLLCAPrieEEhhhHRUPFyJnJAA=
-            // They box. This is a hot loop. Ffs.
-            // Even uglier manual pointer shit it is.
-            TGameInput* t = scene.input.GetUnsafeTypedPtr();
-            if (typeof(TGameInput) == typeof(KeyboardInput)) {
-                return new MovePlayerJob<KeyboardInput>(
-                    in scene.player, (KeyboardInput*)t, in scene.playerHitbox, in scene.playerGrazebox
-                ).Schedule(deps);
-            }
-
-            // If other, fall back to non-bursted code. The only downside is
-            // the performance, which is much more acceptable than crashing.
-            // Easily recognisable by large blue blobs instead of thin green
-            // blobs in Unity's profiler.
-            return new MovePlayerJob<TGameInput>(
-                in scene.player, t, in scene.playerHitbox, in scene.playerGrazebox
-            ).Schedule(deps);
         }
     }
 }
